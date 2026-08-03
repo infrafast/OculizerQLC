@@ -1,6 +1,7 @@
 {
   "pulse_seconds": 0.1,
-  "unmapped": "ignore",
+  "unmapped": "fallback",
+  "fallback_scene": "party",
   "scenes": {
     "party": {
       "action": "toggle",

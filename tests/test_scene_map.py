@@ -26,6 +26,18 @@ class SceneMapTests(unittest.TestCase):
         self.assertEqual(scene_map.pulse_seconds, 0.2)
         self.assertEqual(scene_map.unmapped, "error")
 
+    def test_resolves_unmapped_scene_to_configured_fallback(self):
+        scene_map = SceneMap.from_mapping(
+            {
+                "unmapped": "fallback",
+                "fallback_scene": "party",
+                "scenes": {"party": {"path": "/party"}},
+            }
+        )
+
+        self.assertEqual(scene_map.resolve("wave"), "party")
+        self.assertEqual(scene_map.resolve("party"), "party")
+
     def test_loads_from_json_file(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "scenes.json"
@@ -41,6 +53,8 @@ class SceneMapTests(unittest.TestCase):
         invalid_maps = (
             {"pulse_seconds": -1},
             {"unmapped": "guess"},
+            {"unmapped": "fallback", "scenes": {"party": {"path": "/party"}}},
+            {"fallback_scene": "party", "scenes": {"party": {"path": "/party"}}},
             {"scenes": {"party": {"path": "test"}}},
             {"scenes": {"party": {"action": "unknown"}}},
         )

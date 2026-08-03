@@ -181,6 +181,16 @@ class SceneManager:
         
         self.current_scene = self.scenes[target_scene]
 
+    def resolve_scene(self, scene_name: str, apply_fallback: bool = True) -> str:
+        """Resolve a requested scene through the current profile fallback policy."""
+        if scene_name not in self.scenes:
+            raise ValueError(f"Scene '{scene_name}' not found")
+        if apply_fallback:
+            fallback = self.get_fallback_scene(scene_name)
+            if fallback:
+                return fallback
+        return scene_name
+
     def reload_scenes(self):
         """Reload all scenes from disk, preserving current scene if possible"""
         current_scene_name = self.current_scene['name']

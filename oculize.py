@@ -7,7 +7,8 @@ import platform
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
 from oculizer.light import OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_silence, load_runtime_config
+from oculizer.automatic import AutomaticSceneRouter
 import logging
 from collections import deque, OrderedDict
 import sounddevice as sd
@@ -134,7 +135,7 @@ class AudioOculizerController:
                  dual_stream=True, prediction_device=None, predictor_version='v4',
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
                  test_mode=False, output='enttec', osc_config=None, osc_host=None,
-                 osc_port=None, osc_dry_run=None, scene_map=None):
+                 osc_port=None, osc_dry_run=None, scene_map=None, silence_config=None):
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
@@ -170,6 +171,9 @@ class AudioOculizerController:
             osc_port=osc_port,
             osc_dry_run=osc_dry_run
         )
+        if output == 'qlc-osc':
+            self.oculizer.restrict_scenes_to_backend()
+        self.scene_router = AutomaticSceneRouter(self.oculizer, silence_config=silence_config)
         
         self.dual_stream = dual_stream
         self.predictor_version = predictor_version
@@ -256,27 +260,16 @@ class AudioOculizerController:
 
     def update_loop(self):
         """Update lighting based on real-time audio predictions."""
-        last_scene = None
-        
         while True:
             try:
-                # Skip automatic scene changes if in toggle mode with override active
-                if self.in_toggle_mode and self.toggle_override_active:
+                # The integrated selector owns routing while it is open.
+                if self.in_toggle_mode:
                     time.sleep(0.1)
                     continue
                 
-                # Get current scene from oculizer's integrated prediction
-                current_scene = self.oculizer.current_predicted_scene
-                
-                if current_scene and current_scene != last_scene:
-                    # Scene has changed
-                    if current_scene in self.scene_manager.scenes:
-                        self.info_message = f"Changing to scene: {current_scene}"
-                        logging.info(f"Changing to scene: {current_scene}")
-                        self.oculizer.change_scene(current_scene)
-                        last_scene = current_scene
-                    else:
-                        logging.warning(f"Scene '{current_scene}' not found in scene manager")
+                if self.scene_router.step():
+                    current_scene = self.scene_manager.current_scene['name']
+                    self.info_message = f"Changed to scene: {current_scene}"
                         
             except Exception as e:
                 self.error_message = f"Error in update loop: {str(e)}"
@@ -325,9 +318,8 @@ class AudioOculizerController:
         original_scenes = self.scene_manager.scenes.copy()
         self.scene_manager.scenes = sort_scenes_alphabetically(self.scene_manager.scenes)
         
-        # Enable mouse events
-        curses.mousemask(curses.ALL_MOUSE_EVENTS | curses.REPORT_MOUSE_POSITION)
-        print('\033[?1003h')  # Enable mouse movement tracking
+        # Keep terminal interaction keyboard-only for portability.
+        curses.mousemask(0)
         self.stdscr.keypad(1)
         
         # Initialize variables
@@ -340,7 +332,6 @@ class AudioOculizerController:
         # Override state
         override_active = False
         override_scene = None
-        last_prediction = None
         
         try:
             while True:
@@ -356,12 +347,8 @@ class AudioOculizerController:
                 predicted_scene = self.oculizer.current_predicted_scene
                 
                 # Update current scene name based on override state
-                if not override_active and predicted_scene and predicted_scene != last_prediction:
-                    # Prediction changed and we're following predictions
-                    if predicted_scene in self.scene_manager.scenes:
-                        self.oculizer.change_scene(predicted_scene)
-                        current_scene_name = predicted_scene
-                        last_prediction = predicted_scene
+                if not override_active and self.scene_router.step():
+                    current_scene_name = self.scene_manager.current_scene['name']
                 
                 # Calculate grid layout
                 num_rows, num_columns, column_width = calculate_grid_dimensions(scene_list, max_x, max_y - 6)
@@ -452,7 +439,6 @@ class AudioOculizerController:
                         search_string = ""
                     
                     if event == 17:  # Ctrl+Q
-                        print('\033[?1003l')  # Disable mouse tracking
                         curses.mousemask(0)
                         self.stop()
                         exit()
@@ -461,12 +447,13 @@ class AudioOculizerController:
                         break
                     elif event == 18:  # Ctrl+R
                         try:
-                            self.scene_manager.reload_scenes()
+                            self.oculizer.reload_scene_configuration()
                             self.scene_manager.scenes = sort_scenes_alphabetically(self.scene_manager.scenes)
                             if override_active:
-                                self.oculizer.change_scene(override_scene)
+                                self.scene_router.set_manual_override(override_scene)
                             else:
-                                self.oculizer.change_scene(current_scene_name)
+                                self.scene_router.last_target = None
+                                self.scene_router.step()
                             scene_list = list(self.scene_manager.scenes.items())
                             total_scenes = len(scene_list)
                             self.info_message = "Scenes reloaded"
@@ -491,28 +478,6 @@ class AudioOculizerController:
                         if 0 <= new_index < total_scenes:
                             selected_index = new_index
                             search_string = ""
-                    elif event == curses.KEY_MOUSE:
-                        _, mx, my, _, bstate = curses.getmouse()
-                        if my >= 5 and my < min(5 + num_rows, max_y - 1):  # Adjusted for new header line
-                            row = my - 5
-                            col = mx // column_width
-                            hover_pos = (row, col)
-                            
-                            if bstate & curses.BUTTON1_CLICKED:
-                                new_index = get_index_from_position(row, col, num_columns, total_scenes)
-                                if 0 <= new_index < total_scenes:
-                                    new_scene = scene_list[new_index][0]
-                                    self.oculizer.change_scene(new_scene)
-                                    current_scene_name = new_scene
-                                    selected_index = new_index
-                                    search_string = ""
-                                    
-                                    # Automatically enable override when clicking a scene
-                                    override_active = True
-                                    override_scene = new_scene
-                                    
-                                    self.info_message = f"Override: {new_scene} (ESC to resume predictions)"
-                                    logging.info(f"Mouse selection: {new_scene} - override enabled")
                     elif event in [curses.KEY_ENTER, 10, 13]:  # Enter key
                         # Check if Shift+Enter (KEY_ENTER with shift modifier doesn't work reliably)
                         # We'll use a different approach - check for specific key codes
@@ -520,25 +485,19 @@ class AudioOculizerController:
                         # Let's use regular Enter for selection and implement Shift+Enter detection
                         if 0 <= selected_index < total_scenes:
                             new_scene = scene_list[selected_index][0]
-                            self.oculizer.change_scene(new_scene)
-                            current_scene_name = new_scene
-                            search_string = ""
-                            
-                            # Automatically enable override when manually selecting a scene
-                            override_active = True
-                            override_scene = new_scene
-                            
-                            self.info_message = f"Override: {new_scene} (ESC to resume predictions)"
-                            logging.info(f"Manual scene selection: {new_scene} - override enabled")
+                            if self.scene_router.set_manual_override(new_scene):
+                                current_scene_name = self.scene_manager.current_scene['name']
+                                search_string = ""
+                                override_active = True
+                                override_scene = new_scene
+                                self.info_message = f"Override: {new_scene} (ESC to resume predictions)"
                     elif event == 27:  # ESC key
                         # ESC: Resume following predictions if override is active
                         if override_active:
                             override_active = False
                             override_scene = None
-                            # Switch back to predicted scene if available
-                            if predicted_scene and predicted_scene in self.scene_manager.scenes:
-                                self.oculizer.change_scene(predicted_scene)
-                                current_scene_name = predicted_scene
+                            self.scene_router.clear_manual_override()
+                            current_scene_name = self.scene_manager.current_scene['name']
                             self.info_message = "Override disabled - following predictions"
                             logging.info("Toggle mode: Override disabled via ESC, resuming predictions")
                         search_string = ""
@@ -561,8 +520,6 @@ class AudioOculizerController:
                 time.sleep(0.01)
         
         finally:
-            # Clean up mouse tracking
-            print('\033[?1003l')
             curses.mousemask(0)
             # Restore original scene order if needed
             # self.scene_manager.scenes = original_scenes
@@ -570,6 +527,8 @@ class AudioOculizerController:
             # Reset toggle mode flags
             self.in_toggle_mode = False
             self.toggle_override_active = False
+            if self.scene_router.manual_override is not None:
+                self.scene_router.clear_manual_override()
 
     def handle_user_input(self):
         try:
@@ -941,13 +900,15 @@ Scene Cache Size:
         parser.error(str(exc))
     if args.input_device is None:
         args.input_device = configured_audio_input(config)
+    args.silence_config = configured_silence(config)
     if args.profile is None and args.output == 'enttec':
         args.profile = default_profile
     return args
 
 def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
          average_dual_channels, scene_cache_size, prediction_channels, test_mode,
-         output, osc_config, scene_map, osc_host, osc_port, osc_dry_run):
+         output, osc_config, scene_map, osc_host, osc_port, osc_dry_run,
+         silence_config):
     setup_colors()
     controller = AudioOculizerController(
         stdscr, 
@@ -965,7 +926,8 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         scene_map=scene_map,
         osc_host=osc_host,
         osc_port=osc_port,
-        osc_dry_run=osc_dry_run
+        osc_dry_run=osc_dry_run,
+        silence_config=silence_config,
     )
     
     try:
@@ -1065,5 +1027,6 @@ if __name__ == "__main__":
             args.scene_map,
             args.osc_host,
             args.osc_port,
-            args.osc_dry_run
+            args.osc_dry_run,
+            args.silence_config,
         ))

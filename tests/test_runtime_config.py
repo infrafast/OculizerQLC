@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from oculizer.light.control import Oculizer
-from oculizer.runtime_config import configured_audio_input, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_silence, load_runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
@@ -23,6 +23,49 @@ class RuntimeConfigTests(unittest.TestCase):
             path = Path(directory) / "oculizer.json"
             path.write_text(json.dumps({"audio": {"input_device": True}}))
             with self.assertRaisesRegex(ValueError, "input_device"):
+                load_runtime_config(path)
+
+    def test_loads_configurable_silence_scene_and_hysteresis(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oculizer.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "audio": {
+                            "silence": {
+                                "threshold": 0.01,
+                                "resume_threshold": 0.02,
+                                "duration_seconds": 3,
+                                "scene": "ambient1",
+                            }
+                        }
+                    }
+                )
+            )
+            config = load_runtime_config(path)
+
+        silence = configured_silence(config)
+        self.assertEqual(silence.scene, "ambient1")
+        self.assertEqual(silence.threshold, 0.01)
+        self.assertEqual(silence.resume_threshold, 0.02)
+        self.assertEqual(silence.duration_seconds, 3.0)
+
+    def test_rejects_invalid_silence_hysteresis(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oculizer.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "audio": {
+                            "silence": {
+                                "threshold": 0.02,
+                                "resume_threshold": 0.01,
+                            }
+                        }
+                    }
+                )
+            )
+            with self.assertRaisesRegex(ValueError, "resume_threshold"):
                 load_runtime_config(path)
 
 

@@ -1,0 +1,95 @@
+"""Headless Oculizer entry point for development and future systemd use."""
+
+import argparse
+import logging
+import signal
+import sys
+
+from oculizer.headless import HeadlessOculizerService
+from oculizer.light import Oculizer, OUTPUT_CHOICES
+from oculizer.runtime_config import configured_audio_input, configured_silence, load_runtime_config
+from oculizer.scenes import SceneManager
+
+
+def configure_service_streams() -> None:
+    """Use explicit carriage-return line endings in terminal service output."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(newline="\r\n", line_buffering=True)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run Oculizer without a terminal interface")
+    parser.add_argument("--config", default=None, help="General configuration (default: config/oculizer.json)")
+    parser.add_argument("--output", choices=OUTPUT_CHOICES, default="qlc-osc")
+    parser.add_argument("--profile", default=None, help="Fixture profile required only for Enttec")
+    parser.add_argument("--input-device", default=None, help="Prediction audio input selector")
+    parser.add_argument("--prediction-device", default=None, help="Optional separate prediction input")
+    parser.add_argument("--prediction-channels", default=None)
+    parser.add_argument("--predictor-version", choices=["v1", "v3", "v4", "v5", "vday"], default="v4")
+    parser.add_argument("--scene-cache-size", type=int, default=25)
+    parser.add_argument("--osc-config", default=None)
+    parser.add_argument("--scene-map", default=None)
+    parser.add_argument("--osc-host", default=None)
+    parser.add_argument("--osc-port", type=int, default=None)
+    parser.add_argument("--osc-dry-run", action="store_true", default=None)
+    args = parser.parse_args()
+
+    try:
+        config = load_runtime_config(args.config)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.input_device is None:
+        args.input_device = configured_audio_input(config)
+    args.silence_config = configured_silence(config)
+    if args.output == "enttec" and not args.profile:
+        parser.error("--profile is required with --output enttec")
+    if args.scene_cache_size < 1:
+        parser.error("--scene-cache-size must be at least 1")
+    if isinstance(args.prediction_device, str) and args.prediction_device.isdigit():
+        args.prediction_device = int(args.prediction_device)
+    return args
+
+
+def build_service(args) -> HeadlessOculizerService:
+    scene_manager = SceneManager(
+        "scenes",
+        profile_name=args.profile if args.output == "enttec" else None,
+    )
+    oculizer = Oculizer(
+        args.profile,
+        scene_manager,
+        input_device=args.input_device,
+        scene_prediction_enabled=True,
+        scene_prediction_device=args.prediction_device,
+        predictor_version=args.predictor_version,
+        scene_cache_size=args.scene_cache_size,
+        prediction_channels=args.prediction_channels,
+        output=args.output,
+        osc_config_path=args.osc_config,
+        osc_scene_map_path=args.scene_map,
+        osc_host=args.osc_host,
+        osc_port=args.osc_port,
+        osc_dry_run=args.osc_dry_run,
+    )
+    oculizer.restrict_scenes_to_backend()
+    return HeadlessOculizerService(oculizer, silence_config=args.silence_config)
+
+
+def main() -> int:
+    args = parse_args()
+    configure_service_streams()
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        stream=sys.stdout,
+    )
+    service = build_service(args)
+    signal.signal(signal.SIGTERM, service.request_stop)
+    signal.signal(signal.SIGINT, service.request_stop)
+    return service.run()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

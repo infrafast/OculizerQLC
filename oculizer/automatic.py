@@ -1,0 +1,101 @@
+"""Automatic prediction-to-scene routing independent of any user interface."""
+
+from __future__ import annotations
+
+import logging
+import time
+
+from oculizer.runtime_config import SilenceConfig
+
+
+logger = logging.getLogger(__name__)
+
+
+class AutomaticSceneRouter:
+    """Apply stable predictions or a manual override through one scene API."""
+
+    def __init__(self, oculizer, silence_config: SilenceConfig | None = None, clock=None):
+        self.oculizer = oculizer
+        self.silence_config = silence_config or SilenceConfig(enabled=False)
+        self.clock = clock or time.monotonic
+        self.manual_override: str | None = None
+        self.last_target: str | None = None
+        self.last_rejected: str | None = None
+        self.silence_started_at: float | None = None
+        self.silence_active = False
+
+    def _set_prediction_suspended(self, suspended: bool) -> None:
+        setter = getattr(self.oculizer, "set_prediction_suspended", None)
+        if setter is not None:
+            setter(suspended)
+
+    def _update_silence_state(self) -> None:
+        if not self.silence_config.enabled:
+            return
+        rms = getattr(self.oculizer, "current_audio_rms", None)
+        if rms is None:
+            return
+        now = self.clock()
+        if self.silence_active:
+            if rms >= self.silence_config.resume_threshold:
+                self.silence_active = False
+                self.silence_started_at = None
+                self.last_target = None
+                self._set_prediction_suspended(False)
+                logger.info("Audio resumed at RMS %.6f", rms)
+            return
+        if rms <= self.silence_config.threshold:
+            if self.silence_started_at is None:
+                self.silence_started_at = now
+            if now - self.silence_started_at >= self.silence_config.duration_seconds:
+                self.silence_active = True
+                self.last_target = None
+                self._set_prediction_suspended(True)
+                logger.info(
+                    "Silence detected at RMS %.6f; requesting scene '%s'",
+                    rms,
+                    self.silence_config.scene,
+                )
+        else:
+            self.silence_started_at = None
+
+    def set_manual_override(self, scene_name: str) -> bool:
+        if not self.oculizer.change_scene(scene_name):
+            return False
+        self.manual_override = scene_name
+        self.last_target = self.oculizer.resolve_scene_target(scene_name)
+        logger.info("Manual scene override enabled: %s", scene_name)
+        return True
+
+    def clear_manual_override(self) -> bool:
+        if self.manual_override is None:
+            return False
+        logger.info("Manual scene override cleared: %s", self.manual_override)
+        self.manual_override = None
+        self.last_target = None
+        return self.step()
+
+    def step(self) -> bool:
+        requested = self.manual_override
+        if requested is None:
+            self._update_silence_state()
+        if requested is None and self.silence_active:
+            requested = self.silence_config.scene
+        if requested is None:
+            requested = self.oculizer.current_predicted_scene
+        if not requested:
+            return False
+        target = self.oculizer.resolve_scene_target(requested)
+        if target is None:
+            if requested != self.last_rejected:
+                logger.warning("Predicted scene '%s' has no available target", requested)
+                self.last_rejected = requested
+            return False
+        self.last_rejected = None
+        if target == self.last_target:
+            return False
+        if not self.oculizer.change_scene(requested):
+            return False
+        self.last_target = target
+        logger.info("Automatic scene request '%s' activated as '%s'", requested, target)
+        return True

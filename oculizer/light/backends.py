@@ -27,6 +27,9 @@ class LightingBackend(ABC):
     name: str
     supports_direct_fixture_output: bool = False
 
+    def resolve_scene(self, scene_name: str) -> str | None:
+        return scene_name
+
     @abstractmethod
     def activate_scene(self, scene_name: str) -> bool:
         raise NotImplementedError
@@ -128,14 +131,21 @@ class QLCOscBackend(LightingBackend):
         released = self.client.release(path)
         return pressed and released
 
+    def resolve_scene(self, scene_name: str) -> str | None:
+        return self.scene_map.resolve(scene_name)
+
     def activate_scene(self, scene_name: str) -> bool:
-        control = self.scene_map.get(scene_name)
+        requested_scene = scene_name
+        scene_name = self.resolve_scene(scene_name)
+        control = self.scene_map.get(scene_name) if scene_name is not None else None
         if control is None:
-            message = f"QLC+ scene '{scene_name}' has no OSC mapping"
+            message = f"QLC+ scene '{requested_scene}' has no OSC mapping"
             if self.scene_map.unmapped == "error":
                 raise KeyError(message)
             logger.warning(message)
             return False
+        if requested_scene != scene_name:
+            logger.info("QLC+ scene request '%s' resolved to fallback '%s'", requested_scene, scene_name)
         if scene_name == self.active_scene:
             logger.debug("QLC+ scene '%s' is already active", scene_name)
             return True

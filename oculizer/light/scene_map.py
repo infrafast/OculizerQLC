@@ -23,6 +23,7 @@ class SceneMap:
     scenes: Mapping[str, SceneControl]
     pulse_seconds: float = 0.1
     unmapped: str = "ignore"
+    fallback_scene: str | None = None
 
     @classmethod
     def from_file(cls, path: str | Path) -> "SceneMap":
@@ -51,8 +52,8 @@ class SceneMap:
             raise SceneMapError("pulse_seconds must be between 0 and 2 seconds")
 
         unmapped = data.get("unmapped", "ignore")
-        if unmapped not in {"ignore", "error"}:
-            raise SceneMapError("unmapped must be 'ignore' or 'error'")
+        if unmapped not in {"ignore", "error", "fallback"}:
+            raise SceneMapError("unmapped must be 'ignore', 'error', or 'fallback'")
 
         scenes = {}
         for name, raw_control in raw_scenes.items():
@@ -71,7 +72,26 @@ class SceneMap:
                 raise SceneMapError(f"scene '{name}' action '{action}' must not define a path")
             scenes[name] = SceneControl(path=path, action=action)
 
-        return cls(scenes=scenes, pulse_seconds=float(pulse_seconds), unmapped=unmapped)
+        fallback_scene = data.get("fallback_scene")
+        if unmapped == "fallback":
+            if not isinstance(fallback_scene, str) or fallback_scene not in scenes:
+                raise SceneMapError("fallback_scene must name a mapped scene when unmapped is 'fallback'")
+        elif fallback_scene is not None:
+            raise SceneMapError("fallback_scene requires unmapped to be 'fallback'")
+
+        return cls(
+            scenes=scenes,
+            pulse_seconds=float(pulse_seconds),
+            unmapped=unmapped,
+            fallback_scene=fallback_scene,
+        )
 
     def get(self, scene_name: str) -> SceneControl | None:
         return self.scenes.get(scene_name)
+
+    def resolve(self, scene_name: str) -> str | None:
+        if scene_name in self.scenes:
+            return scene_name
+        if self.unmapped == "fallback":
+            return self.fallback_scene
+        return None

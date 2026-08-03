@@ -107,8 +107,8 @@ class Oculizer(threading.Thread):
         # Audio is only required for direct reactive rendering or prediction.
         # A manual QLC+ selector must not open an otherwise unused native stream.
         self.audio_processing_enabled = (
-            not test_mode
-            and (self.backend.supports_direct_fixture_output or scene_prediction_enabled)
+            scene_prediction_enabled
+            or (not test_mode and self.backend.supports_direct_fixture_output)
         )
         self.device_idx = self._get_audio_device_idx() if self.audio_processing_enabled else None
         self.scene_changed = threading.Event()
@@ -120,6 +120,7 @@ class Oculizer(threading.Thread):
         self.scene_prediction_enabled = scene_prediction_enabled
         # Resolve prediction device (can be string name or integer index)
         self.scene_prediction_device = self._get_prediction_device_idx(scene_prediction_device) if scene_prediction_enabled else None
+        self.prediction_audio_sample_rate = 48000 if self.scene_prediction_device is not None else self.sample_rate
         self.predictor_version = predictor_version
         self.scene_cache_size = scene_cache_size
         self.prediction_channels_spec = prediction_channels  # Store the user specification
@@ -137,11 +138,13 @@ class Oculizer(threading.Thread):
         self.prediction_count = 0
         self.prediction_thread = None  # Separate thread for prediction processing
         self.prediction_lock = threading.Lock()  # Lock for thread-safe access
+        self.prediction_suspended = threading.Event()
         
         # Audio quality monitoring
         self.audio_quality_check_interval = 100  # Check every N callbacks
         self.audio_callback_count = 0
         self.last_audio_rms = None
+        self.current_audio_rms = None
         self.audio_underrun_count = 0
         self.max_queue_depth_seen = 0  # Track maximum queue buildup
 
@@ -304,6 +307,8 @@ class Oculizer(threading.Thread):
 
     def _init_scene_prediction(self):
         """Initialize scene prediction components."""
+        import contextlib
+        import io
         from oculizer.scene_predictors import get_predictor
         from collections import deque
         import librosa
@@ -318,8 +323,21 @@ class Oculizer(threading.Thread):
         else:
             self.prediction_sr = 32000
         
-        # Initialize scene predictor with correct sample rate
-        self.scene_predictor = ScenePredictor(sr=self.prediction_sr)
+        # Historical predictor implementations and EfficientAT print model
+        # internals directly. Capture that output so service logs stay concise.
+        captured_output = io.StringIO()
+        logger.info("Initializing %s scene predictor", self.predictor_version)
+        try:
+            with contextlib.redirect_stdout(captured_output), contextlib.redirect_stderr(captured_output):
+                self.scene_predictor = ScenePredictor(sr=self.prediction_sr)
+        except Exception:
+            captured = captured_output.getvalue().strip()
+            if captured:
+                logger.error("Predictor initialization output:\n%s", captured)
+            raise
+        captured = captured_output.getvalue().strip()
+        if captured:
+            logger.debug("Suppressed predictor initialization output:\n%s", captured)
         
         # Initialize audio cache for 4 seconds at predictor sample rate
         self.prediction_audio_cache = deque(maxlen=self.prediction_sr * 4)
@@ -327,8 +345,6 @@ class Oculizer(threading.Thread):
         # Initialize scene cache with configurable size
         self.scene_cache = deque(maxlen=self.scene_cache_size)
         
-        import logging
-        logger = logging.getLogger(__name__)
         logger.info(f"Scene prediction initialized with {self.predictor_version} predictor at {self.prediction_sr}Hz (device: {self.scene_prediction_device})")
         logger.info(f"Scene cache size: {self.scene_cache_size} ({'instant response' if self.scene_cache_size == 1 else f'~{self.scene_cache_size * 0.1:.1f}s smoothing'})")
         
@@ -372,6 +388,7 @@ class Oculizer(threading.Thread):
             mono_data = np.mean(indata, axis=1)
         else:
             mono_data = indata.flatten()
+        self.current_audio_rms = float(np.sqrt(np.mean(mono_data ** 2)))
         
         # Periodic audio quality monitoring
         self.audio_callback_count += 1
@@ -380,7 +397,7 @@ class Oculizer(threading.Thread):
             logger = logging.getLogger(__name__)
             
             # Check RMS energy
-            rms = np.sqrt(np.mean(mono_data ** 2))
+            rms = self.current_audio_rms
             
             # Log if RMS is suspiciously low (possible silence/disconnection)
             if rms < 0.001:
@@ -440,6 +457,15 @@ class Oculizer(threading.Thread):
         
         while self.running.is_set():
             try:
+                if self.prediction_suspended.is_set():
+                    while not self.prediction_audio_queue.empty():
+                        try:
+                            self.prediction_audio_queue.get_nowait()
+                        except queue.Empty:
+                            break
+                    time.sleep(0.1)
+                    continue
+
                 # Check queue depth before processing
                 queue_depth = self.prediction_audio_queue.qsize()
                 if queue_depth > self.max_queue_depth_seen:
@@ -489,7 +515,7 @@ class Oculizer(threading.Thread):
                 
                 # Resample if needed (audio stream is at 48kHz, predictor expects self.prediction_sr)
                 # Note: In dual-stream mode, prediction device might have different sample rate
-                audio_stream_sample_rate = 48000  # From InputStream configuration
+                audio_stream_sample_rate = self.prediction_audio_sample_rate
                 if audio_stream_sample_rate != self.prediction_sr:
                     audio_data = librosa.resample(
                         audio_data,
@@ -548,6 +574,39 @@ class Oculizer(threading.Thread):
                 time.sleep(0.5)  # Avoid tight loop on repeated errors
         
         logger.info("Prediction processing thread stopped")
+
+    def set_prediction_suspended(self, suspended: bool) -> None:
+        """Pause heavy inference and discard stale prediction audio during silence."""
+        if suspended:
+            if self.prediction_suspended.is_set():
+                return
+            self.prediction_suspended.set()
+            with self.prediction_lock:
+                if self.prediction_audio_cache is not None:
+                    self.prediction_audio_cache.clear()
+                if self.scene_cache is not None:
+                    self.scene_cache.clear()
+                self.current_predicted_scene = None
+                self.latest_prediction = None
+            logger.info("Prediction inference suspended")
+        else:
+            if not self.prediction_suspended.is_set():
+                return
+            while not self.prediction_audio_queue.empty():
+                try:
+                    self.prediction_audio_queue.get_nowait()
+                except queue.Empty:
+                    break
+            with self.prediction_lock:
+                if self.prediction_audio_cache is not None:
+                    self.prediction_audio_cache.clear()
+                if self.scene_cache is not None:
+                    self.scene_cache.clear()
+                self.current_predicted_scene = None
+                self.latest_prediction = None
+            self.prediction_suspended.clear()
+            self.last_prediction_time = 0
+            logger.info("Prediction inference resumed")
     
     def update_scene_prediction(self):
         """Lightweight method called from main thread - just checks thread health."""
@@ -811,6 +870,15 @@ class Oculizer(threading.Thread):
             audio_data = np.mean(indata[:, :2], axis=1)
         else:
             audio_data = indata.copy().flatten()
+
+        capture_sample_rate = getattr(self, 'capture_sample_rate', self.sample_rate)
+        if capture_sample_rate != self.sample_rate:
+            audio_data = librosa.resample(
+                audio_data,
+                orig_sr=capture_sample_rate,
+                target_sr=self.sample_rate,
+            )
+        self.current_audio_rms = float(np.sqrt(np.mean(audio_data ** 2)))
         
         # In single-stream mode, also feed prediction queue
         if self.scene_prediction_enabled and self.scene_prediction_device is None:
@@ -917,21 +985,36 @@ class Oculizer(threading.Thread):
         # Use 2 channels if average_dual_channels is enabled, otherwise use default
         device_info = sd.query_devices(self.device_idx)
         main_channels = 2 if self.average_dual_channels else self.channels
+        self.capture_sample_rate = int(round(device_info['default_samplerate']))
+        capture_block_size = max(
+            1,
+            int(round(self.block_size * self.capture_sample_rate / self.sample_rate)),
+        )
         
         # Log FFT/reactivity stream configuration
         fft_device_name = device_info['name']
         if self.average_dual_channels:
-            logger.info(f"🎚️  FFT/Reactivity: '{fft_device_name}' - averaging channels 1-2 at {self.sample_rate}Hz")
+            logger.info(
+                "FFT/Reactivity: '%s' - averaging channels 1-2 at %dHz, analysis at %dHz",
+                fft_device_name,
+                self.capture_sample_rate,
+                self.sample_rate,
+            )
         else:
-            logger.info(f"🎚️  FFT/Reactivity: '{fft_device_name}' - using channel 1 (mono) at {self.sample_rate}Hz")
+            logger.info(
+                "FFT/Reactivity: '%s' - channel 1 at %dHz, analysis at %dHz",
+                fft_device_name,
+                self.capture_sample_rate,
+                self.sample_rate,
+            )
         
         try:
             # Start main audio stream for FFT/DMX control
             with sd.InputStream(
                 device=self.device_idx,
                 channels=main_channels,
-                samplerate=self.sample_rate,
-                blocksize=self.block_size,
+                samplerate=self.capture_sample_rate,
+                blocksize=capture_block_size,
                 callback=self.audio_callback
             ):
                 # Start scene prediction stream if enabled and separate device specified
@@ -1092,17 +1175,34 @@ class Oculizer(threading.Thread):
         # The backend owns output-state transitions. If activation fails (for
         # example, because the logical scene is unmapped), preserve the current
         # SceneManager state and report the failed command to the caller.
-        if not self.backend.activate_scene(scene_name):
+        target_scene = self.resolve_scene_target(scene_name)
+        if target_scene is None:
+            logger.warning("Requested scene '%s' has no available output target", scene_name)
+            return False
+        if not self.backend.activate_scene(target_scene):
             return False
         # Reset all effect states before changing scene
         reset_effect_states()
-        self.scene_manager.set_scene(scene_name)
+        self.scene_manager.set_scene(target_scene, apply_fallback=False)
         # Reset orchestrator when changing scenes
         self.current_orchestrator = None
         # Set flag for main loop to handle the transition
         self.scene_changed.set()
+        logger.info("Scene request '%s' activated as '%s'", scene_name, target_scene)
         # Main loop will turn off lights and apply new scene
         return True
+
+    def resolve_scene_target(self, scene_name):
+        """Resolve backend routing and legacy profile fallback without side effects."""
+        backend_target = self.backend.resolve_scene(scene_name)
+        if backend_target is None:
+            return None
+        if backend_target not in self.scene_manager.scenes:
+            return None
+        return self.scene_manager.resolve_scene(
+            backend_target,
+            apply_fallback=self.output == OUTPUT_ENTTEC,
+        )
 
     def restrict_scenes_to_backend(self):
         """Apply a hardware-independent QLC+ scene catalog when applicable."""

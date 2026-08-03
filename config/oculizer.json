@@ -1,5 +1,12 @@
 {
   "audio": {
-    "input_device": "default"
+    "input_device": "default",
+    "silence": {
+      "enabled": true,
+      "threshold": 0.001,
+      "resume_threshold": 0.002,
+      "duration_seconds": 2.0,
+      "scene": "off"
+    }
   }
 }

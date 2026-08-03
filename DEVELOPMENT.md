@@ -243,17 +243,46 @@ Exit criterion: a complete manual session controls QLC+ without loading an Entte
 
 ### Phase 4 — Automatic prediction
 
-Status: **not started**
+Status: **implemented — awaiting end-to-end audio and QLC+ validation**
 
-- [ ] connect predicted transitions to the same backend;
-- [ ] preserve smoothing and fallbacks;
-- [ ] preserve manual override;
-- [ ] log the requested scene, fallback, and activated QLC+ scene;
-- [ ] send nothing when the logical state has not changed;
-- [ ] provide a non-interactive application mode that starts prediction and QLC+ control without curses or terminal input;
-- [ ] handle `SIGTERM` and `SIGINT` with the same safe shutdown path.
+- [x] connect predicted transitions to the same backend;
+- [x] preserve smoothing and fallbacks;
+- [x] preserve manual override;
+- [x] log the requested scene, fallback, and activated QLC+ scene;
+- [x] send nothing when the logical state has not changed;
+- [x] provide a non-interactive application mode that starts prediction and QLC+ control without curses or terminal input;
+- [x] handle `SIGTERM` and `SIGINT` with the same safe shutdown path.
 
 Exit criterion: automatic transitions and return from override are consistent in QLC+.
+
+### Phase 4b — Speech-aware semantic routing
+
+Status: **planned — approved design**
+
+- [ ] retain the 527 AudioSet logits already returned by EfficientAT instead of discarding them after embedding extraction;
+- [ ] aggregate relevant `Speech`, male/female/child speech, and speech-noise labels into a speech score;
+- [ ] treat `Singing` as music so vocals do not trigger announcement mode;
+- [ ] compare speech and music confidence using configurable thresholds and a minimum confidence margin;
+- [ ] require a configurable minimum speech duration and release duration to prevent rapid mode changes;
+- [ ] make the speech/announcement scene user-configurable;
+- [ ] define mixed speech-and-music behavior, initially preserving the current scene when confidence is ambiguous;
+- [ ] give manual override priority over speech routing, speech routing priority over ordinary music-scene prediction, and silence routing its explicitly documented priority;
+- [ ] log concise speech/music scores and routing decisions without logging every inference frame;
+- [ ] validate clean speech, singing, music, silence, and mixed speech/music recordings.
+
+Proposed routing order:
+
+```text
+manual override
+    → configured silence policy
+    → dominant clean speech / announcement scene
+    → music and singing / normal scene prediction
+    → ambiguous speech plus music / preserve current scene
+```
+
+Implementation decision: reuse the pretrained EfficientAT AudioSet classification head already evaluated by the current model. Do not add a second large model unless validation proves the existing logits insufficient.
+
+Exit criterion: spoken announcements reliably select the configured scene without classifying singing as speech or destabilizing mixed music playback.
 
 ### Phase 5 — First continuous modulation
 
@@ -614,6 +643,75 @@ Naming decision:
 - the mapping remains under `config/` because it routes logical scenes into a deployment-specific QLC+ workspace;
 - it was renamed from `qlc_scenes.json` to `qlc_scene_map.json` to distinguish routing configuration from the artistic scene definitions under `scenes/`;
 - manual selection in `toggle.py` is both an integration test surface and an operator override; phase 4 will drive the same command layer automatically from audio predictions.
+
+### 2026-08-03 — Phase 4 automatic routing and headless runtime
+
+Implemented:
+
+- added `AutomaticSceneRouter`, a curses-independent coordinator for smoothed predictions, resolved output targets, duplicate suppression, and manual override;
+- connected the existing interactive automatic loop and integrated selector to the same `Oculizer.change_scene()` path used by phase 3;
+- added explicit logical fallback routing so the reference workspace resolves all currently unmapped predictions to its sole `party` control;
+- retained the predictor's existing cache smoothing and corrected single-stream prediction resampling to use the actual capture sample rate;
+- opened the primary audio stream at the device's native sample rate and resampled into the configured 16 kHz analysis rate, avoiding assumptions about CoreAudio or Linux device rates;
+- added `oculizer_service.py` and `HeadlessOculizerService` for non-interactive prediction and QLC+ control;
+- added clean `SIGINT` and `SIGTERM` handling with shared worker shutdown and bounded join behavior;
+- removed mouse protocol handling from the integrated selector and retained keyboard override controls.
+
+Validated:
+
+- 31 focused tests pass across automatic fallback routing, deduplication, manual override and return, headless clean stop, unexpected worker exit, phase-3 mapping, hardware isolation, and OSC UDP transport;
+- compilation passes for both interactive entry points, the headless entry point, and all routing modules;
+- the headless CLI exposes configuration, audio, predictor, OSC, and scene-map overrides without importing curses runtime behavior.
+
+Known integration boundary:
+
+- all semantic predictions currently resolve to `party` because `/test` is the only QLC+ function in the reference workspace;
+- end-to-end validation still requires live audio, predictor output, QLC+ observation, manual override/return, and signal-driven shutdown on macOS.
+
+### 2026-08-03 — Headless log readability
+
+Implemented:
+
+- configured the headless entry point with explicit CRLF line endings so every terminal log returns to column zero;
+- captured direct stdout/stderr emitted by historical predictor implementations and EfficientAT model construction;
+- retained captured third-party details at debug level and kept failures available in error logs without printing the complete neural-network representation during normal startup.
+
+Observed cause:
+
+- the development terminal treated line-feed-only output as a vertical move without a carriage return, producing progressively indented lines;
+- EfficientAT also printed the full DyMN architecture directly to stdout, making the startup output unnecessarily large.
+
+### 2026-08-03 — Configurable silence routing
+
+Implemented:
+
+- added a validated `audio.silence` policy to `config/oculizer.json`;
+- made the silence scene user-selectable rather than hard-coding blackout or `off`;
+- added a configurable entry threshold, minimum duration, and higher resume threshold for hysteresis;
+- measured RMS continuously on both single-stream and separate prediction inputs;
+- gave manual override priority over silence routing and silence routing priority over raw model classification;
+- connected the policy to both interactive automatic operation and the headless service.
+- suspended heavy inference, cleared smoothing state, and drained queued audio while silence is active;
+- resumed inference from fresh audio only after crossing the configured resume threshold.
+
+Decision:
+
+- an inference already in progress may emit one final raw label after silence activation, but subsequent silent classification is suspended;
+- a custom silence scene must exist as an Oculizer semantic scene and have a QLC+ mapping for the deployment.
+
+### 2026-08-03 — Speech-aware routing roadmap decision
+
+Decision:
+
+- add phase 4b for spoken-announcement detection when speech and music share the same input mix;
+- reuse the 527 AudioSet logits already produced by EfficientAT, including `Speech`, speech subcategories, `Singing`, and `Music`;
+- classify singing as music, use configurable confidence and timing hysteresis, and preserve the current scene for ambiguous mixed content;
+- keep the announcement scene configurable and retain manual override as the highest-priority operator action.
+
+Rationale:
+
+- the current clustering path discards the AudioSet logits even though the loaded model has already computed them;
+- reusing those outputs should add little inference overhead and avoids requiring a separate microphone feed or another large model.
 
 Validated:
 
