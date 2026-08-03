@@ -67,7 +67,7 @@ The main directories and configuration files are:
 - `config/oculizer.json`: general runtime configuration, including the audio input selector;
 - `config/audio_parameters.json`: audio capture and analysis parameters;
 - `config/qlc_osc.json`: QLC+ OSC transport settings;
-- `config/qlc_scene_map.json`: deployment-specific mapping from logical Oculizer scenes to QLC+ OSC controls;
+- `config/qlc_scenes.json`: hardware-independent logical scene-to-OSC mapping;
 - `profile_fallbacks.json`: profile-specific scene substitutions.
 
 List available audio devices:
@@ -152,12 +152,10 @@ python toggle.py --profile garage2025 --input blackhole
 For QLC+, no fixture profile or audio input is required:
 
 ```bash
-python toggle.py --output qlc-osc --osc-config config/qlc_osc.json --scene-map config/qlc_scene_map.json
+python toggle.py --output qlc-osc --osc-config config/qlc_osc.json --scene-map config/qlc_scenes.json
 ```
 
-Only logical scenes declared in `config/qlc_scene_map.json` are displayed. The reference mapping exposes `party`, which pulses the validated `/test` QLC+ toggle button, and `off`, which deactivates the currently tracked toggle. The reference QLC+ button must be off before starting because this phase has logical state tracking but no OSC state feedback yet.
-
-This file belongs in `config/`, not `scenes/`: files under `scenes/` describe Oculizer's artistic scene semantics, while the QLC+ scene map describes deployment routing for a particular QLC+ workspace. `toggle.py` is the manual validation and operator interface. Automatic audio-driven selection will call the same scene-command layer in phase 4, and the Raspberry Pi service will not require an interactive choice.
+Only logical scenes declared in `config/qlc_scenes.json` are displayed. The reference mapping exposes `party`, which pulses the validated `/test` QLC+ toggle button, and `off`, which deactivates the currently tracked toggle. The reference QLC+ button must be off before starting because this phase has logical state tracking but no OSC state feedback yet.
 
 Without `--input`, `toggle.py` uses the selector from `config/oculizer.json`, which defaults to the operating-system input. Inspect the inputs visible to the current Python environment with:
 
