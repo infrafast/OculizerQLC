@@ -640,7 +640,7 @@ Validated:
 
 Known integration boundary:
 
-- the reference workspace currently provides only `/test`; therefore `party` is the sole active test mapping and `off` deactivates it;
+- the original reference workspace provided only `/test`; the current default fallback is `ambient1` at `/oculizer/scenes/ambient1`, while `off` deactivates the tracked scene and asserts blackout;
 - QLC+ toggle state is assumed to be off at application startup because OSC feedback is deferred to the state/robustness phase.
 
 Remaining validation:
@@ -659,7 +659,7 @@ Implemented:
 
 - added `AutomaticSceneRouter`, a curses-independent coordinator for smoothed predictions, resolved output targets, duplicate suppression, and manual override;
 - connected the existing interactive automatic loop and integrated selector to the same `Oculizer.change_scene()` path used by phase 3;
-- added explicit logical fallback routing so the reference workspace resolves all currently unmapped predictions to its sole `party` control;
+- added explicit logical fallback routing; it now resolves all currently unmapped predictions to `ambient1` at `/oculizer/scenes/ambient1`;
 - retained the predictor's existing cache smoothing and corrected single-stream prediction resampling to use the actual capture sample rate;
 - opened the primary audio stream at the device's native sample rate and resampled into the configured 16 kHz analysis rate, avoiding assumptions about CoreAudio or Linux device rates;
 - added `oculizer_service.py` and `HeadlessOculizerService` for non-interactive prediction and QLC+ control;
@@ -674,7 +674,7 @@ Validated:
 
 Known integration boundary:
 
-- all semantic predictions currently resolve to `party` because `/test` is the only QLC+ function in the reference workspace;
+- `wave` is explicitly routed to `/oculizer/scenes/wave`; all other semantic predictions without an explicit routing entry resolve to the `ambient1` QLC+ control;
 - the reference QLC+ workspace still exposes only one active test function, so richer semantic transitions require additional QLC+ functions and mappings.
 
 Manual validation:

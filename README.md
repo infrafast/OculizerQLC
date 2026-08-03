@@ -183,7 +183,7 @@ For QLC+, no fixture profile or audio input is required:
 python toggle.py --output qlc-osc --qlc-config config/qlc_config.json
 ```
 
-Only logical scenes declared under `routing.scenes` in `config/qlc_config.json` are displayed. The reference mapping exposes `party`, which pulses the validated `/test` QLC+ toggle button, `announcement`, and `off`. The reference QLC+ buttons must be off before starting because logical state tracking has no OSC state feedback yet.
+Only logical scenes declared under `routing.scenes` in `config/qlc_config.json` are displayed. The reference mapping exposes `ambient1` at `/oculizer/scenes/ambient1`, `wave` at `/oculizer/scenes/wave`, plus `announcement` and `off`. The reference QLC+ buttons must be off before starting because logical state tracking has no OSC state feedback yet.
 
 The `off` action also sends `/blackout 1.0` after deactivating the tracked toggle. The next ordinary scene activation sends `/blackout 0.0` before pulsing its control. QLC+ must therefore map `/blackout` to an appropriate blackout control.
 
@@ -201,7 +201,7 @@ Omit `--input-device` to use `config/oculizer.json`. `SIGINT` and `SIGTERM` use 
 
 Service output uses explicit carriage-return line endings for readable terminal logs. Verbose third-party model dumps are captured at debug level; normal startup reports only concise predictor progress and warnings.
 
-Unmapped predictions resolve explicitly to `party`. Requested and resolved scenes are logged, while different predictions resolving to the same active target send no duplicate OSC pulse. Expand `routing.scenes` in `config/qlc_config.json` as real QLC+ functions are added.
+Unmapped predictions resolve explicitly to `ambient1`. Requested and resolved scenes are logged, while different predictions resolving to the same active target send no duplicate OSC pulse. Expand `routing.scenes` in `config/qlc_config.json` as real QLC+ functions are added.
 
 Once silence is active, heavy model inference is suspended and queued audio is discarded. RMS monitoring continues in the audio callback; inference resumes from fresh audio only after the level crosses `resume_threshold`. One prediction already in progress may finish immediately after silence activation, but periodic silent `wave` classifications and queue-depth growth then stop.
 

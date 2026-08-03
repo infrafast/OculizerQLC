@@ -14,11 +14,15 @@
   "routing": {
     "pulse_seconds": 0.1,
     "unmapped": "fallback",
-    "fallback_scene": "party",
+    "fallback_scene": "ambient1",
     "scenes": {
-      "party": {
+      "ambient1": {
         "action": "toggle",
-        "path": "/test"
+        "path": "/oculizer/scenes/ambient1"
+      },
+      "wave": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/wave"
       },
       "off": {
         "action": "off"
