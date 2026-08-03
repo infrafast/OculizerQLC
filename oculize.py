@@ -6,6 +6,8 @@ import argparse
 import platform
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
+from oculizer.light import OUTPUT_CHOICES
+from oculizer.runtime_config import configured_audio_input, load_runtime_config
 import logging
 from collections import deque, OrderedDict
 import sounddevice as sd
@@ -131,7 +133,8 @@ class AudioOculizerController:
     def __init__(self, stdscr, profile='garage', input_device='scarlett', 
                  dual_stream=True, prediction_device=None, predictor_version='v4',
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
-                 test_mode=False):
+                 test_mode=False, output='enttec', osc_config=None, osc_host=None,
+                 osc_port=None, osc_dry_run=None):
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
@@ -159,7 +162,12 @@ class AudioOculizerController:
             average_dual_channels=average_dual_channels,
             scene_cache_size=scene_cache_size,
             prediction_channels=prediction_channels,
-            test_mode=test_mode
+            test_mode=test_mode,
+            output=output,
+            osc_config_path=osc_config,
+            osc_host=osc_host,
+            osc_port=osc_port,
+            osc_dry_run=osc_dry_run
         )
         
         self.dual_stream = dual_stream
@@ -890,10 +898,12 @@ Scene Cache Size:
   - 25: Heavy smoothing (2.5s lag) - tested behavior on Windows
         """
     )
+    parser.add_argument('--config', default=None,
+                      help='General Oculizer JSON configuration (default: config/oculizer.json)')
     parser.add_argument('-p', '--profile', type=str, default=default_profile,
                       help=f'Lighting profile to use (default: {default_profile})')
-    parser.add_argument('-i', '--input-device', type=str, default=default_input_device,
-                      help=f'Audio input device for FFT/DMX (default: {default_input_device})')
+    parser.add_argument('-i', '--input-device', type=str, default=None,
+                      help='Override the configured FFT audio input with default, an alias, a name, or an index')
     parser.add_argument('--prediction-device', type=str, default=None,
                       help=f'Device for scene prediction in dual-stream mode (default: {default_prediction_device} if dual-stream, otherwise None). Can be a device name (cable_output, scarlett, etc.) or device index number.')
     parser.add_argument('--single-stream', action='store_true', default=default_single_stream,
@@ -909,11 +919,30 @@ Scene Cache Size:
                       help=f'Channels to use from prediction device (e.g., "1" for channel 1, "1,2" for channels 1-2 averaged, "1-16" for all 16 channels averaged). Default: {default_prediction_channels if default_prediction_channels else "auto-detect"}')
     parser.add_argument('--test', action='store_true',
                       help='Test mode: Enable scene predictions only, disable FFT reactivity and DMX output. Uses virtual cable (BlackHole on macOS, Cable Output on Windows) for predictions.')
+    parser.add_argument('--output', choices=OUTPUT_CHOICES, default='enttec',
+                      help='Lighting output backend (default: enttec)')
+    parser.add_argument('--osc-config', default=None,
+                      help='QLC+ OSC JSON configuration (default: config/qlc_osc.json)')
+    parser.add_argument('--osc-host', default=None,
+                      help='Override the QLC+ OSC destination host')
+    parser.add_argument('--osc-port', type=int, default=None,
+                      help='Override the QLC+ OSC destination port')
+    parser.add_argument('--osc-dry-run', action='store_true', default=None,
+                      help='Log OSC messages without sending UDP packets')
     parser.add_argument('--list-devices', action='store_true',
                       help='List available audio devices and exit')
-    return parser.parse_args()
+    args = parser.parse_args()
+    try:
+        config = load_runtime_config(args.config)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.input_device is None:
+        args.input_device = configured_audio_input(config)
+    return args
 
-def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version, average_dual_channels, scene_cache_size, prediction_channels, test_mode):
+def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
+         average_dual_channels, scene_cache_size, prediction_channels, test_mode,
+         output, osc_config, osc_host, osc_port, osc_dry_run):
     setup_colors()
     controller = AudioOculizerController(
         stdscr, 
@@ -925,7 +954,12 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         average_dual_channels=average_dual_channels,
         scene_cache_size=scene_cache_size,
         prediction_channels=prediction_channels,
-        test_mode=test_mode
+        test_mode=test_mode,
+        output=output,
+        osc_config=osc_config,
+        osc_host=osc_host,
+        osc_port=osc_port,
+        osc_dry_run=osc_dry_run
     )
     
     try:
@@ -1019,5 +1053,10 @@ if __name__ == "__main__":
             args.average_dual_channels,
             args.scene_cache_size,
             args.prediction_channels,
-            args.test
+            args.test,
+            args.output,
+            args.osc_config,
+            args.osc_host,
+            args.osc_port,
+            args.osc_dry_run
         ))

@@ -21,9 +21,19 @@ from oculizer.audio import AdaptiveNormalizer
 import threading
 import queue
 import time
+import logging
 from pathlib import Path
 from oculizer.light.effects import reset_effect_states
 from oculizer.light.orchestrators import ORCHESTRATORS
+from oculizer.light.backends import (
+    DisabledBackend,
+    EnttecBackend,
+    OUTPUT_ENTTEC,
+    OUTPUT_QLC_OSC,
+    create_qlc_osc_backend,
+)
+
+logger = logging.getLogger(__name__)
 
 global n_channels
 n_channels = {
@@ -39,30 +49,61 @@ class Oculizer(threading.Thread):
     def __init__(self, profile_name, scene_manager, input_device='cable', 
                  scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v1',
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
-                 test_mode=False, adaptive_gain=True):
+                 test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
+                 osc_config_path=None, osc_host=None, osc_port=None, osc_dry_run=None):
         threading.Thread.__init__(self)
         self.profile_name = profile_name
-        self.input_device = input_device.lower()
+        self.input_device = str(input_device).strip()
         self.sample_rate = audio_parameters['SAMPLERATE']
         self.block_size = audio_parameters['BLOCKSIZE']
         self.hop_length = audio_parameters['HOP_LENGTH']
         self.channels = 1
         self.average_dual_channels = average_dual_channels
         self.test_mode = test_mode
+        self.output = output
         self.mfft_queue = queue.Queue(maxsize=1)
-        self.device_idx = self._get_audio_device_idx() if not test_mode else None
         self.running = threading.Event()
         self.scene_manager = scene_manager
         self.profile = self._load_profile()
         self.light_names = [i['name'] for i in self.profile['lights']]
-        # Skip DMX controller initialization in test mode
+        # Test mode disables all lighting output. Otherwise select the requested backend.
         if test_mode:
+            self.dmx_controller, self.controller_dict = None, {}
+            self.backend = DisabledBackend()
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info("Test mode: lighting output disabled")
+        elif output == OUTPUT_QLC_OSC:
+            if osc_config_path is None:
+                current_dir = Path(__file__).resolve().parent
+                osc_config_path = current_dir.parent.parent / 'config' / 'qlc_osc.json'
+            self.backend = create_qlc_osc_backend(
+                osc_config_path,
+                host=osc_host,
+                port=osc_port,
+                dry_run=osc_dry_run,
+            )
             self.dmx_controller, self.controller_dict = None, {}
             import logging
             logger = logging.getLogger(__name__)
-            logger.info("Test mode: Skipping DMX controller initialization")
-        else:
+            logger.info(
+                "QLC+ OSC output initialized for %s:%d%s",
+                self.backend.client.config.host,
+                self.backend.client.config.port,
+                " (dry-run)" if self.backend.client.config.dry_run else "",
+            )
+        elif output == OUTPUT_ENTTEC:
             self.dmx_controller, self.controller_dict = self._load_controller()
+            self.backend = EnttecBackend(self.dmx_controller, self.controller_dict)
+        else:
+            raise ValueError(f"Unsupported lighting output: {output}")
+        # Audio is only required for direct reactive rendering or prediction.
+        # A manual QLC+ selector must not open an otherwise unused native stream.
+        self.audio_processing_enabled = (
+            not test_mode
+            and (self.backend.supports_direct_fixture_output or scene_prediction_enabled)
+        )
+        self.device_idx = self._get_audio_device_idx() if self.audio_processing_enabled else None
         self.scene_changed = threading.Event()
         self.current_orchestrator = None
         # Set scene_changed event to trigger initial orchestrator setup
@@ -107,16 +148,43 @@ class Oculizer(threading.Thread):
 
     def _get_audio_device_idx(self):
         devices = sd.query_devices()
-        for i, device in enumerate(devices):
-            if self.input_device == 'blackhole' and 'BlackHole' in device['name']:
+        selector = self.input_device.casefold()
+
+        if selector == 'default':
+            try:
+                default_input = sd.query_devices(kind='input')['index']
+            except (sd.PortAudioError, ValueError):
+                default_input = -1
+            if 0 <= default_input < len(devices) and devices[default_input]['max_input_channels'] > 0:
+                return default_input
+            raise ValueError("The operating system does not expose a default audio input device.")
+
+        if selector.isdigit():
+            device_idx = int(selector)
+            if 0 <= device_idx < len(devices) and devices[device_idx]['max_input_channels'] > 0:
+                return device_idx
+            raise ValueError(f"Audio device index {device_idx} is not a valid input device.")
+
+        aliases = {
+            'blackhole': ('blackhole',),
+            'scarlett': ('scarlett', 'focusrite'),
+            'cable': ('cable',),
+            'cable_input': ('cable input',),
+            'cable_output': ('cable output',),
+        }
+        search_terms = aliases.get(selector, (selector,))
+        input_devices = [
+            (i, device) for i, device in enumerate(devices)
+            if device['max_input_channels'] > 0
+        ]
+
+        # Prefer an exact device name before accepting a portable substring.
+        for i, device in input_devices:
+            if device['name'].casefold() == selector:
                 return i
-            elif self.input_device == 'scarlett' and ('Scarlett' in device['name'] or 'Focusrite' in device['name']) and device['max_input_channels'] > 0:
-                return i
-            elif self.input_device == 'cable' and 'CABLE' in device['name'] and device['max_input_channels'] > 0:
-                return i
-            elif self.input_device == 'cable_input' and 'CABLE Input' in device['name'] and device['max_input_channels'] > 0:
-                return i
-            elif self.input_device == 'cable_output' and 'CABLE Output' in device['name'] and device['max_input_channels'] > 0:
+        for i, device in input_devices:
+            device_name = device['name'].casefold()
+            if any(term in device_name for term in search_terms):
                 return i
         
         # If device not found, print available devices and raise error
@@ -723,7 +791,7 @@ class Oculizer(threading.Thread):
 
     def audio_callback(self, indata, frames, time, status):
         if status:
-            print(f"Audio callback error: {status}")
+            logger.warning("Audio callback status: %s", status)
             return
         
         # Check if still running to avoid operations after stop
@@ -762,6 +830,12 @@ class Oculizer(threading.Thread):
         
         import logging
         logger = logging.getLogger(__name__)
+
+        if not self.audio_processing_enabled:
+            logger.info("Audio stream disabled: selected backend has no active audio consumer")
+            while self.running.is_set():
+                time.sleep(0.1)
+            return
         
         # In test mode, skip FFT stream entirely and only run predictions
         if self.test_mode:
@@ -819,10 +893,8 @@ class Oculizer(threading.Thread):
                     logger.error("Test mode requires scene_prediction_enabled and scene_prediction_device")
                     return
                     
-            except Exception as e:
-                logger.error(f"Error in test mode: {str(e)}")
-                import traceback
-                traceback.print_exc()
+            except Exception:
+                logger.exception("Error in test mode")
             finally:
                 # Clean up prediction stream
                 if self.prediction_stream:
@@ -919,10 +991,8 @@ class Oculizer(threading.Thread):
                     
                     time.sleep(0.001)
                     
-        except Exception as e:
-            print(f"Error in audio stream: {str(e)}")
-            import traceback
-            traceback.print_exc()
+        except Exception:
+            logger.exception("Error in audio stream")
         finally:
             # Clean up prediction stream if not already stopped
             if self.prediction_stream:
@@ -930,12 +1000,14 @@ class Oculizer(threading.Thread):
                     self.prediction_stream.stop()
                     self.prediction_stream.close()
                     self.prediction_stream = None
-                except Exception as e:
-                    print(f"Error closing prediction stream in finally: {e}")    
+                except Exception:
+                    logger.exception("Error closing prediction stream")
 
     def process_audio_and_lights(self):
         # Skip processing in test mode
-        if self.test_mode:
+        if self.test_mode or not self.backend.supports_direct_fixture_output:
+            # QLC+ scene control is intentionally connected in phase 3.
+            self.scene_changed.clear()
             return
             
         scene_just_changed = False
@@ -1027,20 +1099,9 @@ class Oculizer(threading.Thread):
         return None
 
     def turn_off_all_lights(self):
-        # Skip in test mode
-        if self.test_mode or not self.dmx_controller:
+        if self.test_mode or not self.backend.supports_direct_fixture_output:
             return
-            
-        # Batch all light updates together to send a single DMX packet
-        for light_name, light_fixture in self.controller_dict.items():
-            # Update channels in DMX buffer without sending
-            for i in range(light_fixture.n_channels):
-                channel = light_fixture.start_channel + i
-                if 1 <= channel <= 512:
-                    self.dmx_controller.dmx_data[channel] = 0
-        
-        # Send all updates at once
-        self.dmx_controller._send_dmx_packet()
+        self.backend.blackout(True)
         time.sleep(0.05)  # Small delay to ensure DMX signal is processed
 
     def stop(self):
@@ -1065,9 +1126,8 @@ class Oculizer(threading.Thread):
             except Exception as e:
                 logger.error(f"Error stopping prediction stream: {e}")
         
-        # Close DMX controller connection (skip in test mode)
-        if hasattr(self, 'dmx_controller') and self.dmx_controller and not self.test_mode:
-            self.dmx_controller.close()
+        if hasattr(self, 'backend'):
+            self.backend.close()
 
 def main():
     # init scene manager
@@ -1089,8 +1149,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-

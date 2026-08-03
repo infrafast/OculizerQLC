@@ -5,10 +5,22 @@ import curses
 import time
 import argparse
 import platform
+import sounddevice as sd
+import logging
 from collections import OrderedDict
 import math
 
-from oculizer.light import Oculizer
+from oculizer.light import Oculizer, OUTPUT_CHOICES
+from oculizer.runtime_config import configured_audio_input, load_runtime_config
+
+
+def setup_logging():
+    logging.basicConfig(
+        filename=os.path.join(os.path.dirname(__file__), 'oculizer.log'),
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        force=True,
+    )
 from oculizer.scenes import SceneManager
 
 def parse_args():
@@ -17,21 +29,52 @@ def parse_args():
     
     # macOS defaults (match oculize.py defaults)
     if is_macos:
-        default_input = 'scarlett'
         default_profile = 'mobile'
     else:
         # Windows/Linux defaults
-        default_input = 'scarlett'
         default_profile = 'bbgv'
     
     parser = argparse.ArgumentParser(description='Interactive scene toggler for Oculizer')
+    parser.add_argument('--config', default=None,
+                      help='General Oculizer JSON configuration (default: config/oculizer.json)')
     parser.add_argument('-p', '--profile', type=str, default=default_profile,
                       help=f'Profile to use (default: {default_profile})')
-    parser.add_argument('-i', '--input', type=str, default=default_input,
-                      help=f'Audio input device to use (default: {default_input}, options: cable, blackhole, scarlett)')
+    parser.add_argument('-i', '--input', type=str, default=None,
+                      help='Override the configured audio input with default, an alias, a name, or an index')
     parser.add_argument('--average-dual-channels', action='store_true',
                       help='Average first two input channels together for FFT (useful for Scarlett 18i20)')
-    return parser.parse_args()
+    parser.add_argument('--output', choices=OUTPUT_CHOICES, default='enttec',
+                      help='Lighting output backend (default: enttec)')
+    parser.add_argument('--osc-config', default=None,
+                      help='QLC+ OSC JSON configuration (default: config/qlc_osc.json)')
+    parser.add_argument('--osc-host', default=None,
+                      help='Override the QLC+ OSC destination host')
+    parser.add_argument('--osc-port', type=int, default=None,
+                      help='Override the QLC+ OSC destination port')
+    parser.add_argument('--osc-dry-run', action='store_true', default=None,
+                      help='Log OSC messages without sending UDP packets')
+    parser.add_argument('--list-devices', action='store_true',
+                      help='List available audio input devices and exit')
+    args = parser.parse_args()
+    try:
+        config = load_runtime_config(args.config)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.input is None:
+        args.input = configured_audio_input(config)
+    return args
+
+
+def list_input_devices():
+    devices = sd.query_devices()
+    print("Available audio input devices:")
+    found = False
+    for index, device in enumerate(devices):
+        if device['max_input_channels'] > 0:
+            found = True
+            print(f"{index}: {device['name']} ({device['max_input_channels']} input channels)")
+    if not found:
+        print("No audio input device detected.")
 
 def sort_scenes_alphabetically(scenes):
     return OrderedDict(sorted(scenes.items()))
@@ -97,9 +140,9 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
     # Sort scenes alphabetically
     scene_manager.scenes = sort_scenes_alphabetically(scene_manager.scenes)
 
-    # Enable mouse events and keyboard input
-    curses.mousemask(curses.ALL_MOUSE_EVENTS | curses.REPORT_MOUSE_POSITION)
-    print('\033[?1003h')  # Enable mouse movement tracking
+    # Keep this interface keyboard-only. Mouse protocols are not decoded
+    # consistently by curses in macOS integrated terminals and over SSH.
+    curses.mousemask(0)
     stdscr.keypad(1)
     stdscr.nodelay(1)
     init_colors()
@@ -160,7 +203,7 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
                 stdscr.addstr(display_y, display_x, scene_str, color)
 
             # Display instructions
-            instructions = "Ctrl+T to return, Ctrl+Q to quit, Ctrl+R to reload | Type to search, Arrow keys, Enter to activate"
+            instructions = "Ctrl+T return, Ctrl+Q quit, Ctrl+R reload | Type to search, arrows, Enter to activate"
             stdscr.addstr(max_y-1, 0, instructions, curses.color_pair(6))
 
             stdscr.refresh()
@@ -204,18 +247,6 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
                     if 0 <= new_index < total_scenes:
                         selected_index = new_index
                         search_string = ""
-                elif event == curses.KEY_MOUSE:
-                    _, mx, my, _, bstate = curses.getmouse()
-                    if my >= 3 and my < min(3 + num_rows, max_y - 1):
-                        row = my - 3
-                        col = mx // column_width
-                        hover_pos = (row, col)
-                        
-                        if bstate & curses.BUTTON1_CLICKED:
-                            new_index = get_index_from_position(row, col, num_columns, total_scenes)
-                            if 0 <= new_index < total_scenes:
-                                selected_index = new_index
-                                search_string = ""
                 elif event in [curses.KEY_ENTER, 10, 13]:  # Enter key
                     if 0 <= selected_index < total_scenes:
                         new_scene = scene_list[selected_index][0]
@@ -245,10 +276,10 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
             time.sleep(0.01)
 
     finally:
-        print('\033[?1003l')  # Disable mouse tracking
         curses.mousemask(0)  # Disable mouse events
 
-def main(stdscr, profile, input_device, average_dual_channels):
+def main(stdscr, profile, input_device, average_dual_channels, output, osc_config,
+         osc_host, osc_port, osc_dry_run):
     # Load profile fixtures for scene manager
     from pathlib import Path
     profile_fixtures = set()
@@ -265,8 +296,17 @@ def main(stdscr, profile, input_device, average_dual_channels):
     # Initialize scene manager with profile awareness
     scene_manager = SceneManager('scenes', profile_name=profile, available_fixtures=profile_fixtures)
     scene_manager.set_scene('party')  # Set an initial scene
-    light_controller = Oculizer(profile, scene_manager, input_device, 
-                               average_dual_channels=average_dual_channels)
+    light_controller = Oculizer(
+        profile,
+        scene_manager,
+        input_device,
+        average_dual_channels=average_dual_channels,
+        output=output,
+        osc_config_path=osc_config,
+        osc_host=osc_host,
+        osc_port=osc_port,
+        osc_dry_run=osc_dry_run,
+    )
     light_controller.start()
     
     try:
@@ -279,4 +319,18 @@ def main(stdscr, profile, input_device, average_dual_channels):
 
 if __name__ == '__main__':
     args = parse_args()
-    curses.wrapper(lambda stdscr: main(stdscr, args.profile, args.input.lower(), args.average_dual_channels)) 
+    if args.list_devices:
+        list_input_devices()
+    else:
+        setup_logging()
+        curses.wrapper(lambda stdscr: main(
+            stdscr,
+            args.profile,
+            args.input,
+            args.average_dual_channels,
+            args.output,
+            args.osc_config,
+            args.osc_host,
+            args.osc_port,
+            args.osc_dry_run,
+        ))

@@ -205,15 +205,15 @@ Exit criterion: the same client passes UDP tests and controls the QLC+ button cr
 
 ### Phase 2 — Interchangeable backend
 
-Status: **not started**
+Status: **complete — validated on macOS**
 
-- [ ] define the `LightingBackend` protocol;
-- [ ] wrap the current output in `EnttecBackend`;
-- [ ] create `QLCOscBackend`;
-- [ ] add `--output enttec|qlc-osc`;
-- [ ] add `--osc-dry-run` and host/port overrides;
-- [ ] never detect serial ports in OSC mode;
-- [ ] preserve existing Enttec behavior.
+- [x] define the `LightingBackend` protocol;
+- [x] wrap the current output in `EnttecBackend`;
+- [x] create `QLCOscBackend`;
+- [x] add `--output enttec|qlc-osc`;
+- [x] add `--osc-dry-run` and host/port overrides;
+- [x] never detect serial ports in OSC mode;
+- [x] preserve existing Enttec behavior.
 
 Minimum intent API:
 
@@ -453,6 +453,111 @@ Validated:
 Implemented:
 
 - added `.venv/` to `.gitignore` so the repository-local Python environment and installed packages cannot be committed.
+
+### 2026-08-03 — Phase 2 interchangeable lighting backend
+
+Implemented:
+
+- introduced the `LightingBackend` intent API and `DisabledBackend`, `EnttecBackend`, and `QLCOscBackend` implementations;
+- retained the existing direct fixture-rendering loop exclusively for the Enttec backend;
+- connected backend selection to both `oculize.py` and `toggle.py` with `--output enttec|qlc-osc`;
+- added OSC configuration-path, host, port, and dry-run command-line overrides;
+- made the QLC+ backend skip all serial-controller initialization and direct fixture rendering;
+- routed shutdown and blackout through the selected backend;
+- retained `enttec` as the default to preserve existing startup behavior.
+
+Validated:
+
+- `python -m py_compile` passes for both entry points and all modified lighting modules;
+- 14 focused tests pass across the OSC sender, OSC client, and backend layers;
+- adapter tests cover Enttec blackout and idempotent close behavior;
+- QLC+ tests cover intent parameters, blackout, close, configuration overrides, and socket-free dry-run mode;
+- an Oculizer construction test makes Enttec initialization raise immediately and confirms it is never called in `qlc-osc` mode.
+
+Decision:
+
+- QLC+ scene activation and toggle-state tracking remain intentionally inactive until phase 3 supplies an explicit logical scene-to-OSC mapping. Selecting `qlc-osc` in phase 2 validates backend isolation but does not yet change QLC+ scenes.
+
+Next: phase 3, connect manual scene changes from `toggle.py` through a configured OSC scene mapping.
+
+### 2026-08-03 — macOS toggle audio-device startup correction
+
+Implemented:
+
+- aligned the standalone toggle's macOS audio default with `oculize.py` by selecting the `blackhole` alias instead of assuming a connected Scarlett interface;
+- added `toggle.py --list-devices` so audio discovery can be checked without entering curses mode.
+
+Validated:
+
+- Core Audio exposes `BlackHole 2ch` with two input channels on the development Mac;
+- the former `scarlett` default did not match any connected input device.
+
+This machine-specific default was subsequently replaced by the portable runtime configuration described in the next entry.
+
+### 2026-08-03 — Portable audio input configuration
+
+Implemented:
+
+- added the general `config/oculizer.json` runtime configuration with `audio.input_device` set to `default`;
+- established command-line input selection as an override of the general configuration;
+- implemented portable OS-default resolution through PortAudio's active host API;
+- accepted stable aliases, full or partial device names, and numeric indexes;
+- connected the configuration to both `toggle.py` and `oculize.py` through `--config PATH`;
+- kept QLC+ transport settings isolated in `config/qlc_osc.json`.
+
+Validation:
+
+- the development Mac resolves `default` to the CoreAudio default input;
+- BlackHole resolves by alias and full name;
+- configuration loading, default fallback, validation, aliases, names, and indexes have focused unit coverage.
+
+Decision:
+
+- runtime code does not select CoreAudio, ALSA, PulseAudio, or another Linux audio layer explicitly. PortAudio and the operating system own that selection, which keeps application configuration portable to Raspberry Pi OS.
+
+### 2026-08-03 — Standalone toggle terminal cleanup
+
+Implemented:
+
+- removed raw terminal mouse-movement tracking from `toggle.py`;
+- routed audio callback and stream diagnostics through `oculizer.log` instead of writing tracebacks into the curses terminal;
+- configured the standalone selector with a file-only logging handler before curses starts.
+
+Cause:
+
+- the raw `1003` mouse-tracking mode can expose terminal escape sequences as visible garbage when terminal and curses mouse handling differ.
+
+Validation:
+
+- the standalone selector no longer emits raw mouse-mode escape sequences;
+- keyboard navigation remains enabled.
+
+Follow-up validation showed that click and wheel protocols were also exposed as raw sequences by the development terminal. Mouse handling was therefore disabled completely. The standalone selector is keyboard-only to remain predictable in integrated terminals, Linux consoles, and SSH sessions.
+
+### 2026-08-03 — Phase 2 manual-selector audio isolation
+
+Implemented:
+
+- prevented `toggle.py` in `qlc-osc` mode from resolving or opening an unused audio input;
+- retained audio capture when direct Enttec rendering or scene prediction actually consumes it;
+- kept the Oculizer worker alive for manual scene events and clean shutdown without creating a PortAudio stream.
+
+Cause:
+
+- the phase-2 manual QLC+ selector opened BlackHole at the FFT sample rate despite having no OSC audio modulation or prediction consumer;
+- CoreAudio terminated the process natively with a bus error shortly after this unnecessary stream opened.
+
+Validation requirement:
+
+- QLC+ manual mode must start, remain stable, and stop without probing audio or serial hardware;
+- focused tests make both audio-device and Enttec initialization fail if either is attempted in this mode.
+
+Manual validation:
+
+- `python toggle.py --output qlc-osc --osc-config config/qlc_osc.json` starts successfully on macOS;
+- the operator can navigate the keyboard-only scene grid, select an item, and confirm it with `Enter`;
+- `Ctrl+T` returns from the selector and the application shuts down without opening audio or direct-DMX hardware;
+- no QLC+ scene change is expected yet because scene-to-OSC mapping begins in phase 3.
 
 Validated:
 
