@@ -18,8 +18,9 @@ setup(
         # Machine learning
         'scikit-learn>=1.0.0',
         'joblib>=1.1.0',
-        'torch>=1.13.0',
-        'efficientat>=0.0.1',
+        'torch==2.11.0',
+        'torchaudio==2.11.0',
+        'torchvision==0.26.0',
         
         # Lighting control
         'pyserial>=3.5',

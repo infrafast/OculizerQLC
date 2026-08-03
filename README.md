@@ -1,288 +1,221 @@
-```
-      ___           ___           ___           ___                   ___           ___           ___     
-     /\  \         /\  \         /\__\         /\__\      ___        /\  \         /\  \         /\  \    
-    /::\  \       /::\  \       /:/  /        /:/  /     /\  \       \:\  \       /::\  \       /::\  \   
-   /:/\:\  \     /:/\:\  \     /:/  /        /:/  /      \:\  \       \:\  \     /:/\:\  \     /:/\:\  \  
-  /:/  \:\  \   /:/  \:\  \   /:/  /  ___   /:/  /       /::\__\       \:\  \   /::\~\:\  \   /::\~\:\  \ 
- /:/__/ \:\__\ /:/__/ \:\__\ /:/__/  /\__\ /:/__/     __/:/\/__/ _______\:\__\ /:/\:\ \:\__\ /:/\:\ \:\__\ 
- \:\  \ /:/  / \:\  \  \/__/ \:\  \ /:/  / \:\  \    /\/:/  /    \::::::::/__/ \:\~\:\ \/__/ \/_|::\/:/  /
-  \:\  /:/  /   \:\  \        \:\  /:/  /   \:\  \   \::/__/      \:\~~\~~      \:\ \:\__\      |:|::/  / 
-   \:\/:/  /     \:\  \        \:\/:/  /     \:\  \   \:\__\       \:\  \        \:\ \/__/      |:|\/__/  
-    \::/  /       \:\__\        \::/  /       \:\__\   \/__/        \:\__\        \:\__\        |:|  |    
-     \/__/         \/__/         \/__/         \/__/                 \/__/         \/__/         \|__|    
-```
+# Oculizer
 
-# Oculizer 🎵 💡
+Oculizer is a music-reactive lighting system. It analyzes an audio stream in real time, predicts a suitable mood with a classification model, and automatically selects a lighting scene. A manual mode lets the operator take control during a show.
 
-Oculizer is an advanced DMX lighting automation system that creates real-time, music-reactive light shows using machine learning-based scene prediction and live audio analysis. It uses mel-scaled FFT to analyze audio and maps frequency components to DMX values through configurable scenes.
+The project is being migrated to a hybrid architecture with QLC+ 5: Oculizer will retain audio analysis and intelligent scene selection, while QLC+ will run scenes, chasers, and DMX outputs. OSC output is not implemented yet; the current version directly controls a DMX interface compatible with the Enttec USB DMX Pro protocol.
 
-> ⚠️ **Note**: This project is currently in development and requires some technical setup to get working. Use at your own risk!
+## Current features
 
-## Features
+- real-time audio capture with `sounddevice`;
+- mel-scaled FFT analysis for light modulation;
+- scene prediction using EfficientAT, PCA, and k-means;
+- `v1`, `v3`, `v4`, `v5`, and `vday` predictors;
+- single-stream and dual-stream audio modes;
+- JSON-based scenes and fixture profiles;
+- reactive effects, time-based effects, and group orchestrators;
+- automatic and manual scene selection;
+- profile-specific scene substitution through `profile_fallbacks.json`;
+- prediction-only test mode without FFT or DMX hardware;
+- direct DMX output through a DMXKing/Enttec-compatible interface.
 
-- **Real-time audio scene prediction** using [EfficientAT](https://github.com/fschmid56/EfficientAT) neural network and k-means clustering
-- Real-time audio reactivity using mel-scaled FFT analysis
-- Automatic scene transitions based on audio characteristics
-- Configurable scene system with JSON-based mapping rules 
-- Support for various DMX fixtures:
-  - RGB lights
-  - Dimmers
-  - Strobes
-  - Lasers
-- Configurable light-triggered effects
-- Live scene switching through keyboard commands
-- MIDI control support
-- Audio visualization tools for debugging
+## Intended use
 
-## Prerequisites
+Oculizer is designed to create a music-driven light show with three levels of control:
 
-- Python 3.8+
-- USB to DMX adapter (compatible with OpenDMX)
-- DMX-controlled lights
-- Virtual audio cable (VB-Audio Virtual Cable for Windows, BlackHole for macOS)
-- CUDA-capable GPU (recommended for better performance)
-- DMX control software (to determine your light addresses)
+1. the predictor automatically selects a scene from the musical content;
+2. FFT analysis modulates lighting parameters in real time;
+3. the operator can manually select a scene and later return to automatic mode.
 
-## Required Hardware Configuration
+The QLC+ 5 target will preserve this logic while moving hardware patching, lighting functions, and DMX output into QLC+. Development currently takes place on macOS with a local QLC+ instance. The production target is a Raspberry Pi 5 running Raspberry Pi OS, with QLC+ 5 and Oculizer on the same machine.
 
-1. DMX lights connected and addressed properly
-2. USB to DMX adapter connected and recognized
-3. Virtual audio cable to route system audio (e.g., VB-Audio Virtual Cable on Windows, BlackHole on macOS)
-4. MIDI controller (optional)
+## Current prerequisites
 
-## Installation 
+- Python 3.8 or newer;
+- an audio input available through PortAudio;
+- a virtual audio cable when required, such as BlackHole on macOS;
+- an Enttec USB DMX Pro-compatible interface for the current output path;
+- DMX fixtures addressed according to the selected profile.
+
+A CUDA-capable GPU accelerates the model but is not required. Initial model loading can take several seconds on a CPU.
+
+## Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/LandryBulls/Oculizer.git
-cd oculizer
-
-# Install required packages
-pip install -r requirements.txt
+cd Oculizer
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m pip install --no-deps \
+  "efficientat @ git+https://github.com/LandryBulls/EfficientAT.git@010b68e69d9f75d074eb8720ac06968c38352ac8"
 ```
 
-## Configuration Steps
+On Windows, activate the environment with `.venv\\Scripts\\activate`.
 
-1. **Audio Setup**:
-   - Install VB-Audio Virtual Cable (Windows) or BlackHole (macOS)
-   - Route your music player output to the virtual cable
-   - List available audio devices: `python oculize.py --list-devices`
-   - Note the device index for the virtual cable input
+Python 3.11 is the recommended development version. EfficientAT is installed from the project's package-enabled GitHub fork because the upstream project is not distributed on PyPI. The fork is installed with `--no-deps` because its historical training metadata pins PyTorch versions that are unavailable on Python 3.11 and Apple Silicon; the compatible runtime libraries are installed by `requirements.txt`. Installation therefore requires Git and internet access.
 
-2. **DMX Profile Configuration**:
-   - Review `profiles/` directory for example profiles
-   - Create/modify profiles to match your DMX setup
-   - Update channel numbers and fixture types
+Because the fork retains those historical metadata declarations, `pip check` reports EfficientAT dependency conflicts and missing training-only packages. This is expected for this installation method. Runtime validation should instead import `torch`, `torchaudio`, `torchvision`, and `efficientat`; Oculizer does not use the omitted training stack.
 
-3. **Scene Configuration**:
-   - Review `scenes/` directory for example scenes
-   - Create/modify scenes to match your desired effects
-   - Test scenes individually before running full show
+## Configuration
 
-## Usage
+The main directories and configuration files are:
 
-Oculizer provides two main scripts for controlling your light show:
+- `profiles/`: fixtures available in each installation;
+- `scenes/`: lighting behavior and modulation definitions;
+- `templates/`: scene examples;
+- `config/audio_parameters.json`: audio capture and analysis parameters;
+- `profile_fallbacks.json`: profile-specific scene substitutions.
 
-### 1. `oculize.py` - Automatic Scene Prediction
-
-The main script that uses machine learning to automatically predict and switch between scenes based on audio content.
-
-#### Dual-Stream Mode (Recommended for Windows)
-
-For optimal performance, use dual-stream mode with separate audio sources:
-- **FFT Stream**: Delayed audio from your audio interface (e.g., Scarlett) for DMX modulation
-- **Prediction Stream**: Real-time audio (e.g., CABLE Output/VB Cable) for scene prediction
+List available audio devices:
 
 ```bash
-# Dual-stream with predictor version 4 (default)
-python oculize.py --profile garage2025 --input-device scarlett --prediction-device cable_output
-
-# Using predictor v5 (latest)
-python oculize.py --profile garage2025 --predictor-version v5
-
-# List available audio devices
 python oculize.py --list-devices
 ```
 
-#### Single-Stream Mode (Default for macOS)
+Devices can be selected by alias (`blackhole`, `scarlett`, or `cable_output`) or, where supported, by index. Names are preferable because device indexes can change after a restart.
 
-Use the same audio source for both FFT and predictions (better for simpler setups):
+## Automatic operation
+
+Example single-stream setup on macOS:
 
 ```bash
-# Single-stream mode (recommended for macOS with BlackHole)
 python oculize.py --profile garage2025 --input-device blackhole --single-stream
 ```
 
-#### Dual-Channel Averaging
-
-If you have a multi-input audio interface (e.g., Scarlett 18i20) and want to average channels 1 and 2 for FFT:
+Example dual-stream setup:
 
 ```bash
-# Average first two input channels for FFT
-python oculize.py --profile garage2025 --input-device scarlett --average-dual-channels
-
-# Can combine with dual-stream for predictions
-python oculize.py --profile garage2025 --input-device scarlett --average-dual-channels --prediction-device cable_output
+python oculize.py \
+  --profile garage2025 \
+  --input-device scarlett \
+  --prediction-device blackhole
 ```
 
-#### Command Line Options
+Main options:
 
-- `-p, --profile`: Lighting profile to use (default: `garage2025`)
-- `-i, --input-device`: Audio device for FFT/DMX modulation. Can be device name (`scarlett`, `blackhole`, `cable_output`) or device index number (default: `scarlett` on Windows, `blackhole` on macOS)
-- `--prediction-device`: Device for scene prediction in dual-stream mode. Can be device name or index (default: `cable_output`)
-- `--single-stream`: Use single audio stream for both FFT and prediction (default on macOS)
-- `--predictor-version`, `--predictor`: Scene predictor version (`v1`, `v3`, `v4`, `v5`) (default: `v4`)
-- `--average-dual-channels`: Average first two input channels together for FFT (useful for Scarlett 18i20)
-- `--list-devices`: List available audio devices and exit
+| Option | Purpose |
+| --- | --- |
+| `-p`, `--profile` | Fixture profile |
+| `-i`, `--input-device` | Input used for FFT processing |
+| `--prediction-device` | Separate input used by the predictor |
+| `--single-stream` | Use one input for FFT and prediction |
+| `--predictor-version` | Predictor version |
+| `--scene-cache-size` | Prediction smoothing window |
+| `--prediction-channels` | Audio channels used for prediction |
+| `--average-dual-channels` | Average the first two FFT input channels |
+| `--test` | Prediction only, without FFT or DMX |
+| `--list-devices` | Display available audio inputs |
 
-#### Interactive Controls
+During operation:
 
-While running `oculize.py`:
-- **q**: Quit the application
-- **r**: Reload all scenes from disk
+- `q` quits the application;
+- `r` reloads scenes;
+- `Ctrl+T` opens the integrated manual selector.
 
-#### Display Information
+## Manual scene selection
 
-The interface shows:
-- Current audio devices for FFT and prediction
-- Active lighting profile
-- Predictor version in use
-- Current scene name
-- Latest scene prediction
-- Prediction cluster ID
-- Real-time log messages
-
-### 2. `toggle.py` - Manual Scene Control
-
-An interactive grid-based scene browser for manual control and testing.
+Run the standalone selector with:
 
 ```bash
-# Launch with default profile
-python toggle.py --profile bbgv --input scarlett
-
-# With dual-channel averaging
-python toggle.py --profile garage2025 --input scarlett --average-dual-channels
+python toggle.py --profile garage2025 --input blackhole
 ```
 
-#### Command Line Options
+Controls:
 
-- `-p, --profile`: Lighting profile to use (default: `bbgv`)
-- `-i, --input`: Audio device for FFT/DMX. Can be device name (`scarlett`, `blackhole`, `cable`) or device index (default: `scarlett` on Windows, `blackhole` on macOS)
-- `--average-dual-channels`: Average first two input channels together for FFT
+- arrow keys: move through the grid;
+- `Enter` or mouse click: activate a scene;
+- typing letters: search by prefix;
+- `Escape`: clear the search;
+- `Ctrl+R`: reload scenes;
+- `Ctrl+T`: return to the automatic interface when it launched the selector;
+- `Ctrl+Q`: quit.
 
-#### Interactive Controls
+In the integrated selector, predictions continue in the background. A manual selection enables override mode; `Ctrl+O` switches between manual override and automatic prediction following.
 
-- **Arrow Keys**: Navigate between scenes in the grid
-- **Enter**: Activate the selected scene
-- **Mouse Click**: Click on a scene to select and activate it
-- **Type to Search**: Start typing a scene name to jump to it (e.g., type "par" to jump to "party")
-- **Backspace**: Delete last character in search
-- **ESC**: Clear search
-- **Ctrl+R**: Reload all scenes from disk
-- **Ctrl+Q**: Quit the application
+## Test mode
 
-#### Display Features
+```bash
+python oculize.py --test --profile mobile --predictor-version v4
+```
 
-- **Grid Layout**: Scenes displayed in a multi-column grid that adapts to terminal size
-- **Color Coding**:
-  - **Green**: Currently active scene
-  - **Yellow**: Selected scene (keyboard navigation)
-  - **Blue**: Hovered scene (mouse)
-  - **White**: Inactive scenes
-- **Live Search**: Type-to-find functionality with visual feedback
-- **Alphabetical Sorting**: Scenes are automatically sorted alphabetically
+This mode:
 
-## Scene Configuration
+- does not initialize the DMX controller;
+- does not start the FFT stream;
+- keeps the audio capture required by the predictor;
+- validates the model and scene transitions without lighting hardware.
 
-Scenes are defined in JSON files with the following structure:
+## Scenes and profiles
+
+A scene associates fixtures with a modulator. Simplified example:
+
 ```json
 {
-    "name": "scene_name",
-    "description": "Scene description",
-    "type": "effect",
-    "midi": 60, # MIDI note number (optional)
-    "key_command": "1", # Keyboard command (optional)
-    "lights": [
-        {
-            "name": "light_name",
-            "type": "rgb",
-            "modulator": "mfft",
-            "mfft_range": [0, 20],
-            "power_range": [0, 2],
-            "brightness_range": [0, 255],
-            "color": "red", 
-            "strobe": 0
-        }
-    ]
+  "name": "party",
+  "description": "Reactive scene",
+  "type": "effect",
+  "lights": [
+    {
+      "name": "rgb1",
+      "type": "rgb",
+      "modulator": "mfft",
+      "mfft_range": [0, 20],
+      "power_range": [0, 2],
+      "brightness_range": [0, 255],
+      "color": "red",
+      "strobe": 0
+    }
+  ]
 }
 ```
 
-## How It Works
+Main modulators:
 
-Oculizer uses a machine learning pipeline to predict appropriate lighting scenes in real-time:
+- `mfft`: reacts to a frequency range;
+- `time`: evolves periodically without relying on audio level;
+- `bool`: discrete or random selection and triggering.
 
-1. **Audio Capture**: Captures system audio via a virtual audio cable
-2. **Feature Extraction**: Uses **[EfficientAT](https://github.com/fschmid56/EfficientAT)** - a state-of-the-art audio tagging neural network developed by Florian Schmid, Khaled Koutini, and Gerhard Widmer at Johannes Kepler University Linz. EfficientAT is trained on AudioSet and provides high-quality audio embeddings that capture semantic content of music.
-3. **Dimensionality Reduction**: Applies PCA to reduce feature dimensions
-4. **Clustering**: Uses k-means clustering to classify audio into scene clusters
-5. **Scene Mapping**: Maps clusters to predefined lighting scenes
-6. **Light Control**: Updates DMX fixtures based on the current scene and audio features
+Orchestrators coordinate multiple fixtures. For example, the `hopper` type selects active fixtures from an audio trigger. Exact parameters currently depend on the fixture type and the functions implemented in `oculizer/light/mapping.py`, `effects.py`, and `orchestrators.py`.
 
-### Audio Scene Prediction
+### Scene substitutions
 
-The scene prediction system leverages **EfficientAT** neural network embeddings combined with spectral audio features (MFCCs, spectral centroid, RMS energy, etc.) to understand both the semantic content and acoustic properties of music. This allows Oculizer to intelligently match musical moments to appropriate lighting scenes.
+`profile_fallbacks.json` contains `requested scene → played scene` mappings for each profile. Every declared mapping is applied even when the original scene is technically compatible. This also supports installation-specific artistic preferences.
 
-## Development Status
+Available tools:
 
-This project is actively being developed. Known areas needing attention:
-
-- Error handling improvements
-- Better documentation of scene configuration options
-- General code cleanup and optimization
-- Additional visualization tools
-- Better handling of audio routing setup
-- More flexible light modulators in mapping.py
-- More audio features 
-- Scene prediction model refinement
-
-## Contributing
-
-Feel free to submit issues and pull requests. The project is in active development and welcomes contributions!
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-### EfficientAT - Audio Tagging Neural Network
-
-This project relies heavily on **[EfficientAT](https://github.com/fschmid56/EfficientAT)**, a state-of-the-art audio tagging model developed by:
-- **Florian Schmid** ([@fschmid56](https://github.com/fschmid56))
-- **Khaled Koutini**
-- **Gerhard Widmer**
-
-From the LIT AI Lab and Institute of Computational Perception at Johannes Kepler University Linz, Austria.
-
-**Citation:**
-```
-@inproceedings{Schmid2023efficient,
-  title={Efficient Large-Scale Audio Tagging Via Transformer-To-CNN Knowledge Distillation},
-  author={Schmid, Florian and Koutini, Khaled and Widmer, Gerhard},
-  booktitle={IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
-  year={2023}
-}
+```bash
+python analyze_scenes.py
+python generate_fallbacks.py
+python test_fallbacks_simple.py
 ```
 
-EfficientAT provides the foundational audio understanding capabilities that make Oculizer's intelligent scene prediction possible.
+## Troubleshooting
 
-### Other Dependencies
+- Check devices with `python oculize.py --list-devices`.
+- Use `--test` to isolate prediction from lighting hardware.
+- A startup pause can be caused by EfficientAT loading on the CPU.
+- Check `oculizer.log` for scene changes, substitutions, and audio errors.
+- If a scene remains dark, verify that its fixture names exist in the active profile.
+- If installation reports that no `efficientat` distribution exists, use both installation commands above; `efficientat` is not available from PyPI.
 
-- [PyDMXControl](https://github.com/MattIPv4/PyDMXControl) for DMX control
-- [librosa](https://librosa.org/) for audio feature extraction
-- [sounddevice](https://python-sounddevice.readthedocs.io/) for real-time audio capture
-- [scikit-learn](https://scikit-learn.org/) for machine learning components (PCA, k-means clustering)
+## Project status
 
-## Disclaimer
+Direct DMX output works but is tightly coupled to the Enttec controller. The QLC+ 5 migration is planned as testable milestones: OSC transport, interchangeable backends, manual selection, automatic prediction, and continuous audio modulation.
 
-This project involves controlling lighting equipment and should be used with appropriate caution. Always follow proper safety guidelines when working with DMX equipment.
+The milestone-0 QLC+ connection can be checked after configuring the test control in QLC+:
+
+```bash
+python scripts/send_osc_test.py --pulse 1
+```
+
+This sends `/test` with value `1.0`, waits one second, and sends `0.0` to `127.0.0.1:7700`. It is a temporary connection diagnostic, not part of the application OSC namespace or backend.
+
+The validated QLC+ 5.2.2 reference workspace is stored in `qlc/qlc.qxw`. Its OSC input profile is stored separately in `qlc/Oculizer-OSC.qxi`, because QLC+ workspaces reference input profiles by name rather than embedding them. On macOS, install the profile in `~/Library/Application Support/QLC+/InputProfiles/` before opening the workspace on a new system. This workspace is a test reference, not a hard-coded runtime default. A future launcher will require a configurable path to the `.qxw` workspace that QLC+ must load. The production profile location and launch mechanism for Raspberry Pi OS will be finalized during the deployment milestone.
+
+Technical tracking, the roadmap, and contributor instructions are maintained in [DEVELOPMENT.md](DEVELOPMENT.md).
+
+## License and credits
+
+The project is distributed under the MIT License.
+
+Audio prediction relies on EfficientAT, librosa, PyTorch, and scikit-learn. The current output path uses pyserial and the Enttec USB DMX Pro protocol.

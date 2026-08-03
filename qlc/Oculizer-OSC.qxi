@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE InputProfile>
+<InputProfile xmlns="http://www.qlcplus.org/InputProfile">
+ <Creator>
+  <Name>Q Light Controller Plus</Name>
+  <Version>5.2.2</Version>
+  <Author>T S</Author>
+ </Creator>
+ <Manufacturer>Oculizer</Manufacturer>
+ <Model>OSC</Model>
+ <Type>OSC</Type>
+ <Channel Number="15948">
+  <Name>/test</Name>
+  <Type>Button</Type>
+ </Channel>
+</InputProfile>
