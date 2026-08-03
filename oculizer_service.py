@@ -7,7 +7,7 @@ import sys
 
 from oculizer.headless import HeadlessOculizerService
 from oculizer.light import Oculizer, OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_prediction, configured_silence, configured_speech, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.scenes import SceneManager
 
 
@@ -44,6 +44,7 @@ def parse_args():
     args.silence_config = configured_silence(config)
     args.speech_config = configured_speech(config)
     args.prediction_config = configured_prediction(config)
+    args.master_config = configured_master_modulation(config)
     if args.output == "enttec" and not args.profile:
         parser.error("--profile is required with --output enttec")
     if args.scene_cache_size < 1:
@@ -75,7 +76,12 @@ def build_service(args) -> HeadlessOculizerService:
         prediction_window_seconds=args.prediction_config.window_seconds,
     )
     oculizer.restrict_scenes_to_backend()
-    return HeadlessOculizerService(oculizer, silence_config=args.silence_config, speech_config=args.speech_config)
+    return HeadlessOculizerService(
+        oculizer,
+        silence_config=args.silence_config,
+        speech_config=args.speech_config,
+        master_config=args.master_config,
+    )
 
 
 def main() -> int:

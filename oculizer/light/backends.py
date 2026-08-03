@@ -114,9 +114,10 @@ class QLCOscBackend(LightingBackend):
 
     name = OUTPUT_QLC_OSC
 
-    def __init__(self, client: OscClient, scene_map: SceneMap, config_path: str | Path | None = None):
+    def __init__(self, client: OscClient, scene_map: SceneMap, controls=None, config_path: str | Path | None = None):
         self.client = client
         self.scene_map = scene_map
+        self.controls = dict(controls or {})
         self.config_path = Path(config_path) if config_path is not None else None
         self.active_scene: str | None = None
         self.blackout_active = False
@@ -124,7 +125,9 @@ class QLCOscBackend(LightingBackend):
     def reload_scene_map(self) -> None:
         if self.config_path is None:
             return
-        self.scene_map = QLCConfig.from_file(self.config_path).routing
+        config = QLCConfig.from_file(self.config_path)
+        self.scene_map = config.routing
+        self.controls = dict(config.controls)
 
     def _pulse(self, path: str) -> bool:
         pressed = self.client.press(path)
@@ -186,7 +189,7 @@ class QLCOscBackend(LightingBackend):
         return success
 
     def set_parameter(self, name: str, value: float) -> bool:
-        address = name if name.startswith("/") else f"/oculizer/{name}"
+        address = self.controls.get(name, name if name.startswith("/") else f"/oculizer/{name}")
         return self.client.set_level(address, value)
 
     def blackout(self, enabled: bool = True) -> bool:
@@ -222,5 +225,6 @@ def create_qlc_osc_backend(
     return QLCOscBackend(
         OscClient(config),
         qlc_config.routing,
+        controls=qlc_config.controls,
         config_path=config_path,
     )

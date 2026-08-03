@@ -82,6 +82,15 @@
     <Action>Toggle</Action>
     <Input ID="0" Universe="0" Channel="21172"/>
    </Button>
+   <Slider Caption="master" ID="3" WidgetStyle="Slider" InvertedAppearance="false">
+    <WindowState Visible="True" X="17" Y="206" Width="103" Height="378"/>
+    <Appearance>
+     <BackgroundColor>4282664004</BackgroundColor>
+    </Appearance>
+    <Input ID="0" Universe="0" Channel="30161"/>
+    <SliderMode ValueDisplayStyle="Percentage">GrandMaster</SliderMode>
+    <Level LowLimit="0" HighLimit="255" Value="255"/>
+   </Slider>
   </Frame>
   <Frame Caption="Page 2" ID="1">
    <Appearance>

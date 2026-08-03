@@ -286,20 +286,20 @@ Exit criterion: spoken announcements reliably select the configured scene withou
 
 ### Phase 5 — First continuous modulation
 
-Status: **not started**
+Status: **complete — validated with live audio and QLC+ on macOS**
 
-- [ ] begin only with `/oculizer/master`;
-- [ ] normalize into `[0.0, 1.0]`;
-- [ ] rate-limit output, initially targeting 20–30 Hz;
-- [ ] add a change threshold and smoothing;
-- [ ] send a safe value during shutdown;
-- [ ] measure latency, CPU use, and regularity.
+- [x] begin only with `/oculizer/master`;
+- [x] normalize into `[0.0, 1.0]`;
+- [x] rate-limit output, initially targeting 20–30 Hz;
+- [x] add a change threshold and smoothing;
+- [x] send a safe value during shutdown;
+- [x] validate latency and update regularity during live operation without observable performance issues.
 
 Exit criterion: a QLC+ slider follows audio without flicker or significant overhead.
 
 ### Phase 6 — Advanced modulations
 
-Status: **not started**
+Status: **active — awaiting the first frequency-band control contract**
 
 - [ ] add bass, mid, and high one at a time;
 - [ ] add speed or strobe only when the workspace consumes it;
@@ -804,7 +804,33 @@ Implemented:
 - allow ordinary cluster scenes only when music is dominant;
 - added regression coverage for pre-announcement cluster leakage and speech-gap oscillation.
 
-Validation gate: repeat the voice-only recording and confirm that `party` is no longer activated between `off` and `announcement`, or between spoken phrases.
+Validated:
+
+- the operator replayed the voice-only recording and confirmed that the correction substantially eliminates `party` leakage before `announcement` and between spoken phrases;
+- phase 4b, including speech-transition stabilization, is accepted as complete.
+
+### 2026-08-03 — Phase 5 master modulation implementation
+
+Implemented:
+
+- added a configurable RMS-to-master modulation pipeline independent of scene prediction;
+- normalized the configured RMS floor and ceiling into `[0.0, 1.0]`;
+- added exponential smoothing, a change threshold, and a configurable rate capped at 60 Hz with a 25 Hz reference setting;
+- send `silence_value` immediately below the RMS floor and `shutdown_value` before closing the lighting backend;
+- added `/oculizer/master` to the unified QLC+ global controls;
+- connected modulation to both the headless service and interactive automatic runtime;
+- added focused tests for normalization, smoothing, rate limiting, deduplication, safe shutdown, configuration validation, and configurable OSC paths.
+
+QLC+ contract:
+
+- the operator created and mapped a QLC+ 5 Grand Master slider to `/oculizer/master`;
+- the recommended widget uses Reduce mode and affects Intensity channels only.
+
+Remaining validation:
+
+- the operator confirmed that the QLC+ Grand Master follows live audio smoothly, uses the configured safe behavior, and performs as expected;
+- no further calibration was required with the reference values;
+- phase 5 is complete and phase 6 frequency-band modulation is now active.
 
 ## Instructions for developers and coding agents
 

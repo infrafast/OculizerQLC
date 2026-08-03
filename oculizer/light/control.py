@@ -1208,6 +1208,10 @@ class Oculizer(threading.Thread):
             apply_fallback=self.output == OUTPUT_ENTTEC,
         )
 
+    def set_parameter(self, name, value):
+        """Send one normalized continuous parameter through the active backend."""
+        return self.backend.set_parameter(name, value)
+
     def restrict_scenes_to_backend(self):
         """Apply a hardware-independent QLC+ scene catalog when applicable."""
         if self.output != OUTPUT_QLC_OSC:

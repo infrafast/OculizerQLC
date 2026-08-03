@@ -84,6 +84,17 @@ By default, `config/oculizer.json` contains:
     "prediction": {
       "window_seconds": 2.0
     },
+    "master_modulation": {
+      "enabled": true,
+      "parameter": "master",
+      "rate_hz": 25.0,
+      "input_floor": 0.001,
+      "input_ceiling": 0.1,
+      "smoothing_factor": 0.25,
+      "change_threshold": 0.01,
+      "silence_value": 0.0,
+      "shutdown_value": 0.0
+    },
     "silence": {
       "enabled": true,
       "threshold": 0.001,
@@ -100,6 +111,8 @@ By default, `config/oculizer.json` contains:
 The silence policy is evaluated before automatic prediction routing. Audio must remain at or below `threshold` for `duration_seconds` before the configured scene is selected. Normal prediction resumes only above `resume_threshold`, which provides hysteresis near the boundary. `scene` is user-selectable: it can be `off`, an ambient scene, a safety light, or any other logical scene present in both `scenes/` and `config/qlc_config.json`. Manual override always has priority over the silence policy.
 
 `audio.prediction.window_seconds` controls the rolling analysis window. The responsive default is two seconds; increasing it improves temporal stability but delays transitions. Speech defaults use 0.5 seconds to enter announcement mode and 0.75 seconds to return to music.
+
+`audio.master_modulation` maps live input RMS to the QLC+ control named by `parameter`. The reference `master` control is `/oculizer/master` under `controls` in `config/qlc_config.json`. RMS values between `input_floor` and `input_ceiling` are normalized to `[0.0, 1.0]`, smoothed, rate-limited to 25 Hz, and deduplicated using `change_threshold`. Silence and clean shutdown send the configured safe value `0.0`. In QLC+ 5, the reference slider is a Grand Master in Reduce mode applied to Intensity channels only.
 
 The command line overrides the configuration. For example, use BlackHole for an Enttec-backed launch:
 
@@ -282,7 +295,7 @@ python test_fallbacks_simple.py
 
 ## Project status
 
-Direct DMX output remains available. OSC transport, interchangeable backends, manual and automatic QLC+ selection, configurable silence behavior, speech-aware announcement routing, and the headless runtime are validated on macOS. Continuous audio modulation is the next milestone.
+Direct DMX output remains available. OSC transport, interchangeable backends, manual and automatic QLC+ selection, configurable silence behavior, stabilized speech-aware announcement routing, the headless runtime, and continuous Grand Master modulation are validated with live audio on macOS. Frequency-band modulation is the next milestone.
 
 The milestone-0 QLC+ connection can be checked after configuring the test control in QLC+:
 

@@ -32,6 +32,18 @@ class SpeechConfig:
 class PredictionConfig:
     window_seconds: float = 2.0
 
+@dataclass(frozen=True)
+class MasterModulationConfig:
+    enabled: bool = False
+    parameter: str = "master"
+    rate_hz: float = 25.0
+    input_floor: float = 0.001
+    input_ceiling: float = 0.1
+    smoothing_factor: float = 0.25
+    change_threshold: float = 0.01
+    silence_value: float = 0.0
+    shutdown_value: float = 0.0
+
 
 def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
     """Load and minimally validate the general Oculizer JSON configuration."""
@@ -88,6 +100,29 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
     window_seconds = prediction.get("window_seconds", 2.0)
     if isinstance(window_seconds, bool) or not isinstance(window_seconds, (int, float)) or not 0.5 <= window_seconds <= 10:
         raise ValueError("audio.prediction.window_seconds must be between 0.5 and 10 seconds")
+    master = audio.get("master_modulation", {})
+    if not isinstance(master, dict):
+        raise ValueError("audio.master_modulation must be an object")
+    defaults = MasterModulationConfig()
+    master_config = MasterModulationConfig(**{
+        key: master.get(key, getattr(defaults, key))
+        for key in MasterModulationConfig.__dataclass_fields__
+    })
+    if not isinstance(master_config.enabled, bool):
+        raise ValueError("audio.master_modulation.enabled must be a boolean")
+    if not isinstance(master_config.parameter, str) or not master_config.parameter.strip():
+        raise ValueError("audio.master_modulation.parameter must be a non-empty string")
+    for name in ("rate_hz", "input_floor", "input_ceiling", "smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
+        value = getattr(master_config, name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"audio.master_modulation.{name} must be numeric")
+    if not 1 <= master_config.rate_hz <= 60:
+        raise ValueError("audio.master_modulation.rate_hz must be between 1 and 60")
+    if master_config.input_floor < 0 or master_config.input_ceiling <= master_config.input_floor:
+        raise ValueError("audio.master_modulation.input_ceiling must be greater than input_floor")
+    for name in ("smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
+        if not 0 <= getattr(master_config, name) <= 1:
+            raise ValueError(f"audio.master_modulation.{name} must be between 0 and 1")
     return config
 
 
@@ -115,3 +150,14 @@ def configured_speech(config: dict[str, Any]) -> SpeechConfig:
 def configured_prediction(config: dict[str, Any]) -> PredictionConfig:
     prediction = config.get("audio", {}).get("prediction", {})
     return PredictionConfig(window_seconds=float(prediction.get("window_seconds", 2.0)))
+
+def configured_master_modulation(config: dict[str, Any]) -> MasterModulationConfig:
+    master = config.get("audio", {}).get("master_modulation", {})
+    defaults = MasterModulationConfig()
+    values = {
+        key: master.get(key, getattr(defaults, key))
+        for key in MasterModulationConfig.__dataclass_fields__
+    }
+    for key in ("rate_hz", "input_floor", "input_ceiling", "smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
+        values[key] = float(values[key])
+    return MasterModulationConfig(**values)

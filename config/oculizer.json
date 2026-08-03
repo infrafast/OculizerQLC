@@ -4,6 +4,17 @@
     "prediction": {
       "window_seconds": 2.0
     },
+    "master_modulation": {
+      "enabled": true,
+      "parameter": "master",
+      "rate_hz": 25.0,
+      "input_floor": 0.001,
+      "input_ceiling": 0.1,
+      "smoothing_factor": 0.25,
+      "change_threshold": 0.01,
+      "silence_value": 0.0,
+      "shutdown_value": 0.0
+    },
     "silence": {
       "enabled": true,
       "threshold": 0.001,

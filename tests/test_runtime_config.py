@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from oculizer.light.control import Oculizer
-from oculizer.runtime_config import configured_audio_input, configured_prediction, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_master_modulation, configured_prediction, configured_silence, load_runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
@@ -74,6 +74,32 @@ class RuntimeConfigTests(unittest.TestCase):
             path.write_text(json.dumps({"audio": {"prediction": {"window_seconds": 2.5}}}))
             config = load_runtime_config(path)
         self.assertEqual(configured_prediction(config).window_seconds, 2.5)
+
+    def test_loads_master_modulation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oculizer.json"
+            path.write_text(json.dumps({"audio": {"master_modulation": {
+                "enabled": True,
+                "rate_hz": 20,
+                "input_floor": 0.002,
+                "input_ceiling": 0.2,
+            }}}))
+            config = load_runtime_config(path)
+        master = configured_master_modulation(config)
+        self.assertTrue(master.enabled)
+        self.assertEqual(master.rate_hz, 20.0)
+        self.assertEqual(master.input_floor, 0.002)
+        self.assertEqual(master.input_ceiling, 0.2)
+
+    def test_rejects_invalid_master_modulation_range(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oculizer.json"
+            path.write_text(json.dumps({"audio": {"master_modulation": {
+                "input_floor": 0.2,
+                "input_ceiling": 0.1,
+            }}}))
+            with self.assertRaisesRegex(ValueError, "input_ceiling"):
+                load_runtime_config(path)
 
 
 class AudioDeviceResolutionTests(unittest.TestCase):

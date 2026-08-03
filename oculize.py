@@ -7,8 +7,9 @@ import platform
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
 from oculizer.light import OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_prediction, configured_silence, configured_speech, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.automatic import AutomaticSceneRouter
+from oculizer.modulation import MasterModulator
 import logging
 from collections import deque, OrderedDict
 import sounddevice as sd
@@ -136,7 +137,7 @@ class AudioOculizerController:
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
                  test_mode=False, output='enttec', qlc_config=None, osc_host=None,
                  osc_port=None, osc_dry_run=None, silence_config=None,
-                 speech_config=None, prediction_window_seconds=2.0):
+                 speech_config=None, master_config=None, prediction_window_seconds=2.0):
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
@@ -179,6 +180,7 @@ class AudioOculizerController:
             silence_config=silence_config,
             speech_config=speech_config,
         )
+        self.master_modulator = MasterModulator(self.oculizer, config=master_config)
         
         self.dual_stream = dual_stream
         self.predictor_version = predictor_version
@@ -275,12 +277,13 @@ class AudioOculizerController:
                 if self.scene_router.step():
                     current_scene = self.scene_manager.current_scene['name']
                     self.info_message = f"Changed to scene: {current_scene}"
+                self.master_modulator.update()
                         
             except Exception as e:
                 self.error_message = f"Error in update loop: {str(e)}"
                 logging.error(f"Error in update loop: {str(e)}")
             
-            time.sleep(0.1)
+            time.sleep(0.02)
 
     def turn_off_all_lights(self):
         # Skip in test mode
@@ -804,6 +807,7 @@ class AudioOculizerController:
 
     def stop(self):
         try:
+            self.master_modulator.shutdown()
             self.oculizer.stop()
             # Use timeout to avoid hanging indefinitely on Windows
             self.oculizer.join(timeout=3.0)
@@ -906,6 +910,7 @@ Scene Cache Size:
     args.silence_config = configured_silence(config)
     args.speech_config = configured_speech(config)
     args.prediction_config = configured_prediction(config)
+    args.master_config = configured_master_modulation(config)
     if args.profile is None and args.output == 'enttec':
         args.profile = default_profile
     return args
@@ -913,7 +918,7 @@ Scene Cache Size:
 def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
          average_dual_channels, scene_cache_size, prediction_channels, test_mode,
          output, qlc_config, osc_host, osc_port, osc_dry_run,
-         silence_config, speech_config, prediction_window_seconds):
+         silence_config, speech_config, master_config, prediction_window_seconds):
     setup_colors()
     controller = AudioOculizerController(
         stdscr, 
@@ -933,6 +938,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         osc_dry_run=osc_dry_run,
         silence_config=silence_config,
         speech_config=speech_config,
+        master_config=master_config,
         prediction_window_seconds=prediction_window_seconds,
     )
     
@@ -1035,5 +1041,6 @@ if __name__ == "__main__":
             args.osc_dry_run,
             args.silence_config,
             args.speech_config,
+            args.master_config,
             args.prediction_config.window_seconds,
         ))

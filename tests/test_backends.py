@@ -44,14 +44,14 @@ class QLCOscBackendTests(unittest.TestCase):
         client = Mock()
         client.set_level.return_value = True
         client.blackout.return_value = True
-        backend = QLCOscBackend(client, self.make_scene_map())
+        backend = QLCOscBackend(client, self.make_scene_map(), controls={"master": "/show/master"})
 
         self.assertFalse(backend.supports_direct_fixture_output)
         self.assertTrue(backend.set_parameter("master", 0.5))
         self.assertTrue(backend.blackout(False))
         backend.close()
 
-        client.set_level.assert_called_once_with("/oculizer/master", 0.5)
+        client.set_level.assert_called_once_with("/show/master", 0.5)
         client.blackout.assert_called_once_with(False)
         client.close.assert_called_once_with()
 

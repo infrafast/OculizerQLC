@@ -5,7 +5,8 @@
     "dry_run": false
   },
   "controls": {
-    "blackout": "/blackout"
+    "blackout": "/blackout",
+    "master": "/oculizer/master"
   },
   "routing": {
     "pulse_seconds": 0.1,

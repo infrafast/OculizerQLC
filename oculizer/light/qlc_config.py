@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
-from oculizer.light.osc_client import OscConfig, OscConfigError
+from oculizer.light.osc_client import OscConfig, OscConfigError, build_float_message
 from oculizer.light.scene_map import SceneMap, SceneMapError
 
 
@@ -18,6 +18,7 @@ class QLCConfigError(ValueError):
 @dataclass(frozen=True)
 class QLCConfig:
     transport: OscConfig
+    controls: Mapping[str, str]
     routing: SceneMap
 
     @classmethod
@@ -47,16 +48,22 @@ class QLCConfig:
         if not isinstance(routing, Mapping):
             raise QLCConfigError("QLC+ configuration 'routing' must be an object")
 
-        unknown_controls = set(controls) - {"blackout"}
-        if unknown_controls:
-            names = ", ".join(sorted(str(name) for name in unknown_controls))
-            raise QLCConfigError(f"Unsupported QLC+ global control(s): {names}")
+        validated_controls = {}
+        for name, path in controls.items():
+            if not isinstance(name, str) or not name.strip():
+                raise QLCConfigError("QLC+ control names must be non-empty strings")
+            try:
+                build_float_message(path, 0.0)
+            except (TypeError, ValueError) as exc:
+                raise QLCConfigError(f"Invalid QLC+ control '{name}': {exc}") from exc
+            validated_controls[name] = path
 
         osc_data = dict(transport)
-        osc_data["paths"] = {"blackout": controls.get("blackout", OscConfig.blackout_path)}
+        osc_data["paths"] = {"blackout": validated_controls.get("blackout", OscConfig.blackout_path)}
         try:
             return cls(
                 transport=OscConfig.from_mapping(osc_data),
+                controls=validated_controls,
                 routing=SceneMap.from_mapping(routing),
             )
         except (OscConfigError, SceneMapError) as exc:
