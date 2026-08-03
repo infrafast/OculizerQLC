@@ -42,14 +42,11 @@ During development, Oculizer and QLC+ run on the same Mac. In production, both w
 
 ### Not implemented
 
-- Oculizer OSC client;
-- QLC+ OSC configuration;
-- abstract lighting backend;
-- `enttec`/`qlc-osc` command-line selection;
 - Oculizer-scene to QLC+-function mappings;
 - audio modulations sent to QLC+;
 - QLC+ state feedback or synchronization;
-- Raspberry Pi production services.
+- headless Oculizer service entry point;
+- Raspberry Pi production service units.
 
 Never describe these items as available before they have been implemented and validated.
 
@@ -229,16 +226,20 @@ Exit criterion: both backends start, stop, and pass their tests without opening 
 
 ### Phase 3 — Manual scenes from `toggle.py`
 
-Status: **not started**
+Status: **complete — validated with QLC+ on macOS**
 
-- [ ] add a scene-to-OSC-path mapping;
-- [ ] deactivate the previous scene before activating the new one;
-- [ ] avoid duplicate commands when selection does not change;
-- [ ] define behavior for an unmapped scene;
-- [ ] implement `off` and blackout behavior;
-- [ ] validate navigation, clicking, searching, and reloading.
+- [x] add a scene-to-OSC-path mapping;
+- [x] make Enttec fixture profiles optional and unused in `qlc-osc` mode;
+- [x] replace QLC+ profile filtering with a logical scene configuration containing no fixtures, DMX channels, or hardware addresses;
+- [x] keep the default QLC+ launch free of a material-profile choice;
+- [x] isolate scene activation from curses so the same command path can be called by a future headless service;
+- [x] deactivate the previous scene before activating the new one;
+- [x] avoid duplicate commands when selection does not change;
+- [x] define behavior for an unmapped scene;
+- [x] implement `off` and blackout behavior;
+- [x] validate keyboard navigation, searching, and reloading.
 
-Exit criterion: a complete manual session controls QLC+ without Oculizer opening a DMX interface.
+Exit criterion: a complete manual session controls QLC+ without loading an Enttec fixture profile or opening a DMX interface, and the scene-command layer has no dependency on curses.
 
 ### Phase 4 — Automatic prediction
 
@@ -248,7 +249,9 @@ Status: **not started**
 - [ ] preserve smoothing and fallbacks;
 - [ ] preserve manual override;
 - [ ] log the requested scene, fallback, and activated QLC+ scene;
-- [ ] send nothing when the logical state has not changed.
+- [ ] send nothing when the logical state has not changed;
+- [ ] provide a non-interactive application mode that starts prediction and QLC+ control without curses or terminal input;
+- [ ] handle `SIGTERM` and `SIGINT` with the same safe shutdown path.
 
 Exit criterion: automatic transitions and return from override are consistent in QLC+.
 
@@ -294,6 +297,8 @@ Status: **not started**
 - [ ] remove assumptions about macOS paths or devices;
 - [ ] prepare reproducible installation;
 - [ ] create separate systemd services for QLC+ and Oculizer;
+- [ ] run Oculizer through its non-interactive mode with no TTY requirement;
+- [ ] configure service user, working directory, environment, logs, and graceful stop behavior;
 - [ ] order startup and configure restart policies;
 - [ ] accept the QLC+ `.qxw` workspace path through configuration or a command-line option;
 - [ ] validate the configured workspace path before starting QLC+;
@@ -558,6 +563,57 @@ Manual validation:
 - the operator can navigate the keyboard-only scene grid, select an item, and confirm it with `Enter`;
 - `Ctrl+T` returns from the selector and the application shuts down without opening audio or direct-DMX hardware;
 - no QLC+ scene change is expected yet because scene-to-OSC mapping begins in phase 3.
+
+### 2026-08-03 — QLC+ profile separation and headless-service requirements
+
+Roadmap decision:
+
+- phase 3 will stop loading Enttec fixture profiles in `qlc-osc` mode and introduce a hardware-independent logical scene mapping;
+- the QLC+ launch path will not ask the operator to choose a DMX fixture profile;
+- scene commands will be separated from curses so manual and automatic callers share the same backend behavior;
+- phase 4 will provide a non-interactive runtime with signal-aware safe shutdown;
+- phase 8 will package that runtime and QLC+ as ordered Raspberry Pi systemd services with no TTY requirement.
+
+Rationale:
+
+- QLC+ owns fixtures, patching, DMX channels, and hardware addresses in the hybrid architecture;
+- a production Raspberry Pi must start and recover without an interactive terminal or operator input.
+
+### 2026-08-03 — Phase 3 manual QLC+ scene implementation
+
+Implemented:
+
+- added validated logical scene-map parsing in `oculizer/light/scene_map.py` and the replaceable `config/qlc_scene_map.json` mapping;
+- mapped the reference logical `party` scene to the already validated `/test` QLC+ toggle and added the logical `off` action;
+- implemented complete configurable press/release pulses, previous-scene deactivation, logical active-state tracking, duplicate suppression, unmapped-scene handling, off, and blackout behavior in `QLCOscBackend`;
+- made `Oculizer.change_scene()` the curses-independent scene command path and preserved SceneManager state when output activation fails;
+- stopped loading fixture profiles in QLC+ mode and retained platform profile defaults only for Enttec;
+- restricted the QLC+ selector to mapped logical scenes and made `Ctrl+R` reload both scene files and the logical mapping;
+- corrected SceneManager reloads to use their resolved scene-directory path rather than the process working directory;
+- exposed `--scene-map PATH` from both application entry points.
+
+Validated:
+
+- 23 focused tests pass across mapping validation, backend transitions, OSC transport, configuration, hardware isolation, and shutdown;
+- Python compilation passes for both entry points and all phase-3 modules;
+- tests verify that a transition pulses the previous toggle before the next toggle, a duplicate selection sends nothing, `off` clears the tracked scene, and an unmapped scene preserves state;
+- tests verify that QLC+ mode loads neither an Enttec fixture profile nor audio or serial hardware;
+- CLI tests verify that QLC+ leaves the fixture profile unset while Enttec retains its macOS default.
+
+Known integration boundary:
+
+- the reference workspace currently provides only `/test`; therefore `party` is the sole active test mapping and `off` deactivates it;
+- QLC+ toggle state is assumed to be off at application startup because OSC feedback is deferred to the state/robustness phase.
+
+Remaining validation:
+
+- none; the operator confirmed that `party`, duplicate suppression, `off`, and reload behave as documented against QLC+ on macOS.
+
+Naming decision:
+
+- the mapping remains under `config/` because it routes logical scenes into a deployment-specific QLC+ workspace;
+- it was renamed from `qlc_scenes.json` to `qlc_scene_map.json` to distinguish routing configuration from the artistic scene definitions under `scenes/`;
+- manual selection in `toggle.py` is both an integration test surface and an operator override; phase 4 will drive the same command layer automatically from audio predictions.
 
 Validated:
 

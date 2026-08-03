@@ -1,0 +1,13 @@
+{
+  "pulse_seconds": 0.1,
+  "unmapped": "ignore",
+  "scenes": {
+    "party": {
+      "action": "toggle",
+      "path": "/test"
+    },
+    "off": {
+      "action": "off"
+    }
+  }
+}

@@ -184,7 +184,7 @@ class SceneManager:
     def reload_scenes(self):
         """Reload all scenes from disk, preserving current scene if possible"""
         current_scene_name = self.current_scene['name']
-        self.scenes = self.load_json_files('scenes')
+        self.scenes = self.load_json_files(self.scenes_directory)
         # Try to restore the previous scene, fall back to 'party' or first scene if not found
         if current_scene_name in self.scenes:
             self.current_scene = self.scenes[current_scene_name]

@@ -134,18 +134,18 @@ class AudioOculizerController:
                  dual_stream=True, prediction_device=None, predictor_version='v4',
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
                  test_mode=False, output='enttec', osc_config=None, osc_host=None,
-                 osc_port=None, osc_dry_run=None):
+                 osc_port=None, osc_dry_run=None, scene_map=None):
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
         self.test_mode = test_mode
         
         # Load profile first to get available fixtures for SceneManager
-        profile_fixtures = self._load_profile_fixtures(profile)
+        profile_fixtures = self._load_profile_fixtures(profile) if output == 'enttec' else set()
         
         # Initialize SceneManager with profile awareness for scene fallbacks
         self.scene_manager = SceneManager('scenes', 
-                                         profile_name=profile, 
+                                         profile_name=profile if output == 'enttec' else None,
                                          available_fixtures=profile_fixtures)
         
         # Initialize Oculizer with scene prediction support
@@ -165,6 +165,7 @@ class AudioOculizerController:
             test_mode=test_mode,
             output=output,
             osc_config_path=osc_config,
+            osc_scene_map_path=scene_map,
             osc_host=osc_host,
             osc_port=osc_port,
             osc_dry_run=osc_dry_run
@@ -900,8 +901,8 @@ Scene Cache Size:
     )
     parser.add_argument('--config', default=None,
                       help='General Oculizer JSON configuration (default: config/oculizer.json)')
-    parser.add_argument('-p', '--profile', type=str, default=default_profile,
-                      help=f'Lighting profile to use (default: {default_profile})')
+    parser.add_argument('-p', '--profile', type=str, default=None,
+                      help=f'Enttec fixture profile (default for Enttec: {default_profile}; unused for QLC+)')
     parser.add_argument('-i', '--input-device', type=str, default=None,
                       help='Override the configured FFT audio input with default, an alias, a name, or an index')
     parser.add_argument('--prediction-device', type=str, default=None,
@@ -923,6 +924,8 @@ Scene Cache Size:
                       help='Lighting output backend (default: enttec)')
     parser.add_argument('--osc-config', default=None,
                       help='QLC+ OSC JSON configuration (default: config/qlc_osc.json)')
+    parser.add_argument('--scene-map', default=None,
+                      help='Logical QLC+ scene map (default: config/qlc_scene_map.json)')
     parser.add_argument('--osc-host', default=None,
                       help='Override the QLC+ OSC destination host')
     parser.add_argument('--osc-port', type=int, default=None,
@@ -938,11 +941,13 @@ Scene Cache Size:
         parser.error(str(exc))
     if args.input_device is None:
         args.input_device = configured_audio_input(config)
+    if args.profile is None and args.output == 'enttec':
+        args.profile = default_profile
     return args
 
 def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
          average_dual_channels, scene_cache_size, prediction_channels, test_mode,
-         output, osc_config, osc_host, osc_port, osc_dry_run):
+         output, osc_config, scene_map, osc_host, osc_port, osc_dry_run):
     setup_colors()
     controller = AudioOculizerController(
         stdscr, 
@@ -957,6 +962,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         test_mode=test_mode,
         output=output,
         osc_config=osc_config,
+        scene_map=scene_map,
         osc_host=osc_host,
         osc_port=osc_port,
         osc_dry_run=osc_dry_run
@@ -1056,6 +1062,7 @@ if __name__ == "__main__":
             args.test,
             args.output,
             args.osc_config,
+            args.scene_map,
             args.osc_host,
             args.osc_port,
             args.osc_dry_run

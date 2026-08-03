@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+import time
 from abc import ABC, abstractmethod
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Mapping
 
 from oculizer.light.osc_client import OscClient, OscConfig
+from oculizer.light.scene_map import SceneMap
 
 
 logger = logging.getLogger(__name__)
@@ -108,16 +110,66 @@ class QLCOscBackend(LightingBackend):
 
     name = OUTPUT_QLC_OSC
 
-    def __init__(self, client: OscClient):
+    def __init__(self, client: OscClient, scene_map: SceneMap, scene_map_path: str | Path | None = None):
         self.client = client
+        self.scene_map = scene_map
+        self.scene_map_path = Path(scene_map_path) if scene_map_path is not None else None
+        self.active_scene: str | None = None
+
+    def reload_scene_map(self) -> None:
+        if self.scene_map_path is None:
+            return
+        self.scene_map = SceneMap.from_file(self.scene_map_path)
+
+    def _pulse(self, path: str) -> bool:
+        pressed = self.client.press(path)
+        if self.scene_map.pulse_seconds:
+            time.sleep(self.scene_map.pulse_seconds)
+        released = self.client.release(path)
+        return pressed and released
 
     def activate_scene(self, scene_name: str) -> bool:
-        logger.debug("QLC+ scene activation is deferred to phase 3: %s", scene_name)
-        return False
+        control = self.scene_map.get(scene_name)
+        if control is None:
+            message = f"QLC+ scene '{scene_name}' has no OSC mapping"
+            if self.scene_map.unmapped == "error":
+                raise KeyError(message)
+            logger.warning(message)
+            return False
+        if scene_name == self.active_scene:
+            logger.debug("QLC+ scene '%s' is already active", scene_name)
+            return True
+
+        if self.active_scene is not None and not self.deactivate_scene(self.active_scene):
+            return False
+
+        if control.action == "off":
+            self.active_scene = None
+            return True
+        if control.action == "blackout":
+            success = self.blackout(True)
+        else:
+            success = self._pulse(control.path)
+        if success:
+            self.active_scene = scene_name
+        return success
 
     def deactivate_scene(self, scene_name: str) -> bool:
-        logger.debug("QLC+ scene deactivation is deferred to phase 3: %s", scene_name)
-        return False
+        if scene_name != self.active_scene:
+            return True
+        control = self.scene_map.get(scene_name)
+        if control is None:
+            logger.warning("Cannot deactivate unmapped QLC+ scene '%s'", scene_name)
+            return False
+        if control.action == "toggle":
+            success = self._pulse(control.path)
+        elif control.action == "blackout":
+            success = self.blackout(False)
+        else:
+            success = True
+        if success:
+            self.active_scene = None
+        return success
 
     def set_parameter(self, name: str, value: float) -> bool:
         address = name if name.startswith("/") else f"/oculizer/{name}"
@@ -132,6 +184,7 @@ class QLCOscBackend(LightingBackend):
 
 def create_qlc_osc_backend(
     config_path: str | Path,
+    scene_map_path: str | Path,
     *,
     host: str | None = None,
     port: int | None = None,
@@ -149,4 +202,8 @@ def create_qlc_osc_backend(
     if overrides:
         config = replace(config, **overrides)
         config.validate()
-    return QLCOscBackend(OscClient(config))
+    return QLCOscBackend(
+        OscClient(config),
+        SceneMap.from_file(scene_map_path),
+        scene_map_path=scene_map_path,
+    )

@@ -27,15 +27,15 @@ Oculizer is designed to create a music-driven light show with three levels of co
 2. FFT analysis modulates lighting parameters in real time;
 3. the operator can manually select a scene and later return to automatic mode.
 
-The QLC+ 5 target will preserve this logic while moving hardware patching, lighting functions, and DMX output into QLC+. Development currently takes place on macOS with a local QLC+ instance. The production target is a Raspberry Pi 5 running Raspberry Pi OS, with QLC+ 5 and Oculizer on the same machine.
+The QLC+ 5 target will preserve this logic while moving hardware patching, lighting functions, and DMX output into QLC+. Development currently takes place on macOS with a local QLC+ instance. The production target is a Raspberry Pi 5 running Raspberry Pi OS, with QLC+ 5 and Oculizer on the same machine. Production operation will use a non-interactive Oculizer mode managed as a service; curses will remain an optional operator interface rather than a service dependency.
 
 ## Current prerequisites
 
 - Python 3.8 or newer;
 - an audio input available through PortAudio;
 - a virtual audio cable when required, such as BlackHole on macOS;
-- an Enttec USB DMX Pro-compatible interface for the current output path;
-- DMX fixtures addressed according to the selected profile.
+- an Enttec USB DMX Pro-compatible interface only when using the `enttec` backend;
+- DMX fixtures addressed according to the selected profile only when using the `enttec` backend.
 
 A CUDA-capable GPU accelerates the model but is not required. Initial model loading can take several seconds on a CPU.
 
@@ -66,6 +66,8 @@ The main directories and configuration files are:
 - `templates/`: scene examples;
 - `config/oculizer.json`: general runtime configuration, including the audio input selector;
 - `config/audio_parameters.json`: audio capture and analysis parameters;
+- `config/qlc_osc.json`: QLC+ OSC transport settings;
+- `config/qlc_scene_map.json`: deployment-specific mapping from logical Oculizer scenes to QLC+ OSC controls;
 - `profile_fallbacks.json`: profile-specific scene substitutions.
 
 List available audio devices:
@@ -86,17 +88,17 @@ By default, `config/oculizer.json` contains:
 
 `default` selects the input exposed as default by the operating system through PortAudio. This keeps the same configuration portable across CoreAudio on macOS and the available PortAudio host API on Linux. The selector may instead be an alias (`blackhole`, `scarlett`, or `cable_output`), a full or partial device name, or a numeric index. Names are preferable to indexes because indexes can change after a restart.
 
-The command line overrides the configuration. For example, use BlackHole for one launch:
+The command line overrides the configuration. For example, use BlackHole for an Enttec-backed launch:
 
 ```bash
-python toggle.py --input blackhole --output qlc-osc
+python toggle.py --input blackhole --output enttec
 ```
 
 Or select another input by name or index:
 
 ```bash
-python toggle.py --input "Microphone iMac" --output qlc-osc
-python toggle.py --input 0 --output qlc-osc
+python toggle.py --input "Microphone iMac" --output enttec
+python toggle.py --input 0 --output enttec
 ```
 
 An alternative general configuration can be supplied with `--config PATH`.
@@ -147,6 +149,16 @@ Run the standalone selector with:
 python toggle.py --profile garage2025 --input blackhole
 ```
 
+For QLC+, no fixture profile or audio input is required:
+
+```bash
+python toggle.py --output qlc-osc --osc-config config/qlc_osc.json --scene-map config/qlc_scene_map.json
+```
+
+Only logical scenes declared in `config/qlc_scene_map.json` are displayed. The reference mapping exposes `party`, which pulses the validated `/test` QLC+ toggle button, and `off`, which deactivates the currently tracked toggle. The reference QLC+ button must be off before starting because this phase has logical state tracking but no OSC state feedback yet.
+
+This file belongs in `config/`, not `scenes/`: files under `scenes/` describe Oculizer's artistic scene semantics, while the QLC+ scene map describes deployment routing for a particular QLC+ workspace. `toggle.py` is the manual validation and operator interface. Automatic audio-driven selection will call the same scene-command layer in phase 4, and the Raspberry Pi service will not require an interactive choice.
+
 Without `--input`, `toggle.py` uses the selector from `config/oculizer.json`, which defaults to the operating-system input. Inspect the inputs visible to the current Python environment with:
 
 ```bash
@@ -159,11 +171,11 @@ Controls:
 - `Enter`: activate a scene;
 - typing letters: search by prefix;
 - `Escape`: clear the search;
-
-The standalone selector is intentionally keyboard-only. Terminal mouse protocols vary across macOS integrated terminals, Linux consoles, and SSH sessions and can otherwise expose raw escape sequences in the interface.
-- `Ctrl+R`: reload scenes;
+- `Ctrl+R`: reload scenes and the QLC+ logical mapping;
 - `Ctrl+T`: return to the automatic interface when it launched the selector;
 - `Ctrl+Q`: quit.
+
+The standalone selector is intentionally keyboard-only. Terminal mouse protocols vary across macOS integrated terminals, Linux consoles, and SSH sessions and can otherwise expose raw escape sequences in the interface.
 
 In the integrated selector, predictions continue in the background. A manual selection enables override mode; `Ctrl+O` switches between manual override and automatic prediction following.
 
@@ -235,7 +247,7 @@ python test_fallbacks_simple.py
 
 ## Project status
 
-Direct DMX output remains available. The OSC transport and interchangeable-backend milestones are complete; manual scene selection, automatic prediction, and continuous audio modulation will be connected in subsequent milestones.
+Direct DMX output remains available. OSC transport and interchangeable backends are complete. Manual QLC+ scene selection is implemented and awaiting validation against the reference workspace; automatic prediction and continuous audio modulation remain subsequent milestones.
 
 The milestone-0 QLC+ connection can be checked after configuring the test control in QLC+:
 
@@ -252,7 +264,7 @@ python toggle.py --output qlc-osc
 python oculize.py --output qlc-osc
 ```
 
-Use `--osc-config PATH`, `--osc-host HOST`, and `--osc-port PORT` to override the configured destination, or `--osc-dry-run` to exercise startup and shutdown without sending packets. Selecting `qlc-osc` never initializes or probes the serial DMX controller. At the current phase boundary, this backend initializes the OSC transport and supports intent-level parameters and blackout; scene selection is deliberately not sent to QLC+ until the scene mapping introduced in phase 3.
+Use `--osc-config PATH`, `--scene-map PATH`, `--osc-host HOST`, and `--osc-port PORT` to override the configured destination and logical mapping, or `--osc-dry-run` to exercise startup and shutdown without sending packets. Selecting `qlc-osc` never loads a fixture profile or initializes audio or serial DMX hardware in the standalone manual selector.
 
 The standalone `toggle.py` selector does not open an audio stream in `qlc-osc` mode because manual selection has no audio consumer. Audio capture remains enabled for direct reactive Enttec rendering and for automatic scene prediction in `oculize.py`.
 

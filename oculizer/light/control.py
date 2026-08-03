@@ -50,7 +50,8 @@ class Oculizer(threading.Thread):
                  scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v1',
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
                  test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
-                 osc_config_path=None, osc_host=None, osc_port=None, osc_dry_run=None):
+                 osc_config_path=None, osc_scene_map_path=None, osc_host=None,
+                 osc_port=None, osc_dry_run=None):
         threading.Thread.__init__(self)
         self.profile_name = profile_name
         self.input_device = str(input_device).strip()
@@ -64,7 +65,9 @@ class Oculizer(threading.Thread):
         self.mfft_queue = queue.Queue(maxsize=1)
         self.running = threading.Event()
         self.scene_manager = scene_manager
-        self.profile = self._load_profile()
+        # QLC+ owns fixtures and DMX patching. Only the Enttec backend loads a
+        # hardware profile from Oculizer.
+        self.profile = self._load_profile() if output == OUTPUT_ENTTEC and not test_mode else {"lights": []}
         self.light_names = [i['name'] for i in self.profile['lights']]
         # Test mode disables all lighting output. Otherwise select the requested backend.
         if test_mode:
@@ -77,8 +80,12 @@ class Oculizer(threading.Thread):
             if osc_config_path is None:
                 current_dir = Path(__file__).resolve().parent
                 osc_config_path = current_dir.parent.parent / 'config' / 'qlc_osc.json'
+            if osc_scene_map_path is None:
+                current_dir = Path(__file__).resolve().parent
+                osc_scene_map_path = current_dir.parent.parent / 'config' / 'qlc_scene_map.json'
             self.backend = create_qlc_osc_backend(
                 osc_config_path,
+                osc_scene_map_path,
                 host=osc_host,
                 port=osc_port,
                 dry_run=osc_dry_run,
@@ -1082,6 +1089,11 @@ class Oculizer(threading.Thread):
                 print(f"Error processing light {light_name}: {str(e)} (Error type: {type(e).__name__})")
 
     def change_scene(self, scene_name):
+        # The backend owns output-state transitions. If activation fails (for
+        # example, because the logical scene is unmapped), preserve the current
+        # SceneManager state and report the failed command to the caller.
+        if not self.backend.activate_scene(scene_name):
+            return False
         # Reset all effect states before changing scene
         reset_effect_states()
         self.scene_manager.set_scene(scene_name)
@@ -1090,6 +1102,29 @@ class Oculizer(threading.Thread):
         # Set flag for main loop to handle the transition
         self.scene_changed.set()
         # Main loop will turn off lights and apply new scene
+        return True
+
+    def restrict_scenes_to_backend(self):
+        """Apply a hardware-independent QLC+ scene catalog when applicable."""
+        if self.output != OUTPUT_QLC_OSC:
+            return
+        self.scene_manager.scenes = {
+            name: self.scene_manager.scenes[name]
+            for name in self.backend.scene_map.scenes
+            if name in self.scene_manager.scenes
+        }
+        if not self.scene_manager.scenes:
+            raise ValueError("The QLC+ scene map contains no scene known to Oculizer")
+        current_name = self.scene_manager.current_scene['name']
+        if current_name not in self.scene_manager.scenes:
+            self.scene_manager.set_scene(next(iter(self.scene_manager.scenes)), apply_fallback=False)
+
+    def reload_scene_configuration(self):
+        """Reload scene JSON and the QLC+ logical map without curses coupling."""
+        self.scene_manager.reload_scenes()
+        if self.output == OUTPUT_QLC_OSC:
+            self.backend.reload_scene_map()
+            self.restrict_scenes_to_backend()
 
     def get_light_type(self, light_name):
         """Helper function to get light type from profile."""

@@ -37,8 +37,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Interactive scene toggler for Oculizer')
     parser.add_argument('--config', default=None,
                       help='General Oculizer JSON configuration (default: config/oculizer.json)')
-    parser.add_argument('-p', '--profile', type=str, default=default_profile,
-                      help=f'Profile to use (default: {default_profile})')
+    parser.add_argument('-p', '--profile', type=str, default=None,
+                      help=f'Enttec fixture profile (default for Enttec: {default_profile}; unused for QLC+)')
     parser.add_argument('-i', '--input', type=str, default=None,
                       help='Override the configured audio input with default, an alias, a name, or an index')
     parser.add_argument('--average-dual-channels', action='store_true',
@@ -47,6 +47,8 @@ def parse_args():
                       help='Lighting output backend (default: enttec)')
     parser.add_argument('--osc-config', default=None,
                       help='QLC+ OSC JSON configuration (default: config/qlc_osc.json)')
+    parser.add_argument('--scene-map', default=None,
+                      help='Logical QLC+ scene map (default: config/qlc_scene_map.json)')
     parser.add_argument('--osc-host', default=None,
                       help='Override the QLC+ OSC destination host')
     parser.add_argument('--osc-port', type=int, default=None,
@@ -62,6 +64,8 @@ def parse_args():
         parser.error(str(exc))
     if args.input is None:
         args.input = configured_audio_input(config)
+    if args.profile is None and args.output == 'enttec':
+        args.profile = default_profile
     return args
 
 
@@ -221,7 +225,7 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
                     return False  # Return to oculizer mode
                 elif event == 18:  # Ctrl+R
                     try:
-                        scene_manager.reload_scenes()
+                        light_controller.reload_scene_configuration()
                         scene_manager.scenes = sort_scenes_alphabetically(scene_manager.scenes)
                         light_controller.change_scene(current_scene_name)
                         scene_list = list(scene_manager.scenes.items())
@@ -250,8 +254,13 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
                 elif event in [curses.KEY_ENTER, 10, 13]:  # Enter key
                     if 0 <= selected_index < total_scenes:
                         new_scene = scene_list[selected_index][0]
-                        light_controller.change_scene(new_scene)
-                        current_scene_name = new_scene
+                        if light_controller.change_scene(new_scene):
+                            current_scene_name = new_scene
+                        else:
+                            message = f"Scene '{new_scene}' has no active output mapping"
+                            stdscr.addstr(max_y - 2, 0, message[:max_x - 1], curses.color_pair(1))
+                            stdscr.refresh()
+                            time.sleep(1)
                         search_string = ""
                 elif event == 27:  # ESC key
                     search_string = ""
@@ -279,22 +288,27 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
         curses.mousemask(0)  # Disable mouse events
 
 def main(stdscr, profile, input_device, average_dual_channels, output, osc_config,
-         osc_host, osc_port, osc_dry_run):
+         scene_map, osc_host, osc_port, osc_dry_run):
     # Load profile fixtures for scene manager
     from pathlib import Path
     profile_fixtures = set()
-    try:
-        profile_path = Path(__file__).resolve().parent / 'profiles' / f'{profile}.json'
-        if profile_path.exists():
-            with open(profile_path, 'r') as f:
-                profile_data = json.load(f)
-                if 'lights' in profile_data:
-                    profile_fixtures = {light['name'] for light in profile_data['lights'] if 'name' in light}
-    except Exception as e:
-        pass  # Fall back to no profile awareness
+    if output == 'enttec':
+        try:
+            profile_path = Path(__file__).resolve().parent / 'profiles' / f'{profile}.json'
+            if profile_path.exists():
+                with open(profile_path, 'r') as f:
+                    profile_data = json.load(f)
+                    if 'lights' in profile_data:
+                        profile_fixtures = {light['name'] for light in profile_data['lights'] if 'name' in light}
+        except Exception:
+            pass  # Fall back to no profile awareness
     
     # Initialize scene manager with profile awareness
-    scene_manager = SceneManager('scenes', profile_name=profile, available_fixtures=profile_fixtures)
+    scene_manager = SceneManager(
+        'scenes',
+        profile_name=profile if output == 'enttec' else None,
+        available_fixtures=profile_fixtures if output == 'enttec' else None,
+    )
     scene_manager.set_scene('party')  # Set an initial scene
     light_controller = Oculizer(
         profile,
@@ -303,15 +317,24 @@ def main(stdscr, profile, input_device, average_dual_channels, output, osc_confi
         average_dual_channels=average_dual_channels,
         output=output,
         osc_config_path=osc_config,
+        osc_scene_map_path=scene_map,
         osc_host=osc_host,
         osc_port=osc_port,
         osc_dry_run=osc_dry_run,
     )
+
+    if output == 'qlc-osc':
+        light_controller.restrict_scenes_to_backend()
     light_controller.start()
     
     try:
         # Run toggle mode (standalone always exits on Ctrl+Q)
-        run_toggle_mode(stdscr, scene_manager, light_controller, profile)
+        run_toggle_mode(
+            stdscr,
+            scene_manager,
+            light_controller,
+            profile if output == 'enttec' else 'QLC+ logical',
+        )
     finally:
         light_controller.stop()
         light_controller.join()
@@ -330,6 +353,7 @@ if __name__ == '__main__':
             args.average_dual_channels,
             args.output,
             args.osc_config,
+            args.scene_map,
             args.osc_host,
             args.osc_port,
             args.osc_dry_run,

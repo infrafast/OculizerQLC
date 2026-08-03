@@ -1,0 +1,77 @@
+"""Logical Oculizer scene to QLC+ OSC control mapping."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Mapping
+
+
+class SceneMapError(ValueError):
+    """Raised when the logical QLC+ scene map is invalid."""
+
+
+@dataclass(frozen=True)
+class SceneControl:
+    path: str | None = None
+    action: str = "toggle"
+
+
+@dataclass(frozen=True)
+class SceneMap:
+    scenes: Mapping[str, SceneControl]
+    pulse_seconds: float = 0.1
+    unmapped: str = "ignore"
+
+    @classmethod
+    def from_file(cls, path: str | Path) -> "SceneMap":
+        scene_map_path = Path(path).expanduser()
+        try:
+            with scene_map_path.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except FileNotFoundError as exc:
+            raise SceneMapError(f"QLC+ scene map not found: {scene_map_path}") from exc
+        except json.JSONDecodeError as exc:
+            raise SceneMapError(f"Invalid JSON in QLC+ scene map {scene_map_path}: {exc}") from exc
+        return cls.from_mapping(data)
+
+    @classmethod
+    def from_mapping(cls, data: Mapping[str, Any]) -> "SceneMap":
+        if not isinstance(data, Mapping):
+            raise SceneMapError("QLC+ scene map must be a JSON object")
+        raw_scenes = data.get("scenes", {})
+        if not isinstance(raw_scenes, Mapping):
+            raise SceneMapError("QLC+ scene map 'scenes' must be an object")
+
+        pulse_seconds = data.get("pulse_seconds", 0.1)
+        if isinstance(pulse_seconds, bool) or not isinstance(pulse_seconds, (int, float)):
+            raise SceneMapError("pulse_seconds must be numeric")
+        if not 0.0 <= float(pulse_seconds) <= 2.0:
+            raise SceneMapError("pulse_seconds must be between 0 and 2 seconds")
+
+        unmapped = data.get("unmapped", "ignore")
+        if unmapped not in {"ignore", "error"}:
+            raise SceneMapError("unmapped must be 'ignore' or 'error'")
+
+        scenes = {}
+        for name, raw_control in raw_scenes.items():
+            if not isinstance(name, str) or not name.strip():
+                raise SceneMapError("scene names must be non-empty strings")
+            if not isinstance(raw_control, Mapping):
+                raise SceneMapError(f"scene '{name}' control must be an object")
+            action = raw_control.get("action", "toggle")
+            if action not in {"toggle", "off", "blackout"}:
+                raise SceneMapError(f"scene '{name}' has unsupported action '{action}'")
+            path = raw_control.get("path")
+            if action == "toggle":
+                if not isinstance(path, str) or not path.startswith("/"):
+                    raise SceneMapError(f"scene '{name}' toggle path must start with '/'")
+            elif path is not None:
+                raise SceneMapError(f"scene '{name}' action '{action}' must not define a path")
+            scenes[name] = SceneControl(path=path, action=action)
+
+        return cls(scenes=scenes, pulse_seconds=float(pulse_seconds), unmapped=unmapped)
+
+    def get(self, scene_name: str) -> SceneControl | None:
+        return self.scenes.get(scene_name)
