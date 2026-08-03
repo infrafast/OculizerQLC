@@ -145,7 +145,7 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         now = [0.0]
         router = AutomaticSceneRouter(engine, speech_config=SpeechConfig(minimum_duration_seconds=1, release_duration_seconds=1), clock=lambda: now[0])
         engine.current_audioset_scores = {"speech": 0.8, "music": 0.2, "singing": 0.0}
-        self.assertTrue(router.step())
+        self.assertFalse(router.step())  # Hold the current scene while speech is confirmed.
         now[0] = 1.0
         self.assertTrue(router.step())
         engine.current_audioset_scores = {"speech": 0.3, "music": 0.7, "singing": 0.7}
@@ -153,7 +153,40 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         self.assertFalse(router.step())
         now[0] = 3.0
         self.assertTrue(router.step())
-        self.assertEqual(engine.changes, ["wave", "announcement", "wave"])
+        self.assertEqual(engine.changes, ["announcement", "wave"])
+
+    def test_ambiguous_scores_hold_announcement_instead_of_leaking_music_scenes(self):
+        engine = FakeOculizer()
+        engine.targets["announcement"] = "announcement"
+        engine.current_predicted_scene = "wave"
+        now = [0.0]
+        router = AutomaticSceneRouter(
+            engine,
+            speech_config=SpeechConfig(minimum_duration_seconds=0, release_duration_seconds=1),
+            clock=lambda: now[0],
+        )
+
+        engine.current_audioset_scores = {"speech": 0.8, "music": 0.01, "singing": 0.0}
+        self.assertTrue(router.step())
+        engine.current_audioset_scores = {"speech": 0.3, "music": 0.01, "singing": 0.0}
+        now[0] = 5.0
+        self.assertFalse(router.step())
+
+        self.assertTrue(router.speech_active)
+        self.assertEqual(engine.changes, ["announcement"])
+
+    def test_music_prediction_waits_for_dominant_music_scores(self):
+        engine = FakeOculizer()
+        engine.current_predicted_scene = "wave"
+        router = AutomaticSceneRouter(engine, speech_config=SpeechConfig())
+
+        self.assertFalse(router.step())  # No semantic scores are available yet.
+        engine.current_audioset_scores = {"speech": 0.2, "music": 0.2, "singing": 0.0}
+        self.assertFalse(router.step())
+        engine.current_audioset_scores = {"speech": 0.1, "music": 0.8, "singing": 0.0}
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["wave"])
 
 
 class HeadlessServiceTests(unittest.TestCase):

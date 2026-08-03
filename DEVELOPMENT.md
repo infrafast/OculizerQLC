@@ -788,6 +788,24 @@ Live validation:
 - the operator confirmed working transitions between announcement, music, and silence with QLC+ on macOS;
 - phase 4b is complete and continuous master modulation is now the next implementation phase.
 
+### 2026-08-03 — Speech transition stability correction
+
+Observed:
+
+- a voice-only recording repeatedly produced low-level `wave` cluster predictions;
+- the router briefly activated their `party` fallback before confirming speech and whenever speech confidence dipped between phrases;
+- music confidence remained near zero during those dips, so the scene changes were not supported by semantic evidence.
+
+Implemented:
+
+- hold the current scene while dominant speech is completing its entry duration;
+- preserve `announcement` across ambiguous or low-confidence voice windows;
+- begin the configured release timer only when music is dominant over speech;
+- allow ordinary cluster scenes only when music is dominant;
+- added regression coverage for pre-announcement cluster leakage and speech-gap oscillation.
+
+Validation gate: repeat the voice-only recording and confirm that `party` is no longer activated between `off` and `announcement`, or between spoken phrases.
+
 ## Instructions for developers and coding agents
 
 ### Before making changes

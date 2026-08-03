@@ -192,7 +192,7 @@ Once silence is active, heavy model inference is suspended and queued audio is d
 
 Speech-aware routing reuses EfficientAT's existing AudioSet outputs to distinguish dominant spoken announcements from music and singing. It supports a configurable announcement scene, confidence thresholds, timing hysteresis, and conservative behavior for ambiguous speech mixed with music. It does not require a separate microphone input or second large model.
 
-Speech-aware routing is configured under `audio.speech` in `config/oculizer.json`. The default policy requires speech confidence `0.55`, a `0.15` lead over music, 0.5 seconds of stable speech, and a 0.75-second release. It routes to the logical `announcement` scene at `/oculizer/scenes/announcement`; singing contributes to music rather than speech.
+Speech-aware routing is configured under `audio.speech` in `config/oculizer.json`. The default policy requires speech confidence `0.55`, a `0.15` lead over music, 0.5 seconds of stable speech, and a 0.75-second release. It routes to the logical `announcement` scene at `/oculizer/scenes/announcement`; singing contributes to music rather than speech. While speech is being confirmed, or while neither speech nor music is dominant, the router preserves the current QLC+ scene. It releases `announcement` only after dominant music remains stable for the configured release duration, preventing short pauses in speech from leaking cluster scenes such as `wave` into the output.
 
 Without `--input`, `toggle.py` uses the selector from `config/oculizer.json`, which defaults to the operating-system input. Inspect the inputs visible to the current Python environment with:
 

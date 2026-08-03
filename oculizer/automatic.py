@@ -28,23 +28,35 @@ class AutomaticSceneRouter:
         self.speech_started_at = None
         self.speech_release_at = None
 
-    def _update_speech_state(self):
+    def _update_speech_state(self) -> str:
+        """Return speech, music, or hold after applying semantic hysteresis."""
         if not self.speech_config.enabled:
-            return
+            return "music"
         scores = getattr(self.oculizer, "current_audioset_scores", None)
         if not scores:
-            return
+            return "hold"
         now = self.clock()
-        dominant = scores["speech"] >= self.speech_config.threshold and scores["speech"] - scores["music"] >= self.speech_config.music_margin
-        if dominant:
+        speech_score = scores["speech"]
+        music_score = scores["music"]
+        dominant_speech = (
+            speech_score >= self.speech_config.threshold
+            and speech_score - music_score >= self.speech_config.music_margin
+        )
+        dominant_music = (
+            music_score >= self.speech_config.threshold
+            and music_score - speech_score >= self.speech_config.music_margin
+        )
+        if dominant_speech:
             self.speech_release_at = None
             if self.speech_started_at is None:
                 self.speech_started_at = now
             if not self.speech_active and now - self.speech_started_at >= self.speech_config.minimum_duration_seconds:
                 self.speech_active = True
                 self.last_target = None
-                logger.info("Dominant speech detected: speech=%.3f music=%.3f", scores["speech"], scores["music"])
-        else:
+                logger.info("Dominant speech detected: speech=%.3f music=%.3f", speech_score, music_score)
+            return "speech" if self.speech_active else "hold"
+
+        if dominant_music:
             self.speech_started_at = None
             if self.speech_active:
                 self.speech_release_at = self.speech_release_at or now
@@ -53,6 +65,18 @@ class AutomaticSceneRouter:
                     self.speech_release_at = None
                     self.last_target = None
                     logger.info("Speech routing released")
+                    return "music"
+                return "speech"
+            return "music"
+
+        # Low-confidence or mixed content must not flip between the speech
+        # scene and a cluster label. Preserve the current routed state until
+        # either speech or music becomes dominant.
+        self.speech_release_at = None
+        if self.speech_active:
+            return "speech"
+        self.speech_started_at = None
+        return "hold"
 
     def _set_prediction_suspended(self, suspended: bool) -> None:
         setter = getattr(self.oculizer, "set_prediction_suspended", None)
@@ -119,9 +143,11 @@ class AutomaticSceneRouter:
         if requested is None and self.silence_active:
             requested = self.silence_config.scene
         if requested is None and not self.silence_active:
-            self._update_speech_state()
-            if self.speech_active:
+            semantic_route = self._update_speech_state()
+            if semantic_route == "speech":
                 requested = self.speech_config.scene
+            elif semantic_route == "hold":
+                return False
         if requested is None:
             requested = self.oculizer.current_predicted_scene
         if not requested:
