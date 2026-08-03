@@ -28,6 +28,8 @@ class HeadlessOculizerService:
 
     def run(self) -> int:
         logger.info("Starting non-interactive Oculizer runtime")
+        self.master_modulator.startup()
+        self.frequency_modulator.startup()
         self.oculizer.start()
         try:
             while not self.stop_event.wait(self.poll_seconds):

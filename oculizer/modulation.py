@@ -34,6 +34,7 @@ class MasterModulator:
         self.clock = clock or time.monotonic
         self.last_update_at: float | None = None
         self.last_sent_value: float | None = None
+        self.last_sent_at: float | None = None
         self.smoothed_value: float | None = None
 
     def _normalize(self, rms: float) -> float:
@@ -62,12 +63,25 @@ class MasterModulator:
             alpha = self.config.smoothing_factor
             self.smoothed_value += alpha * (target - self.smoothed_value)
         value = max(0.0, min(1.0, self.smoothed_value))
-        if self.last_sent_value is not None and abs(value - self.last_sent_value) < self.config.change_threshold:
+        refresh_due = self.last_sent_at is None or now - self.last_sent_at >= self.config.refresh_seconds
+        if not refresh_due and self.last_sent_value is not None and abs(value - self.last_sent_value) < self.config.change_threshold:
             return False
         if not self.oculizer.set_parameter(self.config.parameter, value):
             return False
         self.last_sent_value = value
+        self.last_sent_at = now
         return True
+
+    def startup(self) -> bool:
+        if not self.config.enabled:
+            return False
+        value = self.config.silence_value
+        success = self.oculizer.set_parameter(self.config.parameter, value)
+        if success:
+            self.last_sent_value = value
+            self.smoothed_value = value
+            self.last_sent_at = self.clock()
+        return success
 
     def shutdown(self) -> bool:
         if not self.config.enabled:
@@ -91,6 +105,7 @@ class FrequencyBandModulator:
         self.clock = clock or time.monotonic
         self.last_update_at: float | None = None
         self.last_sent_values: dict[str, float] = {}
+        self.last_sent_at: dict[str, float] = {}
         self.smoothed_values: dict[str, float] = {}
         self.baselines: dict[str, float] = {}
 
@@ -129,12 +144,32 @@ class FrequencyBandModulator:
             else:
                 value = previous + self.config.smoothing_factor * (target - previous)
             self.smoothed_values[name] = value
-            if name in self.last_sent_values and abs(value - self.last_sent_values[name]) < self.config.change_threshold:
+            refresh_due = name not in self.last_sent_at or now - self.last_sent_at[name] >= self.config.refresh_seconds
+            if not refresh_due and name in self.last_sent_values and abs(value - self.last_sent_values[name]) < self.config.change_threshold:
                 continue
             if self.oculizer.set_parameter(band.parameter, value):
                 self.last_sent_values[name] = value
+                self.last_sent_at[name] = now
                 sent = True
         return sent
+
+    def startup(self) -> bool:
+        if not self.config.enabled:
+            return False
+        success = True
+        sent = False
+        now = self.clock()
+        for name, band in (self.config.bands or {}).items():
+            if band.enabled:
+                sent = True
+                value = self.config.silence_value
+                current_success = self.oculizer.set_parameter(band.parameter, value)
+                success = current_success and success
+                if current_success:
+                    self.last_sent_values[name] = value
+                    self.smoothed_values[name] = value
+                    self.last_sent_at[name] = now
+        return sent and success
 
     def shutdown(self) -> bool:
         if not self.config.enabled:

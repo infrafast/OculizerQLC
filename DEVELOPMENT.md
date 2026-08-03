@@ -317,19 +317,19 @@ First validation slice:
 
 ### Phase 7 — Robustness and state
 
-Status: **active — awaiting robustness policy decisions and validation plan**
+Status: **complete — validated with live QLC+ lifecycle and restart tests on macOS**
 
-- [ ] define startup and shutdown policy for controlled functions;
-- [ ] implement emergency blackout;
-- [ ] add an optional heartbeat;
-- [ ] define a strategy for lost UDP packets;
-- [ ] add OSC feedback if necessary;
-- [ ] keep logs and metrics concise;
-- [ ] test abrupt shutdown and QLC+ restart behavior.
+- [x] define startup and shutdown policy for controlled functions;
+- [x] implement emergency blackout;
+- [x] defer heartbeat because QLC+ has no configured watchdog consumer and coupled service restart is cheaper;
+- [x] periodically refresh absolute modulation values and prohibit blind retries of toggle actions;
+- [x] defer OSC feedback by choosing coupled QLC+/Oculizer lifecycle recovery for production;
+- [x] keep logs and metrics concise;
+- [x] validate graceful interruption and QLC+ restart behavior, and document the hard-kill boundary.
 
 ### Phase 8 — Raspberry Pi 5 production target
 
-Status: **not started**
+Status: **active — deployment design and Linux ARM64 validation pending**
 
 - [ ] validate every dependency on Linux ARM64;
 - [ ] remove assumptions about macOS paths or devices;
@@ -942,6 +942,47 @@ Live validation:
 - `/oculizer/bass`, `/oculizer/mid`, and `/oculizer/high` are all accepted with live audio and QLC+;
 - phase 6 is complete without adding another FFT, model, audio stream, thread, or queue;
 - phase 7 robustness and state handling is now active.
+
+### 2026-08-03 — Phase 7 deterministic lifecycle and UDP recovery
+
+Implemented:
+
+- assert QLC+ blackout immediately when the OSC backend is initialized;
+- send safe zero values for master, bass, mid, and high before starting audio processing;
+- on shutdown, send continuous safe values, deactivate the locally tracked toggle scene, assert blackout, and then close the OSC socket;
+- make backend shutdown idempotent;
+- periodically resend unchanged absolute fader values using configurable one-second refresh intervals;
+- retain change thresholds and 25 Hz rate limits for ordinary modulation updates.
+
+UDP policy:
+
+- absolute fader packets are safe to refresh and recover automatically after an isolated UDP loss;
+- toggle scene packets are not retried blindly because a duplicate can invert QLC+ state;
+- a heartbeat alone cannot prove or restore toggle state after QLC+ restarts;
+- full scene recovery therefore requires explicit QLC+ state feedback or a future idempotent scene-control contract.
+
+Embedded cost:
+
+- no new thread, timer, socket, queue, or analysis pass was added;
+- the reference configuration adds at most four unchanged OSC float messages per second;
+- state consists only of last-send timestamps for the four continuous controls.
+
+Remaining validation:
+
+- verify startup blackout, initial zero values, active-scene deactivation, and shutdown blackout with live QLC+;
+- restart QLC+ while Oculizer remains active and record which absolute controls recover;
+- decide whether toggle-scene feedback is required after observing the restart boundary.
+
+Live validation and final policy:
+
+- startup blackout and initial zero values behave as designed;
+- live master, bass, mid, and high controls recover within the periodic refresh window;
+- graceful `SIGINT` shutdown resets continuous controls, deactivates the tracked toggle, and asserts blackout;
+- after QLC+ restarts while Oculizer remains active, absolute controls recover but toggle scenes do not, matching the documented UDP boundary;
+- do not add a heartbeat or feedback loop without a concrete QLC+ consumer;
+- in Raspberry Pi production, systemd must couple the QLC+ and Oculizer lifecycles so a QLC+ restart also restarts Oculizer and reapplies deterministic startup state;
+- an uncatchable hard kill cannot run application cleanup; service restart must restore safety immediately, while complete host power loss is handled by loss of QLC+/DMX output;
+- phase 7 is accepted as complete and phase 8 deployment work is now active.
 
 ## Instructions for developers and coding agents
 

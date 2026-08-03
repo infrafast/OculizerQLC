@@ -69,6 +69,32 @@ class MasterModulatorTests(unittest.TestCase):
         self.assertFalse(modulator.shutdown())
         self.assertEqual(engine.parameters, [])
 
+    def test_startup_zero_and_periodic_refresh_recover_absolute_value(self):
+        engine = FakeOculizer()
+        now = [0.0]
+        engine.current_audio_rms = 0.05
+        modulator = MasterModulator(
+            engine,
+            MasterModulationConfig(
+                enabled=True,
+                input_floor=0.0,
+                input_ceiling=0.1,
+                smoothing_factor=1.0,
+                refresh_seconds=1.0,
+            ),
+            clock=lambda: now[0],
+        )
+
+        self.assertTrue(modulator.startup())
+        now[0] = 0.04
+        self.assertTrue(modulator.update())
+        now[0] = 0.08
+        self.assertFalse(modulator.update())
+        now[0] = 1.04
+        self.assertTrue(modulator.update())
+
+        self.assertEqual(engine.parameters, [("master", 0.0), ("master", 0.5), ("master", 0.5)])
+
 
 class FrequencyBandModulatorTests(unittest.TestCase):
     def make_config(self):

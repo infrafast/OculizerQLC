@@ -52,7 +52,24 @@ class QLCOscBackendTests(unittest.TestCase):
         backend.close()
 
         client.set_level.assert_called_once_with("/show/master", 0.5)
-        client.blackout.assert_called_once_with(False)
+        self.assertEqual(client.blackout.call_args_list, [unittest.mock.call(False), unittest.mock.call(True)])
+        client.close.assert_called_once_with()
+
+    def test_initialize_and_close_enforce_safe_blackout_and_deactivate_scene(self):
+        client = Mock()
+        client.press.return_value = True
+        client.release.return_value = True
+        client.blackout.return_value = True
+        backend = QLCOscBackend(client, self.make_scene_map())
+
+        self.assertTrue(backend.initialize())
+        self.assertTrue(backend.activate_scene("party"))
+        backend.close()
+        backend.close()
+
+        self.assertIsNone(backend.active_scene)
+        self.assertEqual(client.blackout.call_args_list, [unittest.mock.call(True), unittest.mock.call(False), unittest.mock.call(True)])
+        self.assertEqual(client.release.call_count, 2)  # Activation and shutdown toggle pulses.
         client.close.assert_called_once_with()
 
     def test_scene_transition_pulses_previous_then_next_and_deduplicates(self):

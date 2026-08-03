@@ -121,6 +121,11 @@ class QLCOscBackend(LightingBackend):
         self.config_path = Path(config_path) if config_path is not None else None
         self.active_scene: str | None = None
         self.blackout_active = False
+        self._closed = False
+
+    def initialize(self) -> bool:
+        """Put QLC+ in a deterministic dark state before routing begins."""
+        return self.blackout(True)
 
     def reload_scene_map(self) -> None:
         if self.config_path is None:
@@ -199,6 +204,12 @@ class QLCOscBackend(LightingBackend):
         return success
 
     def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        if self.active_scene is not None:
+            self.deactivate_scene(self.active_scene)
+        self.blackout(True)
         self.client.close()
 
 
@@ -222,9 +233,11 @@ def create_qlc_osc_backend(
     if overrides:
         config = replace(config, **overrides)
         config.validate()
-    return QLCOscBackend(
+    backend = QLCOscBackend(
         OscClient(config),
         qlc_config.routing,
         controls=qlc_config.controls,
         config_path=config_path,
     )
+    backend.initialize()
+    return backend

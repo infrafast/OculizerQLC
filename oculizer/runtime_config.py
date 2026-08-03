@@ -43,6 +43,7 @@ class MasterModulationConfig:
     change_threshold: float = 0.01
     silence_value: float = 0.0
     shutdown_value: float = 0.0
+    refresh_seconds: float = 1.0
 
 @dataclass(frozen=True)
 class FrequencyBandConfig:
@@ -63,6 +64,7 @@ class FrequencyModulationConfig:
     change_threshold: float = 0.02
     silence_value: float = 0.0
     shutdown_value: float = 0.0
+    refresh_seconds: float = 1.0
     bands: Mapping[str, FrequencyBandConfig] | None = None
 
 DEFAULT_FREQUENCY_BANDS = {
@@ -139,7 +141,7 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
         raise ValueError("audio.master_modulation.enabled must be a boolean")
     if not isinstance(master_config.parameter, str) or not master_config.parameter.strip():
         raise ValueError("audio.master_modulation.parameter must be a non-empty string")
-    for name in ("rate_hz", "input_floor", "input_ceiling", "smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
+    for name in ("rate_hz", "input_floor", "input_ceiling", "smoothing_factor", "change_threshold", "silence_value", "shutdown_value", "refresh_seconds"):
         value = getattr(master_config, name)
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError(f"audio.master_modulation.{name} must be numeric")
@@ -150,6 +152,8 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
     for name in ("smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
         if not 0 <= getattr(master_config, name) <= 1:
             raise ValueError(f"audio.master_modulation.{name} must be between 0 and 1")
+    if master_config.refresh_seconds <= 0:
+        raise ValueError("audio.master_modulation.refresh_seconds must be greater than zero")
     _parse_frequency_modulation(audio.get("frequency_modulation", {}))
     return config
 
@@ -165,6 +169,7 @@ def _parse_frequency_modulation(raw: Any) -> FrequencyModulationConfig:
         "change_threshold": 0.02,
         "silence_value": 0.0,
         "shutdown_value": 0.0,
+        "refresh_seconds": 1.0,
     }
     numeric = {}
     for name, default in numeric_defaults.items():
@@ -177,6 +182,8 @@ def _parse_frequency_modulation(raw: Any) -> FrequencyModulationConfig:
     for name in ("smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
         if not 0 <= numeric[name] <= 1:
             raise ValueError(f"audio.frequency_modulation.{name} must be between 0 and 1")
+    if numeric["refresh_seconds"] <= 0:
+        raise ValueError("audio.frequency_modulation.refresh_seconds must be greater than zero")
 
     raw_bands = raw.get("bands", {})
     if not isinstance(raw_bands, dict):
@@ -249,7 +256,7 @@ def configured_master_modulation(config: dict[str, Any]) -> MasterModulationConf
         key: master.get(key, getattr(defaults, key))
         for key in MasterModulationConfig.__dataclass_fields__
     }
-    for key in ("rate_hz", "input_floor", "input_ceiling", "smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
+    for key in ("rate_hz", "input_floor", "input_ceiling", "smoothing_factor", "change_threshold", "silence_value", "shutdown_value", "refresh_seconds"):
         values[key] = float(values[key])
     return MasterModulationConfig(**values)
 

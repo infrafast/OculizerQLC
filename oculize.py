@@ -250,6 +250,8 @@ class AudioOculizerController:
 
     def start(self):
         try:
+            self.master_modulator.startup()
+            self.frequency_modulator.startup()
             self.oculizer.start()
             self.run()
         except Exception as e:
