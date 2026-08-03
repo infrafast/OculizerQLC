@@ -82,6 +82,7 @@ class QLCOscBackendTests(unittest.TestCase):
         client = Mock()
         client.press.return_value = True
         client.release.return_value = True
+        client.blackout.return_value = True
         backend = QLCOscBackend(client, self.make_scene_map())
 
         self.assertTrue(backend.activate_scene("party"))
@@ -89,22 +90,24 @@ class QLCOscBackendTests(unittest.TestCase):
         self.assertEqual(backend.active_scene, "party")
         self.assertTrue(backend.activate_scene("off"))
         self.assertIsNone(backend.active_scene)
+        client.blackout.assert_called_once_with(True)
+
+        self.assertTrue(backend.activate_scene("party"))
+        client.blackout.assert_called_with(False)
+        self.assertFalse(backend.blackout_active)
 
     def test_factory_applies_runtime_overrides(self):
         with tempfile.TemporaryDirectory() as directory:
-            config_path = Path(directory) / "osc.json"
+            config_path = Path(directory) / "qlc_config.json"
             config_path.write_text(
-                json.dumps({"host": "192.0.2.1", "port": 7700}),
-                encoding="utf-8",
-            )
-            scene_map_path = Path(directory) / "scenes.json"
-            scene_map_path.write_text(
-                json.dumps({"scenes": {"party": {"path": "/party"}}}),
+                json.dumps({
+                    "transport": {"host": "192.0.2.1", "port": 7700},
+                    "routing": {"scenes": {"party": {"path": "/party"}}},
+                }),
                 encoding="utf-8",
             )
             backend = create_qlc_osc_backend(
                 config_path,
-                scene_map_path,
                 host="127.0.0.1",
                 port=9000,
                 dry_run=True,
@@ -120,14 +123,12 @@ class QLCOscBackendTests(unittest.TestCase):
 class OculizerBackendSelectionTests(unittest.TestCase):
     def test_qlc_osc_mode_never_loads_the_enttec_controller(self):
         with tempfile.TemporaryDirectory() as directory:
-            config_path = Path(directory) / "osc.json"
+            config_path = Path(directory) / "qlc_config.json"
             config_path.write_text(
-                json.dumps({"host": "127.0.0.1", "port": 7700, "dry_run": True}),
-                encoding="utf-8",
-            )
-            scene_map_path = Path(directory) / "scenes.json"
-            scene_map_path.write_text(
-                json.dumps({"scenes": {"party": {"path": "/party"}}}),
+                json.dumps({
+                    "transport": {"host": "127.0.0.1", "port": 7700, "dry_run": True},
+                    "routing": {"scenes": {"party": {"path": "/party"}}},
+                }),
                 encoding="utf-8",
             )
             with (
@@ -151,8 +152,7 @@ class OculizerBackendSelectionTests(unittest.TestCase):
                     None,
                     Mock(),
                     output="qlc-osc",
-                    osc_config_path=config_path,
-                    osc_scene_map_path=scene_map_path,
+                    qlc_config_path=config_path,
                 )
 
         self.assertIsNone(controller.dmx_controller)

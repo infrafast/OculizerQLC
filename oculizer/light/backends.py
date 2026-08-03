@@ -9,7 +9,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Mapping
 
-from oculizer.light.osc_client import OscClient, OscConfig
+from oculizer.light.osc_client import OscClient
+from oculizer.light.qlc_config import QLCConfig
 from oculizer.light.scene_map import SceneMap
 
 
@@ -113,16 +114,17 @@ class QLCOscBackend(LightingBackend):
 
     name = OUTPUT_QLC_OSC
 
-    def __init__(self, client: OscClient, scene_map: SceneMap, scene_map_path: str | Path | None = None):
+    def __init__(self, client: OscClient, scene_map: SceneMap, config_path: str | Path | None = None):
         self.client = client
         self.scene_map = scene_map
-        self.scene_map_path = Path(scene_map_path) if scene_map_path is not None else None
+        self.config_path = Path(config_path) if config_path is not None else None
         self.active_scene: str | None = None
+        self.blackout_active = False
 
     def reload_scene_map(self) -> None:
-        if self.scene_map_path is None:
+        if self.config_path is None:
             return
-        self.scene_map = SceneMap.from_file(self.scene_map_path)
+        self.scene_map = QLCConfig.from_file(self.config_path).routing
 
     def _pulse(self, path: str) -> bool:
         pressed = self.client.press(path)
@@ -155,10 +157,12 @@ class QLCOscBackend(LightingBackend):
 
         if control.action == "off":
             self.active_scene = None
-            return True
+            return self.blackout(True)
         if control.action == "blackout":
             success = self.blackout(True)
         else:
+            if self.blackout_active and not self.blackout(False):
+                return False
             success = self._pulse(control.path)
         if success:
             self.active_scene = scene_name
@@ -186,7 +190,10 @@ class QLCOscBackend(LightingBackend):
         return self.client.set_level(address, value)
 
     def blackout(self, enabled: bool = True) -> bool:
-        return self.client.blackout(enabled)
+        success = self.client.blackout(enabled)
+        if success:
+            self.blackout_active = enabled
+        return success
 
     def close(self) -> None:
         self.client.close()
@@ -194,14 +201,14 @@ class QLCOscBackend(LightingBackend):
 
 def create_qlc_osc_backend(
     config_path: str | Path,
-    scene_map_path: str | Path,
     *,
     host: str | None = None,
     port: int | None = None,
     dry_run: bool | None = None,
 ) -> QLCOscBackend:
     """Create a QLC+ backend with optional command-line overrides."""
-    config = OscConfig.from_file(config_path)
+    qlc_config = QLCConfig.from_file(config_path)
+    config = qlc_config.transport
     overrides = {}
     if host is not None:
         overrides["host"] = host
@@ -214,6 +221,6 @@ def create_qlc_osc_backend(
         config.validate()
     return QLCOscBackend(
         OscClient(config),
-        SceneMap.from_file(scene_map_path),
-        scene_map_path=scene_map_path,
+        qlc_config.routing,
+        config_path=config_path,
     )

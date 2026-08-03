@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class HeadlessOculizerService:
-    def __init__(self, oculizer, poll_seconds: float = 0.1, silence_config=None):
+    def __init__(self, oculizer, poll_seconds=0.1, silence_config=None, speech_config=None):
         self.oculizer = oculizer
-        self.router = AutomaticSceneRouter(oculizer, silence_config=silence_config)
+        self.router = AutomaticSceneRouter(oculizer, silence_config=silence_config, speech_config=speech_config)
         self.poll_seconds = poll_seconds
         self.stop_event = threading.Event()
 

@@ -1,0 +1,28 @@
+{
+  "transport": {
+    "host": "127.0.0.1",
+    "port": 7700,
+    "dry_run": false
+  },
+  "controls": {
+    "blackout": "/blackout"
+  },
+  "routing": {
+    "pulse_seconds": 0.1,
+    "unmapped": "fallback",
+    "fallback_scene": "party",
+    "scenes": {
+      "party": {
+        "action": "toggle",
+        "path": "/test"
+      },
+      "off": {
+        "action": "off"
+      },
+      "announcement": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/announcement"
+      }
+    }
+  }
+}

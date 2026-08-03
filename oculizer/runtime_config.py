@@ -19,6 +19,19 @@ class SilenceConfig:
     duration_seconds: float = 2.0
     scene: str = "off"
 
+@dataclass(frozen=True)
+class SpeechConfig:
+    enabled: bool = True
+    threshold: float = 0.55
+    music_margin: float = 0.15
+    minimum_duration_seconds: float = 1.0
+    release_duration_seconds: float = 2.0
+    scene: str = "announcement"
+
+@dataclass(frozen=True)
+class PredictionConfig:
+    window_seconds: float = 2.0
+
 
 def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
     """Load and minimally validate the general Oculizer JSON configuration."""
@@ -59,6 +72,22 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
         raise ValueError("audio.silence.resume_threshold must be greater than threshold")
     if not isinstance(silence_config.scene, str) or not silence_config.scene.strip():
         raise ValueError("audio.silence.scene must be a non-empty string")
+    speech = audio.get("speech", {})
+    if not isinstance(speech, dict):
+        raise ValueError("audio.speech must be an object")
+    speech_config = SpeechConfig(**{k: speech.get(k, getattr(SpeechConfig(), k)) for k in SpeechConfig.__dataclass_fields__})
+    if not isinstance(speech_config.enabled, bool) or not isinstance(speech_config.scene, str):
+        raise ValueError("invalid audio.speech configuration")
+    for name in ("threshold", "music_margin", "minimum_duration_seconds", "release_duration_seconds"):
+        value = getattr(speech_config, name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+            raise ValueError(f"audio.speech.{name} must be a non-negative number")
+    prediction = audio.get("prediction", {})
+    if not isinstance(prediction, dict):
+        raise ValueError("audio.prediction must be an object")
+    window_seconds = prediction.get("window_seconds", 2.0)
+    if isinstance(window_seconds, bool) or not isinstance(window_seconds, (int, float)) or not 0.5 <= window_seconds <= 10:
+        raise ValueError("audio.prediction.window_seconds must be between 0.5 and 10 seconds")
     return config
 
 
@@ -77,3 +106,12 @@ def configured_silence(config: dict[str, Any]) -> SilenceConfig:
         duration_seconds=float(silence.get("duration_seconds", 2.0)),
         scene=silence.get("scene", "off"),
     )
+
+def configured_speech(config: dict[str, Any]) -> SpeechConfig:
+    speech = config.get("audio", {}).get("speech", {})
+    defaults = SpeechConfig()
+    return SpeechConfig(**{k: speech.get(k, getattr(defaults, k)) for k in SpeechConfig.__dataclass_fields__})
+
+def configured_prediction(config: dict[str, Any]) -> PredictionConfig:
+    prediction = config.get("audio", {}).get("prediction", {})
+    return PredictionConfig(window_seconds=float(prediction.get("window_seconds", 2.0)))

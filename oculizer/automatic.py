@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 
-from oculizer.runtime_config import SilenceConfig
+from oculizer.runtime_config import SilenceConfig, SpeechConfig
 
 
 logger = logging.getLogger(__name__)
@@ -14,20 +14,55 @@ logger = logging.getLogger(__name__)
 class AutomaticSceneRouter:
     """Apply stable predictions or a manual override through one scene API."""
 
-    def __init__(self, oculizer, silence_config: SilenceConfig | None = None, clock=None):
+    def __init__(self, oculizer, silence_config=None, speech_config=None, clock=None):
         self.oculizer = oculizer
         self.silence_config = silence_config or SilenceConfig(enabled=False)
+        self.speech_config = speech_config or SpeechConfig(enabled=False)
         self.clock = clock or time.monotonic
         self.manual_override: str | None = None
         self.last_target: str | None = None
         self.last_rejected: str | None = None
         self.silence_started_at: float | None = None
         self.silence_active = False
+        self.speech_active = False
+        self.speech_started_at = None
+        self.speech_release_at = None
+
+    def _update_speech_state(self):
+        if not self.speech_config.enabled:
+            return
+        scores = getattr(self.oculizer, "current_audioset_scores", None)
+        if not scores:
+            return
+        now = self.clock()
+        dominant = scores["speech"] >= self.speech_config.threshold and scores["speech"] - scores["music"] >= self.speech_config.music_margin
+        if dominant:
+            self.speech_release_at = None
+            if self.speech_started_at is None:
+                self.speech_started_at = now
+            if not self.speech_active and now - self.speech_started_at >= self.speech_config.minimum_duration_seconds:
+                self.speech_active = True
+                self.last_target = None
+                logger.info("Dominant speech detected: speech=%.3f music=%.3f", scores["speech"], scores["music"])
+        else:
+            self.speech_started_at = None
+            if self.speech_active:
+                self.speech_release_at = self.speech_release_at or now
+                if now - self.speech_release_at >= self.speech_config.release_duration_seconds:
+                    self.speech_active = False
+                    self.speech_release_at = None
+                    self.last_target = None
+                    logger.info("Speech routing released")
 
     def _set_prediction_suspended(self, suspended: bool) -> None:
         setter = getattr(self.oculizer, "set_prediction_suspended", None)
         if setter is not None:
             setter(suspended)
+
+    def _reset_speech_state(self) -> None:
+        self.speech_active = False
+        self.speech_started_at = None
+        self.speech_release_at = None
 
     def _update_silence_state(self) -> None:
         if not self.silence_config.enabled:
@@ -42,6 +77,7 @@ class AutomaticSceneRouter:
                 self.silence_started_at = None
                 self.last_target = None
                 self._set_prediction_suspended(False)
+                self._reset_speech_state()
                 logger.info("Audio resumed at RMS %.6f", rms)
             return
         if rms <= self.silence_config.threshold:
@@ -51,6 +87,7 @@ class AutomaticSceneRouter:
                 self.silence_active = True
                 self.last_target = None
                 self._set_prediction_suspended(True)
+                self._reset_speech_state()
                 logger.info(
                     "Silence detected at RMS %.6f; requesting scene '%s'",
                     rms,
@@ -81,6 +118,10 @@ class AutomaticSceneRouter:
             self._update_silence_state()
         if requested is None and self.silence_active:
             requested = self.silence_config.scene
+        if requested is None and not self.silence_active:
+            self._update_speech_state()
+            if self.speech_active:
+                requested = self.speech_config.scene
         if requested is None:
             requested = self.oculizer.current_predicted_scene
         if not requested:

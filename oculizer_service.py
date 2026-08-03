@@ -7,7 +7,7 @@ import sys
 
 from oculizer.headless import HeadlessOculizerService
 from oculizer.light import Oculizer, OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.scenes import SceneManager
 
 
@@ -29,8 +29,7 @@ def parse_args():
     parser.add_argument("--prediction-channels", default=None)
     parser.add_argument("--predictor-version", choices=["v1", "v3", "v4", "v5", "vday"], default="v4")
     parser.add_argument("--scene-cache-size", type=int, default=25)
-    parser.add_argument("--osc-config", default=None)
-    parser.add_argument("--scene-map", default=None)
+    parser.add_argument("--qlc-config", default=None, help="Unified QLC+ configuration (default: config/qlc_config.json)")
     parser.add_argument("--osc-host", default=None)
     parser.add_argument("--osc-port", type=int, default=None)
     parser.add_argument("--osc-dry-run", action="store_true", default=None)
@@ -43,6 +42,8 @@ def parse_args():
     if args.input_device is None:
         args.input_device = configured_audio_input(config)
     args.silence_config = configured_silence(config)
+    args.speech_config = configured_speech(config)
+    args.prediction_config = configured_prediction(config)
     if args.output == "enttec" and not args.profile:
         parser.error("--profile is required with --output enttec")
     if args.scene_cache_size < 1:
@@ -67,14 +68,14 @@ def build_service(args) -> HeadlessOculizerService:
         scene_cache_size=args.scene_cache_size,
         prediction_channels=args.prediction_channels,
         output=args.output,
-        osc_config_path=args.osc_config,
-        osc_scene_map_path=args.scene_map,
+        qlc_config_path=args.qlc_config,
         osc_host=args.osc_host,
         osc_port=args.osc_port,
         osc_dry_run=args.osc_dry_run,
+        prediction_window_seconds=args.prediction_config.window_seconds,
     )
     oculizer.restrict_scenes_to_backend()
-    return HeadlessOculizerService(oculizer, silence_config=args.silence_config)
+    return HeadlessOculizerService(oculizer, silence_config=args.silence_config, speech_config=args.speech_config)
 
 
 def main() -> int:

@@ -186,7 +186,7 @@ Proposed files:
 
 ```text
 oculizer/light/osc_client.py
-config/qlc_osc.json
+config/qlc_config.json
 tests/test_osc_client.py
 ```
 
@@ -243,7 +243,7 @@ Exit criterion: a complete manual session controls QLC+ without loading an Entte
 
 ### Phase 4 — Automatic prediction
 
-Status: **implemented — awaiting end-to-end audio and QLC+ validation**
+Status: **complete — validated with live audio and QLC+ on macOS**
 
 - [x] connect predicted transitions to the same backend;
 - [x] preserve smoothing and fallbacks;
@@ -257,18 +257,18 @@ Exit criterion: automatic transitions and return from override are consistent in
 
 ### Phase 4b — Speech-aware semantic routing
 
-Status: **planned — approved design**
+Status: **complete — validated with live speech, music, and silence on macOS**
 
-- [ ] retain the 527 AudioSet logits already returned by EfficientAT instead of discarding them after embedding extraction;
-- [ ] aggregate relevant `Speech`, male/female/child speech, and speech-noise labels into a speech score;
-- [ ] treat `Singing` as music so vocals do not trigger announcement mode;
-- [ ] compare speech and music confidence using configurable thresholds and a minimum confidence margin;
-- [ ] require a configurable minimum speech duration and release duration to prevent rapid mode changes;
-- [ ] make the speech/announcement scene user-configurable;
-- [ ] define mixed speech-and-music behavior, initially preserving the current scene when confidence is ambiguous;
-- [ ] give manual override priority over speech routing, speech routing priority over ordinary music-scene prediction, and silence routing its explicitly documented priority;
-- [ ] log concise speech/music scores and routing decisions without logging every inference frame;
-- [ ] validate clean speech, singing, music, silence, and mixed speech/music recordings.
+- [x] retain the 527 AudioSet logits already returned by EfficientAT instead of discarding them after embedding extraction;
+- [x] aggregate relevant `Speech`, male/female/child speech, and speech-noise labels into a speech score;
+- [x] treat `Singing` as music so vocals do not trigger announcement mode;
+- [x] compare speech and music confidence using configurable thresholds and a minimum confidence margin;
+- [x] require a configurable minimum speech duration and release duration to prevent rapid mode changes;
+- [x] make the speech/announcement scene user-configurable;
+- [x] define mixed speech-and-music behavior, initially preserving the current scene when confidence is ambiguous;
+- [x] give manual override priority over speech routing, speech routing priority over ordinary music-scene prediction, and silence routing its explicitly documented priority;
+- [x] log concise speech/music scores and routing decisions without logging every inference frame;
+- [x] validate speech, music, and silence transitions with the local QLC+ workspace; singing and ambiguous mixtures retain conservative score-based routing.
 
 Proposed routing order:
 
@@ -419,7 +419,7 @@ Decision:
 Implemented:
 
 - added `oculizer/light/osc_client.py` with a reusable, thread-safe UDP client;
-- added `config/qlc_osc.json` with loopback defaults and a namespaced blackout path;
+- added the original standalone `config/qlc_osc.json` transport file, later consolidated into `config/qlc_config.json`;
 - implemented OSC float encoding, normalized value clamping, press/release, level, blackout, dry-run, context-manager, and idempotent close behavior;
 - made UDP send failures return `False` after logging instead of propagating into real-time application code;
 - kept the milestone `/test` script self-contained so it can run by path without installing the Oculizer package;
@@ -447,7 +447,7 @@ Observed QLC+ button semantics:
 
 Validated:
 
-- `OscClient.from_file('config/qlc_osc.json')` successfully controls the `/test` Virtual Console button;
+- the standalone OSC client configuration successfully controlled the `/test` Virtual Console button before configuration consolidation;
 - `press('/test')` toggles the attached Function on;
 - `release('/test')` is correctly treated by QLC+ as button release and does not toggle the Function off;
 - a second complete press/release pulse toggles the active Function off;
@@ -537,7 +537,7 @@ Implemented:
 - implemented portable OS-default resolution through PortAudio's active host API;
 - accepted stable aliases, full or partial device names, and numeric indexes;
 - connected the configuration to both `toggle.py` and `oculize.py` through `--config PATH`;
-- kept QLC+ transport settings isolated in `config/qlc_osc.json`.
+- kept QLC+ transport settings isolated from the general Oculizer runtime configuration.
 
 Validation:
 
@@ -588,7 +588,7 @@ Validation requirement:
 
 Manual validation:
 
-- `python toggle.py --output qlc-osc --osc-config config/qlc_osc.json` starts successfully on macOS;
+- the QLC+ selector starts successfully on macOS with an explicit QLC+ configuration;
 - the operator can navigate the keyboard-only scene grid, select an item, and confirm it with `Enter`;
 - `Ctrl+T` returns from the selector and the application shuts down without opening audio or direct-DMX hardware;
 - no QLC+ scene change is expected yet because scene-to-OSC mapping begins in phase 3.
@@ -612,14 +612,14 @@ Rationale:
 
 Implemented:
 
-- added validated logical scene-map parsing in `oculizer/light/scene_map.py` and the replaceable `config/qlc_scene_map.json` mapping;
+- added validated logical scene-map parsing in `oculizer/light/scene_map.py`; its original standalone mapping was later consolidated into `config/qlc_config.json`;
 - mapped the reference logical `party` scene to the already validated `/test` QLC+ toggle and added the logical `off` action;
 - implemented complete configurable press/release pulses, previous-scene deactivation, logical active-state tracking, duplicate suppression, unmapped-scene handling, off, and blackout behavior in `QLCOscBackend`;
 - made `Oculizer.change_scene()` the curses-independent scene command path and preserved SceneManager state when output activation fails;
 - stopped loading fixture profiles in QLC+ mode and retained platform profile defaults only for Enttec;
 - restricted the QLC+ selector to mapped logical scenes and made `Ctrl+R` reload both scene files and the logical mapping;
 - corrected SceneManager reloads to use their resolved scene-directory path rather than the process working directory;
-- exposed `--scene-map PATH` from both application entry points.
+- exposed an explicit mapping path from both application entry points; this was later replaced by the unified `--qlc-config PATH` option.
 
 Validated:
 
@@ -641,7 +641,7 @@ Remaining validation:
 Naming decision:
 
 - the mapping remains under `config/` because it routes logical scenes into a deployment-specific QLC+ workspace;
-- it was renamed from `qlc_scenes.json` to `qlc_scene_map.json` to distinguish routing configuration from the artistic scene definitions under `scenes/`;
+- routing configuration remains distinct from artistic scene definitions under `scenes/` and now lives under `routing` in `config/qlc_config.json`;
 - manual selection in `toggle.py` is both an integration test surface and an operator override; phase 4 will drive the same command layer automatically from audio predictions.
 
 ### 2026-08-03 — Phase 4 automatic routing and headless runtime
@@ -666,7 +666,15 @@ Validated:
 Known integration boundary:
 
 - all semantic predictions currently resolve to `party` because `/test` is the only QLC+ function in the reference workspace;
-- end-to-end validation still requires live audio, predictor output, QLC+ observation, manual override/return, and signal-driven shutdown on macOS.
+- the reference QLC+ workspace still exposes only one active test function, so richer semantic transitions require additional QLC+ functions and mappings.
+
+Manual validation:
+
+- the headless runtime starts with BlackHole, loads predictor v4, and produces live predictions;
+- automatic output routing activates the expected reference QLC+ control without duplicate pulses;
+- sustained silence activates the configured `off` scene;
+- signal-driven shutdown returns cleanly to the terminal;
+- terminal logs remain readable after the CRLF and predictor-output cleanup.
 
 ### 2026-08-03 — Headless log readability
 
@@ -713,10 +721,72 @@ Rationale:
 - the current clustering path discards the AudioSet logits even though the loaded model has already computed them;
 - reusing those outputs should add little inference overhead and avoids requiring a separate microphone feed or another large model.
 
+### 2026-08-03 — Phase 4 live validation completed
+
+Validated:
+
+- live BlackHole input and predictor v4 operate through the non-interactive service;
+- QLC+ receives the automatically resolved scene without repeated toggle commands;
+- silence routing selects `off` while raw silent classifications no longer control lighting output;
+- the operator accepted the phase-4 behavior and authorized progression to phase 4b.
+
+### 2026-08-03 — Phase 4b AudioSet score extraction
+
+Implemented:
+
+- retained predictor-v4 AudioSet probabilities alongside the existing embedding and cluster result;
+- exposed aggregated `speech`, `singing`, and `music` scores to the Oculizer runtime;
+- aggregated singing into the music score rather than the speech score;
+- resolved class indexes from EfficientAT's packaged label names instead of hard-coding numeric positions.
+
+This score extraction was subsequently connected to configurable confidence, margin, duration, release, and announcement-scene routing in the automatic coordinator.
+
+Live-validation correction:
+
+- reset speech-active timing and cached AudioSet scores across silence transitions;
+- require a fresh post-silence inference window and the complete configured speech duration before activating `announcement`;
+- prevent stale pre-silence speech confidence from activating the announcement scene immediately after audio resumes.
+
+### 2026-08-03 — Explicit QLC+ blackout for off
+
+Implemented:
+
+- changed the configured blackout OSC address to `/blackout`;
+- made logical `off` deactivate the last tracked toggle and then assert blackout;
+- made the next ordinary scene clear blackout before activating its QLC+ control;
+- tracked blackout state locally to avoid leaving QLC+ blacked out after music resumes.
+
+### 2026-08-03 — Responsive prediction timing
+
+Implemented:
+
+- made the rolling prediction window configurable as `audio.prediction.window_seconds`;
+- changed the default window from four seconds to two seconds;
+- changed speech entry from one second to 0.5 seconds and release from two seconds to 0.75 seconds;
+- sized the audio cache at the actual source sample rate before inference-time resampling.
+
+Tradeoff: shorter windows improve voice-to-music transitions but can reduce classification stability. Operators can increase the window and timing values per deployment.
+
 Validated:
 
 - confirmed that no `.venv` file is tracked by Git;
 - confirmed that Git ignores the complete `.venv` tree.
+
+### 2026-08-03 — Phase 4b live validation and unified QLC+ configuration
+
+Implemented:
+
+- consolidated OSC transport, global QLC+ controls, and logical scene routing into `config/qlc_config.json`;
+- added the validated `transport`, `controls`, and `routing` configuration sections;
+- replaced `--osc-config` and `--scene-map` with the single `--qlc-config PATH` option in all application entry points;
+- retained host, port, and dry-run command-line overrides;
+- removed the two superseded QLC+ JSON files so there is one deployment configuration source;
+- added unified-configuration parsing and validation tests.
+
+Live validation:
+
+- the operator confirmed working transitions between announcement, music, and silence with QLC+ on macOS;
+- phase 4b is complete and continuous master modulation is now the next implementation phase.
 
 ## Instructions for developers and coding agents
 

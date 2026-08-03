@@ -6,7 +6,7 @@ from unittest.mock import Mock
 from oculizer.automatic import AutomaticSceneRouter
 from oculizer.headless import HeadlessOculizerService
 from oculizer_service import configure_service_streams
-from oculizer.runtime_config import SilenceConfig
+from oculizer.runtime_config import SilenceConfig, SpeechConfig
 
 
 class FakeOculizer:
@@ -16,6 +16,7 @@ class FakeOculizer:
         self.changes = []
         self.alive = False
         self.current_audio_rms = None
+        self.current_audioset_scores = None
         self.prediction_suspended = False
 
     def resolve_scene_target(self, scene):
@@ -119,6 +120,40 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         self.assertTrue(router.set_manual_override("party"))
         self.assertFalse(router.step())
         self.assertEqual(engine.changes, ["party"])
+
+    def test_silence_clears_previous_speech_state(self):
+        engine = FakeOculizer()
+        engine.current_audio_rms = 0.0
+        router = AutomaticSceneRouter(
+            engine,
+            silence_config=SilenceConfig(duration_seconds=0, scene="off"),
+            speech_config=SpeechConfig(minimum_duration_seconds=0),
+        )
+        router.speech_active = True
+        router.speech_started_at = 1.0
+
+        self.assertTrue(router.step())
+
+        self.assertTrue(router.silence_active)
+        self.assertFalse(router.speech_active)
+        self.assertIsNone(router.speech_started_at)
+
+    def test_dominant_speech_routes_announcement_then_releases(self):
+        engine = FakeOculizer()
+        engine.targets["announcement"] = "announcement"
+        engine.current_predicted_scene = "wave"
+        now = [0.0]
+        router = AutomaticSceneRouter(engine, speech_config=SpeechConfig(minimum_duration_seconds=1, release_duration_seconds=1), clock=lambda: now[0])
+        engine.current_audioset_scores = {"speech": 0.8, "music": 0.2, "singing": 0.0}
+        self.assertTrue(router.step())
+        now[0] = 1.0
+        self.assertTrue(router.step())
+        engine.current_audioset_scores = {"speech": 0.3, "music": 0.7, "singing": 0.7}
+        now[0] = 2.0
+        self.assertFalse(router.step())
+        now[0] = 3.0
+        self.assertTrue(router.step())
+        self.assertEqual(engine.changes, ["wave", "announcement", "wave"])
 
 
 class HeadlessServiceTests(unittest.TestCase):

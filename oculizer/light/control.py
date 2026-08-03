@@ -50,8 +50,8 @@ class Oculizer(threading.Thread):
                  scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v1',
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
                  test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
-                 osc_config_path=None, osc_scene_map_path=None, osc_host=None,
-                 osc_port=None, osc_dry_run=None):
+                 qlc_config_path=None, osc_host=None,
+                 osc_port=None, osc_dry_run=None, prediction_window_seconds=2.0):
         threading.Thread.__init__(self)
         self.profile_name = profile_name
         self.input_device = str(input_device).strip()
@@ -77,15 +77,11 @@ class Oculizer(threading.Thread):
             logger = logging.getLogger(__name__)
             logger.info("Test mode: lighting output disabled")
         elif output == OUTPUT_QLC_OSC:
-            if osc_config_path is None:
+            if qlc_config_path is None:
                 current_dir = Path(__file__).resolve().parent
-                osc_config_path = current_dir.parent.parent / 'config' / 'qlc_osc.json'
-            if osc_scene_map_path is None:
-                current_dir = Path(__file__).resolve().parent
-                osc_scene_map_path = current_dir.parent.parent / 'config' / 'qlc_scene_map.json'
+                qlc_config_path = current_dir.parent.parent / 'config' / 'qlc_config.json'
             self.backend = create_qlc_osc_backend(
-                osc_config_path,
-                osc_scene_map_path,
+                qlc_config_path,
                 host=osc_host,
                 port=osc_port,
                 dry_run=osc_dry_run,
@@ -124,6 +120,7 @@ class Oculizer(threading.Thread):
         self.predictor_version = predictor_version
         self.scene_cache_size = scene_cache_size
         self.prediction_channels_spec = prediction_channels  # Store the user specification
+        self.prediction_window_seconds = float(prediction_window_seconds)
         self.prediction_channel_indices = None  # Will be parsed later
         self.scene_predictor = None
         self.prediction_stream = None
@@ -133,6 +130,7 @@ class Oculizer(threading.Thread):
         self.current_predicted_scene = None
         self.latest_prediction = None  # Store the latest raw prediction
         self.current_cluster = None
+        self.current_audioset_scores = None
         self.last_prediction_time = 0
         self.prediction_interval = 0.1
         self.prediction_count = 0
@@ -339,8 +337,10 @@ class Oculizer(threading.Thread):
         if captured:
             logger.debug("Suppressed predictor initialization output:\n%s", captured)
         
-        # Initialize audio cache for 4 seconds at predictor sample rate
-        self.prediction_audio_cache = deque(maxlen=self.prediction_sr * 4)
+        # Cache source-rate audio; resampling happens immediately before inference.
+        self.prediction_audio_cache = deque(
+            maxlen=int(self.prediction_audio_sample_rate * self.prediction_window_seconds)
+        )
         
         # Initialize scene cache with configurable size
         self.scene_cache = deque(maxlen=self.scene_cache_size)
@@ -481,11 +481,11 @@ class Oculizer(threading.Thread):
                 except queue.Empty:
                     continue
                 
-                # Check if we have enough cached audio (4 seconds at predictor sample rate)
+                # Check if the configured source-rate window is full.
                 with self.prediction_lock:
                     cache_length = len(self.prediction_audio_cache)
                 
-                if cache_length < self.prediction_sr * 4:
+                if cache_length < int(self.prediction_audio_sample_rate * self.prediction_window_seconds):
                     continue
                 
                 # Check if it's time for prediction
@@ -526,6 +526,7 @@ class Oculizer(threading.Thread):
                 # Make prediction (heavy CPU work happens here) - measure time
                 prediction_start_time = time.time()
                 scene, cluster = self.scene_predictor.predict(audio_data, return_cluster=True)
+                semantic_scores = getattr(self.scene_predictor, 'last_audioset_scores', None)
                 prediction_duration = time.time() - prediction_start_time
                 
                 # Update state with lock
@@ -542,6 +543,7 @@ class Oculizer(threading.Thread):
                             self.current_predicted_scene = self.scene_cache[-1]
                     
                     self.current_cluster = cluster
+                    self.current_audioset_scores = semantic_scores
                     self.last_prediction_time = current_time
                     self.prediction_count += 1
                     
@@ -588,6 +590,7 @@ class Oculizer(threading.Thread):
                     self.scene_cache.clear()
                 self.current_predicted_scene = None
                 self.latest_prediction = None
+                self.current_audioset_scores = None
             logger.info("Prediction inference suspended")
         else:
             if not self.prediction_suspended.is_set():
@@ -604,6 +607,7 @@ class Oculizer(threading.Thread):
                     self.scene_cache.clear()
                 self.current_predicted_scene = None
                 self.latest_prediction = None
+                self.current_audioset_scores = None
             self.prediction_suspended.clear()
             self.last_prediction_time = 0
             logger.info("Prediction inference resumed")

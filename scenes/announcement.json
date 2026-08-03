@@ -1,0 +1,6 @@
+{
+  "name": "announcement",
+  "description": "Logical QLC+ scene used while dominant spoken speech is detected.",
+  "type": "logical",
+  "lights": []
+}

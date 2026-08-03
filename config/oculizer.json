@@ -1,12 +1,23 @@
 {
   "audio": {
     "input_device": "default",
+    "prediction": {
+      "window_seconds": 2.0
+    },
     "silence": {
       "enabled": true,
       "threshold": 0.001,
       "resume_threshold": 0.002,
       "duration_seconds": 2.0,
       "scene": "off"
+    },
+    "speech": {
+      "enabled": true,
+      "threshold": 0.55,
+      "music_margin": 0.15,
+      "minimum_duration_seconds": 0.5,
+      "release_duration_seconds": 0.75,
+      "scene": "announcement"
     }
   }
 }

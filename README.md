@@ -2,7 +2,7 @@
 
 Oculizer is a music-reactive lighting system. It analyzes an audio stream in real time, predicts a suitable mood with a classification model, and automatically selects a lighting scene. A manual mode lets the operator take control during a show.
 
-The project is being migrated to a hybrid architecture with QLC+ 5: Oculizer will retain audio analysis and intelligent scene selection, while QLC+ will run scenes, chasers, and DMX outputs. The application can now start with either the existing Enttec-compatible direct-DMX backend or the QLC+ OSC backend. Scene activation over OSC is the next implementation milestone.
+The project is being migrated to a hybrid architecture with QLC+ 5: Oculizer retains audio analysis and intelligent scene selection, while QLC+ runs scenes, chasers, and DMX outputs. The application can start with either the existing Enttec-compatible direct-DMX backend or the QLC+ OSC backend. Automatic scene selection, silence handling, and speech-aware announcement routing are validated with QLC+ on macOS.
 
 ## Current features
 
@@ -66,8 +66,7 @@ The main directories and configuration files are:
 - `templates/`: scene examples;
 - `config/oculizer.json`: general runtime configuration, including the audio input selector;
 - `config/audio_parameters.json`: audio capture and analysis parameters;
-- `config/qlc_osc.json`: QLC+ OSC transport settings;
-- `config/qlc_scene_map.json`: deployment-specific logical scene-to-OSC mapping;
+- `config/qlc_config.json`: unified QLC+ OSC transport, global controls, and logical scene routing;
 - `profile_fallbacks.json`: profile-specific scene substitutions.
 
 List available audio devices:
@@ -82,6 +81,9 @@ By default, `config/oculizer.json` contains:
 {
   "audio": {
     "input_device": "default",
+    "prediction": {
+      "window_seconds": 2.0
+    },
     "silence": {
       "enabled": true,
       "threshold": 0.001,
@@ -95,7 +97,9 @@ By default, `config/oculizer.json` contains:
 
 `default` selects the input exposed as default by the operating system through PortAudio. This keeps the same configuration portable across CoreAudio on macOS and the available PortAudio host API on Linux. The selector may instead be an alias (`blackhole`, `scarlett`, or `cable_output`), a full or partial device name, or a numeric index. Names are preferable to indexes because indexes can change after a restart.
 
-The silence policy is evaluated before automatic prediction routing. Audio must remain at or below `threshold` for `duration_seconds` before the configured scene is selected. Normal prediction resumes only above `resume_threshold`, which provides hysteresis near the boundary. `scene` is user-selectable: it can be `off`, an ambient scene, a safety light, or any other logical scene present in both `scenes/` and `config/qlc_scene_map.json`. Manual override always has priority over the silence policy.
+The silence policy is evaluated before automatic prediction routing. Audio must remain at or below `threshold` for `duration_seconds` before the configured scene is selected. Normal prediction resumes only above `resume_threshold`, which provides hysteresis near the boundary. `scene` is user-selectable: it can be `off`, an ambient scene, a safety light, or any other logical scene present in both `scenes/` and `config/qlc_config.json`. Manual override always has priority over the silence policy.
+
+`audio.prediction.window_seconds` controls the rolling analysis window. The responsive default is two seconds; increasing it improves temporal stability but delays transitions. Speech defaults use 0.5 seconds to enter announcement mode and 0.75 seconds to return to music.
 
 The command line overrides the configuration. For example, use BlackHole for an Enttec-backed launch:
 
@@ -161,10 +165,12 @@ python toggle.py --profile garage2025 --input blackhole
 For QLC+, no fixture profile or audio input is required:
 
 ```bash
-python toggle.py --output qlc-osc --osc-config config/qlc_osc.json --scene-map config/qlc_scene_map.json
+python toggle.py --output qlc-osc --qlc-config config/qlc_config.json
 ```
 
-Only logical scenes declared in `config/qlc_scene_map.json` are displayed. The reference mapping exposes `party`, which pulses the validated `/test` QLC+ toggle button, and `off`, which deactivates the currently tracked toggle. The reference QLC+ button must be off before starting because this phase has logical state tracking but no OSC state feedback yet.
+Only logical scenes declared under `routing.scenes` in `config/qlc_config.json` are displayed. The reference mapping exposes `party`, which pulses the validated `/test` QLC+ toggle button, `announcement`, and `off`. The reference QLC+ buttons must be off before starting because logical state tracking has no OSC state feedback yet.
+
+The `off` action also sends `/blackout 1.0` after deactivating the tracked toggle. The next ordinary scene activation sends `/blackout 0.0` before pulsing its control. QLC+ must therefore map `/blackout` to an appropriate blackout control.
 
 The mapping stays under `config/` because it routes semantic scenes into a deployment-specific QLC+ workspace; files under `scenes/` describe Oculizer's artistic scene semantics.
 
@@ -173,18 +179,20 @@ The mapping stays under `config/` because it routes semantic scenes into a deplo
 Run prediction and QLC+ scene routing without curses or terminal input:
 
 ```bash
-python oculizer_service.py --output qlc-osc --input-device blackhole --predictor-version v4 --osc-config config/qlc_osc.json --scene-map config/qlc_scene_map.json
+python oculizer_service.py --output qlc-osc --input-device blackhole --predictor-version v4 --qlc-config config/qlc_config.json
 ```
 
 Omit `--input-device` to use `config/oculizer.json`. `SIGINT` and `SIGTERM` use the same clean shutdown path, making this entry point suitable for later systemd supervision.
 
 Service output uses explicit carriage-return line endings for readable terminal logs. Verbose third-party model dumps are captured at debug level; normal startup reports only concise predictor progress and warnings.
 
-The reference workspace currently exposes only `/test`. Unmapped predictions therefore resolve explicitly to `party`. Requested and resolved scenes are logged, while different predictions resolving to the same active target send no duplicate OSC pulse. Expand `config/qlc_scene_map.json` as real QLC+ functions are added.
+Unmapped predictions resolve explicitly to `party`. Requested and resolved scenes are logged, while different predictions resolving to the same active target send no duplicate OSC pulse. Expand `routing.scenes` in `config/qlc_config.json` as real QLC+ functions are added.
 
 Once silence is active, heavy model inference is suspended and queued audio is discarded. RMS monitoring continues in the audio callback; inference resumes from fresh audio only after the level crosses `resume_threshold`. One prediction already in progress may finish immediately after silence activation, but periodic silent `wave` classifications and queue-depth growth then stop.
 
-A planned speech-aware routing milestone will reuse EfficientAT's existing AudioSet outputs to distinguish dominant spoken announcements from music and singing. It will support a configurable announcement scene, confidence thresholds, timing hysteresis, and conservative behavior for ambiguous speech mixed with music. No separate microphone input or second large model is planned initially.
+Speech-aware routing reuses EfficientAT's existing AudioSet outputs to distinguish dominant spoken announcements from music and singing. It supports a configurable announcement scene, confidence thresholds, timing hysteresis, and conservative behavior for ambiguous speech mixed with music. It does not require a separate microphone input or second large model.
+
+Speech-aware routing is configured under `audio.speech` in `config/oculizer.json`. The default policy requires speech confidence `0.55`, a `0.15` lead over music, 0.5 seconds of stable speech, and a 0.75-second release. It routes to the logical `announcement` scene at `/oculizer/scenes/announcement`; singing contributes to music rather than speech.
 
 Without `--input`, `toggle.py` uses the selector from `config/oculizer.json`, which defaults to the operating-system input. Inspect the inputs visible to the current Python environment with:
 
@@ -274,7 +282,7 @@ python test_fallbacks_simple.py
 
 ## Project status
 
-Direct DMX output remains available. OSC transport, interchangeable backends, and manual QLC+ selection are complete. Automatic prediction routing and a headless runtime are implemented and awaiting end-to-end audio validation; continuous audio modulation remains a subsequent milestone.
+Direct DMX output remains available. OSC transport, interchangeable backends, manual and automatic QLC+ selection, configurable silence behavior, speech-aware announcement routing, and the headless runtime are validated on macOS. Continuous audio modulation is the next milestone.
 
 The milestone-0 QLC+ connection can be checked after configuring the test control in QLC+:
 
@@ -284,14 +292,14 @@ python scripts/send_osc_test.py --pulse 1
 
 This sends `/test` with value `1.0`, waits one second, and sends `0.0` to `127.0.0.1:7700`. It is a temporary connection diagnostic, not part of the application OSC namespace or backend.
 
-The reusable OSC transport is configured in `config/qlc_osc.json`. It provides normalized float messages, press/release helpers, level controls, blackout, dry-run operation, and non-blocking UDP error handling. Select it from either application entry point with:
+The QLC+ integration is configured in `config/qlc_config.json`. Its `transport`, `controls`, and `routing` sections define the UDP destination, global commands such as blackout, and semantic scene mappings. The OSC client provides normalized float messages, press/release helpers, level controls, dry-run operation, and non-blocking UDP error handling. Select it from either application entry point with:
 
 ```bash
 python toggle.py --output qlc-osc
 python oculize.py --output qlc-osc
 ```
 
-Use `--osc-config PATH`, `--scene-map PATH`, `--osc-host HOST`, and `--osc-port PORT` to override the configured destination and logical mapping, or `--osc-dry-run` to exercise startup and shutdown without sending packets. Selecting `qlc-osc` never loads a fixture profile or initializes audio or serial DMX hardware in the standalone manual selector.
+Use `--qlc-config PATH` to select another unified QLC+ configuration. `--osc-host HOST` and `--osc-port PORT` override its destination, while `--osc-dry-run` exercises startup and shutdown without sending packets. Selecting `qlc-osc` never loads a fixture profile or initializes audio or serial DMX hardware in the standalone manual selector.
 
 The standalone `toggle.py` selector does not open an audio stream in `qlc-osc` mode because manual selection has no audio consumer. Audio capture remains enabled for direct reactive Enttec rendering and for automatic scene prediction in `oculize.py`.
 

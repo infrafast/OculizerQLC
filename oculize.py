@@ -7,7 +7,7 @@ import platform
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
 from oculizer.light import OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.automatic import AutomaticSceneRouter
 import logging
 from collections import deque, OrderedDict
@@ -134,8 +134,9 @@ class AudioOculizerController:
     def __init__(self, stdscr, profile='garage', input_device='scarlett', 
                  dual_stream=True, prediction_device=None, predictor_version='v4',
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
-                 test_mode=False, output='enttec', osc_config=None, osc_host=None,
-                 osc_port=None, osc_dry_run=None, scene_map=None, silence_config=None):
+                 test_mode=False, output='enttec', qlc_config=None, osc_host=None,
+                 osc_port=None, osc_dry_run=None, silence_config=None,
+                 speech_config=None, prediction_window_seconds=2.0):
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
@@ -165,15 +166,19 @@ class AudioOculizerController:
             prediction_channels=prediction_channels,
             test_mode=test_mode,
             output=output,
-            osc_config_path=osc_config,
-            osc_scene_map_path=scene_map,
+            qlc_config_path=qlc_config,
             osc_host=osc_host,
             osc_port=osc_port,
-            osc_dry_run=osc_dry_run
+            osc_dry_run=osc_dry_run,
+            prediction_window_seconds=prediction_window_seconds,
         )
         if output == 'qlc-osc':
             self.oculizer.restrict_scenes_to_backend()
-        self.scene_router = AutomaticSceneRouter(self.oculizer, silence_config=silence_config)
+        self.scene_router = AutomaticSceneRouter(
+            self.oculizer,
+            silence_config=silence_config,
+            speech_config=speech_config,
+        )
         
         self.dual_stream = dual_stream
         self.predictor_version = predictor_version
@@ -881,10 +886,8 @@ Scene Cache Size:
                       help='Test mode: Enable scene predictions only, disable FFT reactivity and DMX output. Uses virtual cable (BlackHole on macOS, Cable Output on Windows) for predictions.')
     parser.add_argument('--output', choices=OUTPUT_CHOICES, default='enttec',
                       help='Lighting output backend (default: enttec)')
-    parser.add_argument('--osc-config', default=None,
-                      help='QLC+ OSC JSON configuration (default: config/qlc_osc.json)')
-    parser.add_argument('--scene-map', default=None,
-                      help='Logical QLC+ scene map (default: config/qlc_scene_map.json)')
+    parser.add_argument('--qlc-config', default=None,
+                      help='Unified QLC+ configuration (default: config/qlc_config.json)')
     parser.add_argument('--osc-host', default=None,
                       help='Override the QLC+ OSC destination host')
     parser.add_argument('--osc-port', type=int, default=None,
@@ -901,14 +904,16 @@ Scene Cache Size:
     if args.input_device is None:
         args.input_device = configured_audio_input(config)
     args.silence_config = configured_silence(config)
+    args.speech_config = configured_speech(config)
+    args.prediction_config = configured_prediction(config)
     if args.profile is None and args.output == 'enttec':
         args.profile = default_profile
     return args
 
 def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
          average_dual_channels, scene_cache_size, prediction_channels, test_mode,
-         output, osc_config, scene_map, osc_host, osc_port, osc_dry_run,
-         silence_config):
+         output, qlc_config, osc_host, osc_port, osc_dry_run,
+         silence_config, speech_config, prediction_window_seconds):
     setup_colors()
     controller = AudioOculizerController(
         stdscr, 
@@ -922,12 +927,13 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         prediction_channels=prediction_channels,
         test_mode=test_mode,
         output=output,
-        osc_config=osc_config,
-        scene_map=scene_map,
+        qlc_config=qlc_config,
         osc_host=osc_host,
         osc_port=osc_port,
         osc_dry_run=osc_dry_run,
         silence_config=silence_config,
+        speech_config=speech_config,
+        prediction_window_seconds=prediction_window_seconds,
     )
     
     try:
@@ -1023,10 +1029,11 @@ if __name__ == "__main__":
             args.prediction_channels,
             args.test,
             args.output,
-            args.osc_config,
-            args.scene_map,
+            args.qlc_config,
             args.osc_host,
             args.osc_port,
             args.osc_dry_run,
             args.silence_config,
+            args.speech_config,
+            args.prediction_config.window_seconds,
         ))

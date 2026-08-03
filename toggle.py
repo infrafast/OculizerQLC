@@ -45,10 +45,8 @@ def parse_args():
                       help='Average first two input channels together for FFT (useful for Scarlett 18i20)')
     parser.add_argument('--output', choices=OUTPUT_CHOICES, default='enttec',
                       help='Lighting output backend (default: enttec)')
-    parser.add_argument('--osc-config', default=None,
-                      help='QLC+ OSC JSON configuration (default: config/qlc_osc.json)')
-    parser.add_argument('--scene-map', default=None,
-                      help='Logical QLC+ scene map (default: config/qlc_scene_map.json)')
+    parser.add_argument('--qlc-config', default=None,
+                      help='Unified QLC+ configuration (default: config/qlc_config.json)')
     parser.add_argument('--osc-host', default=None,
                       help='Override the QLC+ OSC destination host')
     parser.add_argument('--osc-port', type=int, default=None,
@@ -287,8 +285,8 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
     finally:
         curses.mousemask(0)  # Disable mouse events
 
-def main(stdscr, profile, input_device, average_dual_channels, output, osc_config,
-         scene_map, osc_host, osc_port, osc_dry_run):
+def main(stdscr, profile, input_device, average_dual_channels, output, qlc_config,
+         osc_host, osc_port, osc_dry_run):
     # Load profile fixtures for scene manager
     from pathlib import Path
     profile_fixtures = set()
@@ -316,8 +314,7 @@ def main(stdscr, profile, input_device, average_dual_channels, output, osc_confi
         input_device,
         average_dual_channels=average_dual_channels,
         output=output,
-        osc_config_path=osc_config,
-        osc_scene_map_path=scene_map,
+        qlc_config_path=qlc_config,
         osc_host=osc_host,
         osc_port=osc_port,
         osc_dry_run=osc_dry_run,
@@ -352,8 +349,7 @@ if __name__ == '__main__':
             args.input,
             args.average_dual_channels,
             args.output,
-            args.osc_config,
-            args.scene_map,
+            args.qlc_config,
             args.osc_host,
             args.osc_port,
             args.osc_dry_run,

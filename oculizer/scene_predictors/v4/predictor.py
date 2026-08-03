@@ -14,7 +14,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import torch
-from efficientat import get_mn, get_dymn, AugmentMelSTFT, NAME_TO_WIDTH
+from efficientat import get_mn, get_dymn, AugmentMelSTFT, NAME_TO_WIDTH, labels
 import librosa
 import json
 import os
@@ -41,6 +41,17 @@ def set_deterministic_seeds(seed=0):
 
 
 class ScenePredictor:
+    @staticmethod
+    def aggregate_audioset_scores(probabilities):
+        speech_names = (
+            "Speech", "Male speech, man speaking", "Female speech, woman speaking",
+            "Child speech, kid speaking", "Speech synthesizer", "Hubbub, speech noise, speech babble",
+        )
+        speech = max(float(probabilities[labels.index(name)]) for name in speech_names)
+        singing = float(probabilities[labels.index("Singing")])
+        music = max(float(probabilities[labels.index("Music")]), singing)
+        return {"speech": speech, "singing": singing, "music": music}
+
     def __init__(self, model_dir=None, sr=48000, seed=0):
         """
         Initialize the v4 scene predictor with trained models.
@@ -60,6 +71,7 @@ class ScenePredictor:
         
         self.model_dir = Path(model_dir)
         self.sr = sr
+        self.last_audioset_scores = None
         
         # MFCC extraction parameters (matching training)
         self.n_mfcc = 128
@@ -165,6 +177,8 @@ class ScenePredictor:
             
             spec = self.mel(wav_tensor)
             logits, feats = self.model(spec.unsqueeze(0))
+            probabilities = torch.sigmoid(logits).detach().cpu().numpy().reshape(-1)
+            self.last_audioset_scores = self.aggregate_audioset_scores(probabilities)
             embeddings = feats.cpu().numpy().squeeze()
             
             return embeddings
@@ -301,4 +315,3 @@ if __name__ == '__main__':
         
     except Exception as e:
         print(f"Error testing predictor: {e}")
-

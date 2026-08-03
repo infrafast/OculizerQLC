@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from oculizer.light.control import Oculizer
-from oculizer.runtime_config import configured_audio_input, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_prediction, configured_silence, load_runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
@@ -67,6 +67,13 @@ class RuntimeConfigTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "resume_threshold"):
                 load_runtime_config(path)
+
+    def test_loads_prediction_window(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oculizer.json"
+            path.write_text(json.dumps({"audio": {"prediction": {"window_seconds": 2.5}}}))
+            config = load_runtime_config(path)
+        self.assertEqual(configured_prediction(config).window_seconds, 2.5)
 
 
 class AudioDeviceResolutionTests(unittest.TestCase):
