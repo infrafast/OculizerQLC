@@ -29,7 +29,7 @@ class OscTestSenderTests(unittest.TestCase):
         self.assertEqual(packet[12:], struct.pack(">f", 0.5))
 
     def test_address_must_start_with_slash(self):
-        with self.assertRaisesRegex(ValueError, "must start"):
+        with self.assertRaisesRegex(ValueError, "starting with"):
             build_float_message("test", 1.0)
 
     def test_send_float_reaches_a_local_udp_receiver(self):

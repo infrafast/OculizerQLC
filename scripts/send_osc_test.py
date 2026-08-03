@@ -16,17 +16,15 @@ DEFAULT_ADDRESS = "/test"
 
 def _encode_osc_string(value: str) -> bytes:
     encoded = value.encode("utf-8") + b"\x00"
-    padding = (-len(encoded)) % 4
-    return encoded + (b"\x00" * padding)
+    return encoded + (b"\x00" * ((-len(encoded)) % 4))
 
 
 def build_float_message(address: str, value: float) -> bytes:
-    """Build an OSC message containing one big-endian float argument."""
-    if not address.startswith("/"):
-        raise ValueError("OSC address must start with '/'")
+    """Build one self-contained OSC float message for milestone testing."""
+    if not isinstance(address, str) or not address.startswith("/"):
+        raise ValueError("OSC address must be a string starting with '/'")
     if "\x00" in address:
         raise ValueError("OSC address must not contain null bytes")
-
     return (
         _encode_osc_string(address)
         + _encode_osc_string(",f")

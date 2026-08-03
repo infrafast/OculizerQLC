@@ -210,6 +210,8 @@ python scripts/send_osc_test.py --pulse 1
 
 This sends `/test` with value `1.0`, waits one second, and sends `0.0` to `127.0.0.1:7700`. It is a temporary connection diagnostic, not part of the application OSC namespace or backend.
 
+The reusable OSC transport is configured in `config/qlc_osc.json`. It currently provides normalized float messages, press/release helpers, level controls, blackout, dry-run operation, and non-blocking UDP error handling. It is not connected to `oculize.py` or `toggle.py` yet; backend integration belongs to the next milestone.
+
 The validated QLC+ 5.2.2 reference workspace is stored in `qlc/qlc.qxw`. Its OSC input profile is stored separately in `qlc/Oculizer-OSC.qxi`, because QLC+ workspaces reference input profiles by name rather than embedding them. On macOS, install the profile in `~/Library/Application Support/QLC+/InputProfiles/` before opening the workspace on a new system. This workspace is a test reference, not a hard-coded runtime default. A future launcher will require a configurable path to the `.qxw` workspace that QLC+ must load. The production profile location and launch mechanism for Raspberry Pi OS will be finalized during the deployment milestone.
 
 Technical tracking, the roadmap, and contributor instructions are maintained in [DEVELOPMENT.md](DEVELOPMENT.md).

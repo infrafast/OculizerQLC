@@ -183,7 +183,7 @@ Exit criterion: an external OSC command starts and stops the test function deter
 
 ### Phase 1 — Standalone OSC client
 
-Status: **not started**
+Status: **complete — validated with QLC+ 5.2.2 on macOS**
 
 Proposed files:
 
@@ -193,13 +193,13 @@ config/qlc_osc.json
 tests/test_osc_client.py
 ```
 
-- [ ] add an OSC dependency compatible with macOS and Linux ARM64;
-- [ ] implement `send`, `press`, `release`, `set_level`, `blackout`, and `close`;
-- [ ] validate and clamp values;
-- [ ] add dry-run mode;
-- [ ] ensure a missing QLC+ instance cannot block the audio loop;
-- [ ] test against a local UDP receiver;
-- [ ] test against QLC+ 5 on macOS.
+- [x] choose a dependency-free OSC implementation compatible with macOS and Linux ARM64;
+- [x] implement `send`, `press`, `release`, `set_level`, `blackout`, and `close`;
+- [x] validate and clamp values;
+- [x] add dry-run mode;
+- [x] ensure a missing QLC+ instance cannot block the audio loop;
+- [x] test against a local UDP receiver;
+- [x] test against QLC+ 5 on macOS.
 
 Exit criterion: the same client passes UDP tests and controls the QLC+ button created in phase 0.
 
@@ -379,6 +379,50 @@ Decision:
 
 - the future launcher must receive the workspace path through configuration or a command-line option, validate it, and pass it to QLC+ at startup;
 - application code must not hard-code `qlc/qlc.qxw` or any machine-specific absolute path.
+
+### 2026-08-03 — Phase 1 reusable OSC client implementation
+
+Implemented:
+
+- added `oculizer/light/osc_client.py` with a reusable, thread-safe UDP client;
+- added `config/qlc_osc.json` with loopback defaults and a namespaced blackout path;
+- implemented OSC float encoding, normalized value clamping, press/release, level, blackout, dry-run, context-manager, and idempotent close behavior;
+- made UDP send failures return `False` after logging instead of propagating into real-time application code;
+- kept the milestone `/test` script self-contained so it can run by path without installing the Oculizer package;
+- selected a standard-library implementation to avoid an unnecessary runtime dependency on macOS and Linux ARM64.
+
+Validated:
+
+- 10 unit and loopback UDP tests pass;
+- configuration loading and validation pass;
+- OSC encoding, clamping, dry-run, close behavior, and four-message UDP delivery pass;
+- Python compilation and default configuration construction pass.
+
+Remaining validation:
+
+- none; the client has been validated against the `/test` control in QLC+ 5.2.2.
+
+Observed QLC+ button semantics:
+
+- a Virtual Console button configured as `Toggle Function on/off` toggles only on a press event (`1.0`);
+- the release event (`0.0`) ends the physical input gesture but does not stop the Function;
+- switching the Function off requires a second complete press/release gesture, not a release message by itself;
+- phase 2 must model a `pulse` gesture separately from desired logical scene state and must avoid assuming that `0.0` means “deactivate” for toggle widgets.
+
+### 2026-08-03 — Phase 1 QLC+ validation completed
+
+Validated:
+
+- `OscClient.from_file('config/qlc_osc.json')` successfully controls the `/test` Virtual Console button;
+- `press('/test')` toggles the attached Function on;
+- `release('/test')` is correctly treated by QLC+ as button release and does not toggle the Function off;
+- a second complete press/release pulse toggles the active Function off;
+- the observed behavior matches the button's `Toggle Function on/off` configuration.
+
+Decision:
+
+- OSC transport retains distinct `press` and `release` primitives;
+- the future QLC+ backend will implement a complete button pulse and explicit logical-state tracking for toggle widgets.
 
 ### 2026-08-03 — Reproducible EfficientAT installation
 
