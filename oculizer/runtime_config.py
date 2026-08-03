@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "oculizer.json"
@@ -43,6 +43,33 @@ class MasterModulationConfig:
     change_threshold: float = 0.01
     silence_value: float = 0.0
     shutdown_value: float = 0.0
+
+@dataclass(frozen=True)
+class FrequencyBandConfig:
+    enabled: bool
+    parameter: str
+    low_hz: float
+    high_hz: float
+    input_floor: float
+    input_ceiling: float
+    response: str = "level"
+    baseline_smoothing: float = 0.02
+
+@dataclass(frozen=True)
+class FrequencyModulationConfig:
+    enabled: bool = False
+    rate_hz: float = 25.0
+    smoothing_factor: float = 0.3
+    change_threshold: float = 0.02
+    silence_value: float = 0.0
+    shutdown_value: float = 0.0
+    bands: Mapping[str, FrequencyBandConfig] | None = None
+
+DEFAULT_FREQUENCY_BANDS = {
+    "bass": FrequencyBandConfig(True, "bass", 35.0, 180.0, 0.0001, 0.02, "transient", 0.02),
+    "mid": FrequencyBandConfig(False, "mid", 180.0, 2000.0, 0.0001, 0.02),
+    "high": FrequencyBandConfig(False, "high", 2000.0, 8000.0, 0.0001, 0.02),
+}
 
 
 def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
@@ -123,7 +150,71 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
     for name in ("smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
         if not 0 <= getattr(master_config, name) <= 1:
             raise ValueError(f"audio.master_modulation.{name} must be between 0 and 1")
+    _parse_frequency_modulation(audio.get("frequency_modulation", {}))
     return config
+
+def _parse_frequency_modulation(raw: Any) -> FrequencyModulationConfig:
+    if not isinstance(raw, dict):
+        raise ValueError("audio.frequency_modulation must be an object")
+    enabled = raw.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError("audio.frequency_modulation.enabled must be a boolean")
+    numeric_defaults = {
+        "rate_hz": 25.0,
+        "smoothing_factor": 0.3,
+        "change_threshold": 0.02,
+        "silence_value": 0.0,
+        "shutdown_value": 0.0,
+    }
+    numeric = {}
+    for name, default in numeric_defaults.items():
+        value = raw.get(name, default)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"audio.frequency_modulation.{name} must be numeric")
+        numeric[name] = float(value)
+    if not 1 <= numeric["rate_hz"] <= 60:
+        raise ValueError("audio.frequency_modulation.rate_hz must be between 1 and 60")
+    for name in ("smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
+        if not 0 <= numeric[name] <= 1:
+            raise ValueError(f"audio.frequency_modulation.{name} must be between 0 and 1")
+
+    raw_bands = raw.get("bands", {})
+    if not isinstance(raw_bands, dict):
+        raise ValueError("audio.frequency_modulation.bands must be an object")
+    bands = {}
+    for name, default in DEFAULT_FREQUENCY_BANDS.items():
+        data = raw_bands.get(name, {})
+        if not isinstance(data, dict):
+            raise ValueError(f"audio.frequency_modulation.bands.{name} must be an object")
+        band = FrequencyBandConfig(**{
+            field: data.get(field, getattr(default, field))
+            for field in FrequencyBandConfig.__dataclass_fields__
+        })
+        if not isinstance(band.enabled, bool) or not isinstance(band.parameter, str) or not band.parameter.strip():
+            raise ValueError(f"invalid audio.frequency_modulation.bands.{name} configuration")
+        if band.response not in {"level", "transient"}:
+            raise ValueError(f"audio.frequency_modulation.bands.{name}.response must be 'level' or 'transient'")
+        for field in ("low_hz", "high_hz", "input_floor", "input_ceiling", "baseline_smoothing"):
+            value = getattr(band, field)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"audio.frequency_modulation.bands.{name}.{field} must be numeric")
+        if band.low_hz < 0 or band.high_hz <= band.low_hz:
+            raise ValueError(f"audio.frequency_modulation.bands.{name}.high_hz must be greater than low_hz")
+        if band.input_floor < 0 or band.input_ceiling <= band.input_floor:
+            raise ValueError(f"audio.frequency_modulation.bands.{name}.input_ceiling must be greater than input_floor")
+        if not 0 < band.baseline_smoothing <= 1:
+            raise ValueError(f"audio.frequency_modulation.bands.{name}.baseline_smoothing must be between 0 and 1")
+        bands[name] = FrequencyBandConfig(
+            band.enabled,
+            band.parameter,
+            float(band.low_hz),
+            float(band.high_hz),
+            float(band.input_floor),
+            float(band.input_ceiling),
+            band.response,
+            float(band.baseline_smoothing),
+        )
+    return FrequencyModulationConfig(enabled=enabled, bands=bands, **numeric)
 
 
 def configured_audio_input(config: dict[str, Any]) -> str | int:
@@ -161,3 +252,6 @@ def configured_master_modulation(config: dict[str, Any]) -> MasterModulationConf
     for key in ("rate_hz", "input_floor", "input_ceiling", "smoothing_factor", "change_threshold", "silence_value", "shutdown_value"):
         values[key] = float(values[key])
     return MasterModulationConfig(**values)
+
+def configured_frequency_modulation(config: dict[str, Any]) -> FrequencyModulationConfig:
+    return _parse_frequency_modulation(config.get("audio", {}).get("frequency_modulation", {}))

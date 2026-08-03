@@ -6,7 +6,10 @@
   },
   "controls": {
     "blackout": "/blackout",
-    "master": "/oculizer/master"
+    "master": "/oculizer/master",
+    "bass": "/oculizer/bass",
+    "mid": "/oculizer/mid",
+    "high": "/oculizer/high"
   },
   "routing": {
     "pulse_seconds": 0.1,

@@ -114,6 +114,8 @@ The silence policy is evaluated before automatic prediction routing. Audio must 
 
 `audio.master_modulation` maps live input RMS to the QLC+ control named by `parameter`. The reference `master` control is `/oculizer/master` under `controls` in `config/qlc_config.json`. RMS values between `input_floor` and `input_ceiling` are normalized to `[0.0, 1.0]`, smoothed, rate-limited to 25 Hz, and deduplicated using `change_threshold`. Silence and clean shutdown send the configured safe value `0.0`. In QLC+ 5, the reference slider is a Grand Master in Reduce mode applied to Intensity channels only.
 
+`audio.frequency_modulation` derives bass (35–180 Hz), mid (180–2,000 Hz), and high (2,000–8,000 Hz) energy from the Mel spectrum already computed by the audio callback. Each band has an independent OSC parameter, frequency range, normalization floor and ceiling, response mode, and enable switch. Bass and mid use `transient` response: a slowly adapting baseline is removed so musical accents create peaks while sustained energy recedes. High uses `level` response so cymbals, hi-hats, and sustained high-frequency content remain represented for their full duration. `baseline_smoothing` controls the baseline only for transient bands. Bass, mid, and high are enabled at `/oculizer/bass`, `/oculizer/mid`, and `/oculizer/high`. All enabled bands share rate limiting, smoothing, change suppression, and safe silence/shutdown values.
+
 The command line overrides the configuration. For example, use BlackHole for an Enttec-backed launch:
 
 ```bash
@@ -295,7 +297,7 @@ python test_fallbacks_simple.py
 
 ## Project status
 
-Direct DMX output remains available. OSC transport, interchangeable backends, manual and automatic QLC+ selection, configurable silence behavior, stabilized speech-aware announcement routing, the headless runtime, and continuous Grand Master modulation are validated with live audio on macOS. Frequency-band modulation is the next milestone.
+Direct DMX output remains available. OSC transport, interchangeable backends, manual and automatic QLC+ selection, configurable silence behavior, stabilized speech-aware announcement routing, the headless runtime, continuous Grand Master modulation, and bass, mid, and high modulation are validated with live audio on macOS. Robustness and state handling is the active milestone.
 
 The milestone-0 QLC+ connection can be checked after configuring the test control in QLC+:
 

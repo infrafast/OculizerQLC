@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from oculizer.light.control import Oculizer
-from oculizer.runtime_config import configured_audio_input, configured_master_modulation, configured_prediction, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, load_runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
@@ -99,6 +99,29 @@ class RuntimeConfigTests(unittest.TestCase):
                 "input_ceiling": 0.1,
             }}}))
             with self.assertRaisesRegex(ValueError, "input_ceiling"):
+                load_runtime_config(path)
+
+    def test_loads_frequency_band_configuration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oculizer.json"
+            path.write_text(json.dumps({"audio": {"frequency_modulation": {
+                "enabled": True,
+                "bands": {"bass": {"enabled": True, "high_hz": 300}},
+            }}}))
+            config = configured_frequency_modulation(load_runtime_config(path))
+        self.assertTrue(config.enabled)
+        self.assertTrue(config.bands["bass"].enabled)
+        self.assertEqual(config.bands["bass"].high_hz, 300.0)
+        self.assertEqual(config.bands["bass"].response, "transient")
+        self.assertFalse(config.bands["mid"].enabled)
+
+    def test_rejects_invalid_frequency_band(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oculizer.json"
+            path.write_text(json.dumps({"audio": {"frequency_modulation": {
+                "bands": {"bass": {"low_hz": 300, "high_hz": 200}},
+            }}}))
+            with self.assertRaisesRegex(ValueError, "high_hz"):
                 load_runtime_config(path)
 
 

@@ -45,7 +45,7 @@
   </Monitor>
  </Engine>
  <VirtualConsole>
-  <Frame Caption="test" ID="0">
+  <Frame Caption="high" ID="0">
    <Appearance>
     <Font>Roboto Condensed,16,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
    </Appearance>
@@ -64,8 +64,17 @@
     <Action>StopAll</Action>
     <Input ID="0" Universe="0" Channel="36806"/>
    </Button>
+   <Slider Caption="medium" ID="5" WidgetStyle="Slider" InvertedAppearance="false">
+    <WindowState Visible="True" X="223" Y="0" Width="85" Height="223"/>
+    <Appearance>
+     <BackgroundColor>4282664004</BackgroundColor>
+    </Appearance>
+    <Input ID="0" Universe="0" Channel="53001"/>
+    <SliderMode ValueDisplayStyle="Exact">Adjust</SliderMode>
+    <Level LowLimit="0" HighLimit="255" Value="0"/>
+   </Slider>
    <Button Caption="test" ID="0">
-    <WindowState Visible="True" X="309" Y="171" Width="223" Height="171"/>
+    <WindowState Visible="True" X="292" Y="412" Width="223" Height="171"/>
     <Appearance>
      <BackgroundColor>4282664004</BackgroundColor>
     </Appearance>
@@ -89,7 +98,25 @@
     </Appearance>
     <Input ID="0" Universe="0" Channel="30161"/>
     <SliderMode ValueDisplayStyle="Percentage">GrandMaster</SliderMode>
-    <Level LowLimit="0" HighLimit="255" Value="255"/>
+    <Level LowLimit="0" HighLimit="255" Value="101"/>
+   </Slider>
+   <Slider Caption="high" ID="6" WidgetStyle="Slider" InvertedAppearance="false">
+    <WindowState Visible="True" X="326" Y="0" Width="85" Height="223"/>
+    <Appearance>
+     <BackgroundColor>4282664004</BackgroundColor>
+    </Appearance>
+    <Input ID="0" Universe="0" Channel="50695"/>
+    <SliderMode ValueDisplayStyle="Exact">Adjust</SliderMode>
+    <Level LowLimit="0" HighLimit="255" Value="186"/>
+   </Slider>
+   <Slider Caption="bass" ID="4" WidgetStyle="Slider" InvertedAppearance="false">
+    <WindowState Visible="True" X="120" Y="0" Width="85" Height="223"/>
+    <Appearance>
+     <BackgroundColor>4282664004</BackgroundColor>
+    </Appearance>
+    <Input ID="0" Universe="0" Channel="32968"/>
+    <SliderMode ValueDisplayStyle="Exact">Adjust</SliderMode>
+    <Level LowLimit="0" HighLimit="255" Value="0"/>
    </Slider>
   </Frame>
   <Frame Caption="Page 2" ID="1">

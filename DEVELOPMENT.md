@@ -299,16 +299,25 @@ Exit criterion: a QLC+ slider follows audio without flicker or significant overh
 
 ### Phase 6 — Advanced modulations
 
-Status: **active — awaiting the first frequency-band control contract**
+Status: **complete — bass, mid, and high validated with live audio and QLC+ on macOS**
 
-- [ ] add bass, mid, and high one at a time;
-- [ ] add speed or strobe only when the workspace consumes it;
-- [ ] document the source, smoothing, and QLC+ destination of every value;
-- [ ] remove any transmission without a validated artistic use.
+- [x] add configurable bass, mid, and high extraction while enabling only bass for the first validation slice;
+- [x] defer speed and strobe because the reference workspace does not consume them;
+- [x] document the source, smoothing, and QLC+ destination of every value;
+- [x] transmit only the validated master, bass, mid, and high controls.
+
+First validation slice:
+
+- [x] reuse the existing Mel spectrum without adding another FFT;
+- [x] extract bass from 35–180 Hz, remove a slowly adapting baseline, and normalize transient energy to `[0.0, 1.0]`;
+- [x] send `/oculizer/bass` at no more than 25 Hz with smoothing and change suppression;
+- [x] send a safe zero at silence and shutdown;
+- [x] map `/oculizer/bass` to one QLC+ control and validate its visual use with live audio;
+- [x] calibrate the reference bass transient response from live input.
 
 ### Phase 7 — Robustness and state
 
-Status: **not started**
+Status: **active — awaiting robustness policy decisions and validation plan**
 
 - [ ] define startup and shutdown policy for controlled functions;
 - [ ] implement emergency blackout;
@@ -432,7 +441,7 @@ Validated:
 - OSC encoding, clamping, dry-run, close behavior, and four-message UDP delivery pass;
 - Python compilation and default configuration construction pass.
 
-Remaining validation:
+Validation targets:
 
 - none; the client has been validated against the `/test` control in QLC+ 5.2.2.
 
@@ -832,6 +841,108 @@ Remaining validation:
 - no further calibration was required with the reference values;
 - phase 5 is complete and phase 6 frequency-band modulation is now active.
 
+### 2026-08-03 — Phase 6 bass modulation slice
+
+Implemented:
+
+- retained the unscaled Mel spectrum already computed by the audio callback and exposed it to the modulation layer without network I/O in the callback;
+- added configurable bass, mid, and high ranges with independent enable switches and normalization bounds;
+- added a shared rate limit, smoothing factor, change threshold, silence value, and shutdown value;
+- initially enabled only the 20–250 Hz bass slice for the first live validation, then narrowed it during calibration as recorded below;
+- added `/oculizer/bass`, `/oculizer/mid`, and `/oculizer/high` to unified QLC+ controls while keeping mid and high transmission disabled;
+- connected band modulation to headless and interactive automatic operation;
+- added unit coverage for configuration validation, enabled-band selection, normalization, and safe shutdown.
+
+Embedded-resource decision:
+
+- phase 6 reuses the 128-bin Mel spectrum already produced by the audio callback and does not add another FFT, audio stream, model, thread, or queue;
+- band extraction scans only the existing small spectrum at the configured modulation rate, currently 25 Hz;
+- future analysis or model additions require an explicit CPU and memory tradeoff review against the Raspberry Pi 5 production target before implementation.
+
+Remaining validation:
+
+- enable and validate the mid band as the next isolated modulation slice;
+- keep high disabled until mid has a concrete and validated artistic use.
+
+Live calibration correction:
+
+- the initial 20–250 Hz absolute-level response detected kicks but remained elevated while other instruments were audible;
+- narrowed the bass range to 35–180 Hz;
+- changed the bass response to transient mode, which subtracts a slowly adapting energy baseline before normalization;
+- retained level mode for the disabled mid and high bands;
+- added regression coverage confirming that sustained bass energy produces a decreasing output after its initial transient.
+
+Live validation:
+
+- the operator confirmed that `/oculizer/bass` follows kicks accurately after transient-mode calibration;
+- the bass fader no longer remains excessively elevated during the rest of the music;
+- the bass slice is accepted as complete.
+
+### 2026-08-03 — Phase 6 mid validation slice
+
+Implemented:
+
+- enabled the existing 180–2,000 Hz mid band at `/oculizer/mid` after the operator created its QLC+ fader;
+- retained level response for the initial validation so the fader represents sustained mid-band energy;
+- reused the same Mel spectrum, update loop, and state dictionaries as bass, adding no FFT, audio stream, model, thread, or queue;
+- the incremental runtime cost is limited to one normalization, smoothing, threshold comparison, and optional OSC float message per 40 ms update.
+
+Remaining validation:
+
+- confirm the mid fader's usable range and stability with live music;
+- tune its normalization bounds or response mode only if the observed behavior requires it.
+
+Live calibration correction:
+
+- the initial absolute-level mid response remained almost continuously at 100% because the broad 180–2,000 Hz range contains energy from most instruments;
+- changed mid to the existing transient response without adding spectral work or runtime infrastructure;
+- raised the mid transient ceiling from `0.02` to `0.1` to provide headroom for its wider band;
+- retained the same low-cost slowly adapting baseline used by bass;
+- validation must confirm that mid accents now use the fader range without remaining saturated.
+
+Live validation:
+
+- the operator confirmed that transient response prevents `/oculizer/mid` from remaining at 100% and provides a useful live response;
+- the mid slice is accepted as complete;
+- `SIGINT` shutdown was rechecked during the same live session and exits correctly after graceful cleanup.
+
+The high band remained disabled at this point and was enabled only after its QLC+ fader was created, as recorded below.
+
+### 2026-08-03 — Phase 6 high validation slice
+
+Implemented:
+
+- enabled the existing 2,000–8,000 Hz high band after the operator created its QLC+ fader;
+- selected transient response and a `0.1` normalization ceiling from the start to avoid the broad-band saturation observed during mid validation;
+- reused the same spectrum and modulation loop, adding only one small state entry and at most one thresholded OSC float message per 40 ms update;
+- added no FFT, model, audio stream, thread, or queue.
+
+Initial validation targets:
+
+- confirm that cymbals, hi-hats, consonants, and other high-frequency accents produce a useful range without sustained saturation;
+- calibrate the high ceiling or baseline only if required by live behavior.
+
+Live calibration correction:
+
+- synthetic checks confirmed that 3–7 kHz tones are correctly isolated in the high band;
+- sustained tones above approximately 3.5 kHz appeared to cut out because transient mode intentionally absorbed continuous energy into its slow baseline;
+- changed only high to level response so sustained cymbals and high-frequency tones remain represented;
+- raised the high ceiling from `0.1` to `0.5` to accommodate absolute high-band energy without immediate saturation;
+- this changes only arithmetic and configuration; it adds no embedded CPU or memory infrastructure.
+
+Second live calibration:
+
+- level mode correctly retained sustained high-frequency content, but the `0.5` ceiling used too little of the fader range with the test input;
+- reduced the high ceiling to `0.1`, increasing sensitivity by a factor of five;
+- a sustained test tone is expected to produce a stable level, while musical high-frequency transients should create the visible movement.
+
+Live validation:
+
+- after lowering the high level ceiling to `0.1`, the operator confirmed a useful and responsive fader range;
+- `/oculizer/bass`, `/oculizer/mid`, and `/oculizer/high` are all accepted with live audio and QLC+;
+- phase 6 is complete without adding another FFT, model, audio stream, thread, or queue;
+- phase 7 robustness and state handling is now active.
+
 ## Instructions for developers and coding agents
 
 ### Before making changes
@@ -846,6 +957,12 @@ Remaining validation:
 ### During implementation
 
 - work on one phase or independently testable slice at a time;
+- treat Raspberry Pi 5 resource limits as a permanent design constraint, even during macOS development;
+- reuse already computed audio features and shared buffers before adding another analysis pass, model, thread, queue, or high-frequency timer;
+- keep CPU, memory, allocation rate, latency, and thermal impact proportional to the feature's validated artistic value;
+- identify resource-intensive proposals before implementation, explain the expected CPU and memory tradeoffs to the operator, and request approval when a meaningful compromise is required;
+- provide a lower-cost alternative whenever a proposed implementation could materially affect embedded performance;
+- record significant resource decisions and measurements in this document;
 - retain Enttec output until its removal is explicitly approved;
 - do not move QLC+-specific logic into `mapping.py`;
 - keep network transport out of the audio callback;
@@ -872,7 +989,8 @@ Depending on the change, run:
 - dry-run tests;
 - QLC+ macOS tests for OSC milestones;
 - a check that OSC mode never opens a DMX port;
-- clean-shutdown and safe-value checks.
+- clean-shutdown and safe-value checks;
+- CPU and memory observations for new continuous processing, additional models, audio-analysis passes, or background workers, with Raspberry Pi 5 as the production reference.
 
 Do not mark a roadmap checkbox complete without recording the executed test and result in the implementation log.
 

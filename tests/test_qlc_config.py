@@ -13,7 +13,7 @@ class QLCConfigTests(unittest.TestCase):
             path.write_text(
                 json.dumps({
                     "transport": {"host": "192.0.2.10", "port": 7777, "dry_run": True},
-                    "controls": {"blackout": "/blackout", "master": "/oculizer/master"},
+                    "controls": {"blackout": "/blackout", "master": "/oculizer/master", "bass": "/oculizer/bass"},
                     "routing": {
                         "pulse_seconds": 0.2,
                         "scenes": {
@@ -34,6 +34,7 @@ class QLCConfigTests(unittest.TestCase):
         self.assertTrue(config.transport.dry_run)
         self.assertEqual(config.transport.blackout_path, "/blackout")
         self.assertEqual(config.controls["master"], "/oculizer/master")
+        self.assertEqual(config.controls["bass"], "/oculizer/bass")
         self.assertEqual(config.routing.pulse_seconds, 0.2)
         self.assertEqual(config.routing.get("announcement").path, "/oculizer/scenes/announcement")
         self.assertEqual(config.routing.get("off").action, "off")

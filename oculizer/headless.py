@@ -6,17 +6,18 @@ import logging
 import threading
 
 from oculizer.automatic import AutomaticSceneRouter
-from oculizer.modulation import MasterModulator
+from oculizer.modulation import FrequencyBandModulator, MasterModulator
 
 
 logger = logging.getLogger(__name__)
 
 
 class HeadlessOculizerService:
-    def __init__(self, oculizer, poll_seconds=0.02, silence_config=None, speech_config=None, master_config=None):
+    def __init__(self, oculizer, poll_seconds=0.02, silence_config=None, speech_config=None, master_config=None, frequency_config=None):
         self.oculizer = oculizer
         self.router = AutomaticSceneRouter(oculizer, silence_config=silence_config, speech_config=speech_config)
         self.master_modulator = MasterModulator(oculizer, config=master_config)
+        self.frequency_modulator = FrequencyBandModulator(oculizer, config=frequency_config)
         self.poll_seconds = poll_seconds
         self.stop_event = threading.Event()
 
@@ -35,9 +36,11 @@ class HeadlessOculizerService:
                     return 1
                 self.router.step()
                 self.master_modulator.update()
+                self.frequency_modulator.update()
             return 0
         finally:
             self.master_modulator.shutdown()
+            self.frequency_modulator.shutdown()
             self.oculizer.stop()
             self.oculizer.join(timeout=5.0)
             if self.oculizer.is_alive():

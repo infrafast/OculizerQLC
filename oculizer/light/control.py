@@ -143,6 +143,8 @@ class Oculizer(threading.Thread):
         self.audio_callback_count = 0
         self.last_audio_rms = None
         self.current_audio_rms = None
+        self.current_mel_spectrum = None
+        self.current_mel_sample_rate = None
         self.audio_underrun_count = 0
         self.max_queue_depth_seen = 0  # Track maximum queue buildup
 
@@ -431,6 +433,8 @@ class Oculizer(threading.Thread):
                     n_fft=1024,  # Using prediction stream block size
                     hop_length=512
                 ), axis=1)
+                self.current_mel_spectrum = mfft_data
+                self.current_mel_sample_rate = 48000
                 mfft_data = scale_mfft(mfft_data)
                 
                 # Update mfft_queue for visualizer
@@ -892,6 +896,8 @@ class Oculizer(threading.Thread):
                 pass  # Drop frame if queue is full to avoid blocking
         
         mfft_data = np.mean(librosa.feature.melspectrogram(y=audio_data, sr=self.sample_rate, n_fft=self.block_size, hop_length=self.hop_length), axis=1)
+        self.current_mel_spectrum = mfft_data
+        self.current_mel_sample_rate = self.sample_rate
         mfft_data = scale_mfft(mfft_data)
 
         if self.normalizer is not None:

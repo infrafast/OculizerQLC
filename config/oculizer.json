@@ -15,6 +15,46 @@
       "silence_value": 0.0,
       "shutdown_value": 0.0
     },
+    "frequency_modulation": {
+      "enabled": true,
+      "rate_hz": 25.0,
+      "smoothing_factor": 0.3,
+      "change_threshold": 0.02,
+      "silence_value": 0.0,
+      "shutdown_value": 0.0,
+      "bands": {
+        "bass": {
+          "enabled": true,
+          "parameter": "bass",
+          "low_hz": 35.0,
+          "high_hz": 180.0,
+          "input_floor": 0.0001,
+          "input_ceiling": 0.02,
+          "response": "transient",
+          "baseline_smoothing": 0.02
+        },
+        "mid": {
+          "enabled": true,
+          "parameter": "mid",
+          "low_hz": 180.0,
+          "high_hz": 2000.0,
+          "input_floor": 0.0001,
+          "input_ceiling": 0.1,
+          "response": "transient",
+          "baseline_smoothing": 0.02
+        },
+        "high": {
+          "enabled": true,
+          "parameter": "high",
+          "low_hz": 2000.0,
+          "high_hz": 8000.0,
+          "input_floor": 0.0001,
+          "input_ceiling": 0.1,
+          "response": "level",
+          "baseline_smoothing": 0.02
+        }
+      }
+    },
     "silence": {
       "enabled": true,
       "threshold": 0.001,
