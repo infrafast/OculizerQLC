@@ -129,6 +129,33 @@ Useful options:
 
 `v4` is the validated default predictor. `v5` also supports speech-aware announcement routing and currently uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
 
+### Train a concert-specific v6 predictor
+
+v6 uses the faster v4 feature pipeline (1,920 EfficientAT dimensions plus 128 mean-MFCC dimensions) while training new clusters on the operator's own recordings. Put representative MP3, WAV, FLAC, M4A, AAC, or OGG recordings in one directory, then run:
+
+```bash
+python3 scripts/train_predictor_v6.py \
+  --input /path/to/concert-recordings \
+  --clusters 30 \
+  --window-seconds 4 \
+  --hop-seconds 2
+```
+
+The initial model remains unavailable to the application because every cluster provisionally maps to `party`. Open `oculizer/scene_predictors/v6/review/cluster_report.md`, listen to its representative excerpts, and edit `oculizer/scene_predictors/v6/scene_mapping.json`. Approve that complete mapping by rerunning the inexpensive statistical stage from the cached audio features:
+
+```bash
+python3 scripts/train_predictor_v6.py \
+  --input /path/to/concert-recordings \
+  --clusters 30 \
+  --window-seconds 4 \
+  --hop-seconds 2 \
+  --reuse-features \
+  --mapping oculizer/scene_predictors/v6/scene_mapping.json \
+  --force
+```
+
+After approval, `--predictor-version v6` appears automatically. Keep `audio.prediction.window_seconds` equal to the v6 training window. The feature cache and review excerpts are local generated data and are ignored by Git; retain a backup until the mapping is final. Use `--max-windows-per-track` to prevent long recordings from dominating, and run `python3 scripts/train_predictor_v6.py --help` for all controls.
+
 Interactive controls:
 
 - `q`: quit;

@@ -4,8 +4,25 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Predictor versions that support the complete current runtime contract.
-AVAILABLE_VERSIONS = ['v4', 'v5']
+_BASE_VERSIONS = ['v4', 'v5']
+_V6_REQUIRED_FILES = ('scaler.pkl', 'pca.pkl', 'kmeans.pkl', 'scene_mapping.json', '.ready')
+
+
+def _v6_is_installed():
+    model_dir = Path(__file__).parent / 'v6'
+    return all((model_dir / filename).is_file() for filename in _V6_REQUIRED_FILES)
+
+
+def list_available_versions():
+    """List complete predictor versions that can be loaded now."""
+    versions = _BASE_VERSIONS.copy()
+    if _v6_is_installed():
+        versions.append('v6')
+    return versions
+
+
+# Kept for callers that display the currently installed choices.
+AVAILABLE_VERSIONS = list_available_versions()
 
 def get_predictor(version='v4'):
     """
@@ -21,8 +38,9 @@ def get_predictor(version='v4'):
         ValueError: If version is not available
         ImportError: If the predictor module cannot be imported
     """
-    if version not in AVAILABLE_VERSIONS:
-        raise ValueError(f"Predictor version '{version}' not available. Available versions: {AVAILABLE_VERSIONS}")
+    available_versions = list_available_versions()
+    if version not in available_versions:
+        raise ValueError(f"Predictor version '{version}' not available. Available versions: {available_versions}")
     
     try:
         # Dynamic import of the predictor module
@@ -41,10 +59,6 @@ def get_predictor(version='v4'):
     except AttributeError as e:
         logger.error(f"ScenePredictor class not found in {version}: {e}")
         raise ImportError(f"ScenePredictor class not found in version '{version}': {e}")
-
-def list_available_versions():
-    """List all available predictor versions."""
-    return AVAILABLE_VERSIONS.copy()
 
 # Backward-compatible direct import now follows the validated default.
 from .v4.predictor import ScenePredictor

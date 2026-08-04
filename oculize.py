@@ -1011,8 +1011,9 @@ Scene Cache Size:
                       help=f'Device for scene prediction in dual-stream mode (default: {default_prediction_device} if dual-stream, otherwise None). Can be a device name (cable_output, scarlett, etc.) or device index number.')
     parser.add_argument('--single-stream', action='store_true', default=default_single_stream,
                       help=f'Use single audio stream for both FFT and prediction (default: {not default_single_stream})')
+    from oculizer.scene_predictors import list_available_versions
     parser.add_argument('--predictor-version', '--predictor', type=str, default='v4',
-                      choices=['v4', 'v5'],
+                        choices=list_available_versions(),
                       help='Scene predictor version to use (default: v4)')
     parser.add_argument('--average-dual-channels', action='store_true',
                       help='Average first two input channels together for FFT (useful for Scarlett 18i20)')

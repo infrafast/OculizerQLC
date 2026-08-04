@@ -41,6 +41,10 @@ def set_deterministic_seeds(seed=0):
 
 
 class ScenePredictor:
+    MODEL_VERSION = "v4"
+    PCA_FILENAME = "pca_95.pkl"
+    KMEANS_FILENAME = "kmeans_100.pkl"
+
     @staticmethod
     def aggregate_audioset_scores(probabilities):
         speech_names = (
@@ -61,7 +65,7 @@ class ScenePredictor:
             sr: Sample rate for audio processing
             seed: Random seed for deterministic behavior
         """
-        print("🎵 Initializing scene predictor v4...")
+        print(f"🎵 Initializing scene predictor {self.MODEL_VERSION}...")
         
         # Set deterministic seeds
         set_deterministic_seeds(seed)
@@ -82,14 +86,14 @@ class ScenePredictor:
         print("📊 Loading preprocessing models (scaler, PCA, KMeans)...")
         try:
             self.scaler = joblib.load(self.model_dir / 'scaler.pkl')
-            self.pca = joblib.load(self.model_dir / 'pca_95.pkl')
-            self.kmeans = joblib.load(self.model_dir / 'kmeans_100.pkl')
+            self.pca = joblib.load(self.model_dir / self.PCA_FILENAME)
+            self.kmeans = joblib.load(self.model_dir / self.KMEANS_FILENAME)
             
             with open(self.model_dir / 'scene_mapping.json', 'r') as f:
                 self.scene_map = json.load(f)
                 
             print(f"✓ Loaded preprocessing models (PCA: {self.pca.n_components_} components, Clusters: {len(self.scene_map)})")
-            logger.info("Successfully loaded v4 preprocessing models")
+            logger.info("Successfully loaded %s preprocessing models", self.MODEL_VERSION)
             logger.info(f"PCA components: {self.pca.n_components_}")
             logger.info(f"Number of clusters: {len(self.scene_map)}")
         except Exception as e:

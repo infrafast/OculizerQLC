@@ -81,3 +81,6 @@ Thumbs.db
 # Project specific
 oculizer.log
 config/dmx_port_cache.txt
+oculizer/scene_predictors/v6/training_features.npz
+oculizer/scene_predictors/v6/review/
+tests/LIVERECORDS.zip

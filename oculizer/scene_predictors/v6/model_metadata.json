@@ -1,0 +1,14 @@
+{
+  "version": "v6",
+  "feature_schema": "efficientat-dymn20_as-1920+v4-mfcc-mean-128",
+  "sample_rate": 48000,
+  "window_seconds": 4.0,
+  "hop_seconds": 2.0,
+  "clusters": 30,
+  "pca_components": 128,
+  "training_windows": 5192,
+  "source_files": 44,
+  "seed": 0,
+  "explained_variance": 0.9286087107965086,
+  "mapping_status": "approved"
+}

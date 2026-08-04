@@ -442,6 +442,34 @@ Control state is initially process-local and is not restored after a crash or re
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
 
+### 2026-08-04 — Concert-specific v6 training pipeline
+
+Delivered behavior:
+
+- added an offline trainer that discovers common compressed/lossless audio formats, decodes them at 48 kHz mono, creates configurable overlapping windows, filters low-RMS silence, and evenly caps each track's contribution;
+- reused the faster v4 feature contract: 1,920 EfficientAT dimensions plus 128 mean-MFCC dimensions (2,048 total), while retaining speech, singing, and music review metadata from EfficientAT;
+- added a reusable compressed feature cache so cluster count, PCA dimension, and artistic mapping can be iterated without rerunning neural feature extraction;
+- trained deterministic `StandardScaler`, randomized PCA, and KMeans artefacts in runtime-compatible float64 precision;
+- generated cluster counts, mean RMS/speech/music values, representative PCM WAV excerpts, CSV/Markdown review reports, model metadata, and a provisional complete scene mapping;
+- added a v6 runtime loader inheriting the tested v4 feature implementation, while keeping v6 hidden from both CLIs until a complete mapping is explicitly supplied and the `.ready` marker is generated;
+- ignored the large, source-specific feature cache and review directory while retaining the small reproducible trainer and model-loader code.
+
+Validation:
+
+- compiled the trainer, v4/v6 loaders, predictor registry, and both application entry points;
+- passed focused tests for window sampling, strict mapping completeness, feature-cache compatibility, and incomplete-v6 rejection;
+- ran the original pipeline smoke test on six repository WAV recordings, then repeated it after switching v6 to the 2,048-dimensional v4 contract;
+- loaded the final v4-based artefacts through the real v6 runtime and predicted cluster 1 from a four-second `hotel.wav` window while retaining speech, singing, and music scores;
+- detected and corrected a float32 training/runtime mismatch during the smoke test before documenting the workflow.
+
+Remaining work: train the real model on the operator's representative concert corpus, review every cluster mapping, compare cluster counts (initially 20–40), and validate transitions on complete shows before production use.
+
+Runtime-loader correction after the first approved model:
+
+- made the inherited v4 loader receive the v6 module directory explicitly; without this override it combined v6 filenames with the v4 directory and looked for the nonexistent `v4/pca.pkl`;
+- made registry tests follow the presence of the complete approved artefact set rather than assume that v6 is permanently absent;
+- loaded the operator's approved 30-cluster model through the default v6 constructor and predicted `chill_blue`/cluster 29 from `tests/fascination.wav`, with AudioSet score routing intact.
+
 ### 2026-08-04 — Retired incomplete predictor versions
 
 Delivered behavior:

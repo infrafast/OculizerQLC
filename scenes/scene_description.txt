@@ -1,0 +1,33 @@
+Voici le tableau que je te conseille comme référentiel final pour ton modèle à 30 clusters. L'objectif n'est pas de couvrir tous les genres musicaux, mais de maximiser la diversité visuelle afin que deux clusters ne produisent jamais un rendu trop similaire.
+
+Cluster	Caractère musical détecté	Scène retenue		Intensité		Utilisation typique
+1	Silence / attente				ambient1			⭐			    Avant concert, pauses
+2	Ambiance aérienne				ambient2			⭐				Ambient, cinématique
+3	Intro fluide					wave				⭐				Piano, guitare, nappes
+4	Ballade froide					chill_blue			⭐				Pop calme
+5	Ballade chaude					chill_red			⭐				Chanson, acoustique
+6	Vintage / rétro					vintage				⭐⭐			Soul, Blues
+7	Sensuel							sexy				⭐⭐			Lounge, R&B
+8	Mystique						temple				⭐⭐			World, musique épique
+9	Sombre							swamp				⭐⭐			Metal lent, ambiant
+10	Psychédélique					hypno				⭐⭐⭐			Progressive, Psytrance
+11	Suspense						goosebumps			⭐⭐⭐			Break, tension
+12	Build-up progressif				white_riser			⭐⭐⭐			Montée avant refrain
+13	Techno / Trance					trance				⭐⭐⭐⭐		Techno, Trance
+14	Disco classique					disco				⭐⭐⭐			Funk, Disco
+15	Pop moderne						discodance			⭐⭐⭐			Pop, Variété
+16	Dance							discobrain			⭐⭐⭐⭐		Dancefloor
+17	Laser Dance						discolaser			⭐⭐⭐⭐		EDM
+18	Séquence cosmique				sequence_cosmic		⭐⭐⭐			Progressif
+19	Séquence explosive				sequence_fire		⭐⭐⭐⭐		Rock, Electro
+20	Electro moderne					electric			⭐⭐⭐⭐		Electro House
+21	Rock							green_speedracer	⭐⭐⭐⭐		Rock
+22	Hard Rock						red_speedracer		⭐⭐⭐⭐⭐		Hard Rock
+23	Metal							white_speedracer	⭐⭐⭐⭐⭐		Metal
+24	Hip-Hop / Trap					red_bass_pulse		⭐⭐⭐⭐		Kick très marqué
+25	Electro Bass					blue_bass_pulse		⭐⭐⭐⭐		Dubstep
+26	Bass Music						bass_hopper_blue	⭐⭐⭐⭐⭐		Future Bass
+27	Drum'n Bass						blue_bass_racer		⭐⭐⭐⭐⭐		DnB
+28	Percussions						splatter			⭐⭐⭐⭐		Solos batterie
+29	Drop / Climax					laser_strobe		⭐⭐⭐⭐⭐		Gros drop
+30	Final							fullstrobe			⭐⭐⭐⭐⭐		Fin de morceau

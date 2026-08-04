@@ -1,0 +1,8 @@
+Voici le tableau que je te conseille comme référentiel final pour ton modèle à 30 clusters. L'objectif n'est pas de couvrir tous les genres musicaux, mais de maximiser la diversité visuelle afin que deux clusters ne produisent jamais un rendu trop similaire.
+
+Cluster	Caractère musical détecté	Scène retenue		Intensité		Utilisation typique
+1	Silence / attente				ambient1			⭐			    Avant concert, pauses
+13	Techno / Trance					trance				⭐⭐⭐⭐		Techno, Trance
+25	Electro Bass					blue_bass_pulse		⭐⭐⭐⭐		Dubstep
+29	Drop / Climax					laser_strobe		⭐⭐⭐⭐⭐		Gros drop
+30	Final							fullstrobe			⭐⭐⭐⭐⭐		Fin de morceau
