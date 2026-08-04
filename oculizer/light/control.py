@@ -21,6 +21,7 @@ import threading
 import queue
 import time
 import logging
+from collections import deque
 from pathlib import Path
 from oculizer.light.effects import reset_effect_states
 from oculizer.light.orchestrators import ORCHESTRATORS
@@ -173,6 +174,7 @@ class Oculizer(threading.Thread):
         self.last_audio_rms = None
         self.current_audio_rms = None
         self.current_mel_spectrum = None
+
         self.current_mel_sample_rate = None
         self.audio_underrun_count = 0
         self.max_queue_depth_seen = 0  # Track maximum queue buildup
@@ -208,6 +210,21 @@ class Oculizer(threading.Thread):
             # them concurrently.
             getattr(librosa, "resample")
             getattr(librosa.feature, "melspectrogram")
+
+    def set_scene_cache_size(self, size):
+        """Resize prediction smoothing safely while preserving newest samples."""
+        if isinstance(size, bool) or not isinstance(size, int) or not 1 <= size <= 100:
+            raise ValueError("scene cache size must be between 1 and 100")
+        with self.prediction_lock:
+            self.scene_cache_size = size
+            if self.scene_cache is not None:
+                self.scene_cache = deque(self.scene_cache, maxlen=size)
+                if self.scene_cache:
+                    try:
+                        self.current_predicted_scene = mode(self.scene_cache)
+                    except Exception:
+                        self.current_predicted_scene = self.scene_cache[-1]
+        logger.info("Scene cache size changed live to %d", size)
 
     def _get_audio_device_idx(self):
         devices = sd.query_devices()

@@ -357,19 +357,35 @@ Design constraints:
 
 Exit criterion: `oculize.py --audio-file <file.wav> --output qlc-osc --osc-dry-run` runs the existing automatic scene, speech, silence, master, and frequency-band pipelines at real-time pace on an audio-less host, loops cleanly, and stops safely without importing or opening `sounddevice`.
 
-### Phase 8 — Raspberry Pi 5 production target
+### Phase 8a — Shared local runtime control and operator presets
 
-Status: **active — deployment design and Linux ARM64 validation pending**
+Status: **planned next — interactive and headless control transport pending**
+
+- [ ] host the same configurable Unix-domain control socket from either `oculize.py` or `oculizer_service.py`, with exactly one runtime owning the socket at a time;
+- [ ] add `oculizerctl` commands for `auto`, `pause`, forced logical scenes, status, live cache/rate/throttle inspection, modification, and disabling optional policies;
+- [ ] expose configurable named transition presets suitable for four operator buttons, initially `responsive`, `normal`, `calm`, and `reset`;
+- [ ] make `oculizerctl preset <name>` apply cache, rate, and throttle as one validated atomic update, and add `oculizerctl presets` to list the resolved preset values;
+- [ ] keep preset values in normal Oculizer configuration rather than hard-coding artistic choices in the client or QLC+ workspace;
+- [ ] allow QLC+ Virtual Console buttons to invoke the same preset commands through a local bridge or command action, without creating a second routing implementation;
+- [ ] keep the interactive main-screen cache/rate/throttle status synchronized with changes received through the socket on its normal render cadence;
+- [ ] add a monotonically increasing policy revision so an `l` editor opened before an external change cannot silently overwrite newer socket values; require reload or explicit retry on conflict;
+- [ ] make all updates atomic and thread-safe inside `AutomaticSceneRouter`, with validation before mutation and explicit reset semantics for cache, rolling-window history, and throttle credits;
+- [ ] validate malformed commands, simultaneous terminal/QLC/UI updates, permissions, stale sockets, acknowledgements, and client disconnects;
+- [ ] document how a development terminal discovers the interactive runtime socket and how QLC+ buttons invoke presets.
+
+Exit criterion: while the interactive application or headless runtime is running, a second terminal and QLC+-originated actions can select modes, scenes, and named transition presets; every active interactive display reflects external changes without restart or split state.
+
+### Phase 8b — Raspberry Pi 5 production target
+
+Status: **pending after Phase 8a — deployment design and Linux ARM64 validation pending**
 
 - [ ] validate every dependency on Linux ARM64;
 - [ ] remove assumptions about macOS paths or devices;
 - [ ] prepare reproducible installation;
 - [ ] create separate systemd services for QLC+ and Oculizer;
 - [ ] run Oculizer through its non-interactive mode with no TTY requirement;
-- [ ] add a local control endpoint to the headless runtime;
-- [ ] add a command-line controller that can select `auto`, `pause`, or a forced logical scene and query status;
 - [ ] route remote scene commands through `AutomaticSceneRouter` and the existing `change_scene()` path rather than bypassing scene state;
-- [ ] validate control permissions, malformed commands, concurrent commands, service restart, and stale-socket recovery;
+- [ ] install and permission the Phase 8a control socket and client for the production service user;
 - [ ] configure service user, working directory, environment, logs, and graceful stop behavior;
 - [ ] order startup and configure restart policies;
 - [ ] accept the QLC+ `.qxw` workspace path through configuration or a command-line option;
@@ -381,17 +397,29 @@ Status: **active — deployment design and Linux ARM64 validation pending**
 
 Final criterion: a cold Raspberry Pi restart reaches an operational lighting system without local intervention.
 
-### Headless runtime control contract
+### Shared runtime control contract (Phase 8a)
 
 Interactive operation remains supported independently of the production service. Running `oculize.py --output qlc-osc` keeps automatic prediction active and allows the operator to enter the integrated scene selector with `Ctrl+T`. Selecting a scene enables the existing manual override, and leaving the override returns routing to automatic prediction. The standalone `toggle.py --output qlc-osc` remains a manual-only controller and must not be run concurrently with the service because both processes would maintain independent QLC+ toggle state.
 
-The production service must expose the same routing intentions without requiring a TTY. Implement a local Unix-domain control socket, with its path configurable and defaulting to a service-owned location under `/run/oculizer/`. Provide a small command-line client, provisionally named `oculizerctl`, with these commands:
+The interactive and production runtimes must expose the same routing intentions without requiring input from their owning terminal. Implement a local Unix-domain control socket with a configurable path. Interactive development may use a user-writable runtime location; the production service defaults to a service-owned location under `/run/oculizer/`. Provide a small command-line client, provisionally named `oculizerctl`, with these commands:
 
 ```text
 oculizerctl auto
 oculizerctl pause
 oculizerctl scene <logical-scene-name>
 oculizerctl status
+oculizerctl limits
+oculizerctl limits --cache 10
+oculizerctl limits --rate 6/10
+oculizerctl limits --throttle 3/2
+oculizerctl limits --rate 6/10 --throttle 3/2
+oculizerctl limits --rate off
+oculizerctl limits --throttle off
+oculizerctl presets
+oculizerctl preset responsive
+oculizerctl preset normal
+oculizerctl preset calm
+oculizerctl preset reset
 ```
 
 The service has three mutually exclusive operator modes:
@@ -400,7 +428,11 @@ The service has three mutually exclusive operator modes:
 - `scene <name>`: enter manual override and activate the requested logical scene through the normal configured fallback and QLC+ mapping path;
 - `pause`: suspend prediction routing, discard queued prediction audio, send safe zero values for continuous modulations, and assert blackout. Returning to `auto` must clear blackout and require fresh audio state so a stale prediction cannot flash a scene.
 
-`status` must report at least the operator mode, requested manual scene if any, resolved active scene, blackout state, and whether the audio worker is healthy. Commands must return a clear success or error response and must not silently accept an unknown or unmapped scene.
+`status` must report at least the operator mode, requested manual scene if any, resolved active scene, blackout state, whether the audio worker is healthy, prediction cache size, the active scene rate limit and its current rolling-window usage, and the active throttle plus its currently available credits. `limits` without options reports the same smoothing and transition-policy state. Commands must return a clear success or error response and must not silently accept an unknown scene, an unmapped scene, or an invalid limit.
+
+Live control changes are process-local and must not rewrite configuration files. Supplying cache and both policies applies them atomically after validating every value; any validation failure preserves the complete previous state. `off` explicitly disables one optional policy. Changing cache size preserves its newest entries and recomputes the smoothed prediction under the prediction lock. Changing the rate limit clears its rolling-window history, while changing the throttle refills it to the newly configured burst capacity. The acknowledgement must state that these resets may affect the next prediction or permit a fresh burst. A service restart always restores the command-line or configured startup values rather than replaying live adjustments.
+
+Named presets are configuration aliases for one complete cache/rate/throttle tuple. Applying a preset uses the same atomic router API as `limits` and the interactive `l` editor. QLC+ buttons, another terminal, and future automation must invoke these commands rather than writing router fields directly. The interactive display reads live router status every render, so external updates become visible automatically. A policy revision guards the modal `l` editor: if socket state changes while it is open, applying its stale snapshot must fail visibly instead of overwriting the newer values.
 
 POSIX signals remain reserved for process lifecycle (`SIGINT` and `SIGTERM`) and possibly a future configuration reload. They are not the scene-control protocol: signals cannot carry arbitrary logical scene names, provide acknowledgements, or report current state. The local socket avoids opening a network port, supports access control through filesystem ownership and permissions, and can later be wrapped by a web, GPIO, MIDI, or home-automation interface without duplicating routing logic.
 
@@ -409,6 +441,34 @@ Control state is initially process-local and is not restored after a crash or re
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-04 — Final automatic scene transition limits and throttle
+
+Implemented:
+
+- added optional `--scene-rate-limit MAX/SECONDS` rolling-window limiting to both interactive and headless entry points;
+- added optional `--scene-throttle BURST/RECOVERY_SECONDS` token-bucket protection independently of prediction cache smoothing;
+- placed both policies in `AutomaticSceneRouter` immediately before the common `change_scene()` call, making them independent of Enttec, QLC+, or future output backends;
+- initialized the throttle with a full burst allowance, consumed one credit only for each successful ordinary music change, and recovered credits continuously at the configured rate without imposing a fixed interval between transitions;
+- counted only successful ordinary music changes after target resolution and deduplication, and continuously reconsidered the latest prediction instead of queueing stale blocked transitions;
+- allowed manual selection and auto resumption, silence entry and recovery, and announcement entry and release to bypass both limits;
+- left both policies disabled when their options are omitted, preserving existing runtime behavior;
+- added a small read-only startup interpreter to the interactive loading screen: it recognizes rate-only, throttle-only, complementary, burst-capped, redundant, and unusually slow configurations, and emits at most three concise lines without changing user values;
+- documented the ten supported interpretation cases and representative commands in `README.md`.
+- added an always-visible main-screen summary after AGC for cache size, rolling-limit usage, and currently available throttle credits, using `Off` for policies not supplied at startup;
+- added the `l` live-control editor with bounded keyboard adjustment, explicit disable, cancel, and atomic apply actions;
+- added a central thread-safe reconfiguration and status API to `AutomaticSceneRouter` for reuse by the future Phase 8a Unix-socket controller;
+- added live prediction-cache resizing under the existing prediction lock, preserving the newest cached labels and recomputing their mode;
+- standardized interactive, CLI, and future control validation at cache/count `1–100` and time `0.5–300` seconds.
+
+Validated:
+
+- covered burst consumption, progressive token recovery, rolling-window expiry, latest-prediction selection, manual override and release, and silence priority with deterministic-clock tests;
+- covered each interpreter branch and its loading-screen presentation with focused tests;
+- verified both CLI help surfaces, strict compilation, and the complete automated test suite.
+- covered atomic reconfiguration, invalid-value rollback, runtime-budget resets, editor bounds and defaults, and thread-safe cache resizing with focused tests.
+
+Remaining work: tune deployment values from live shows; `--scene-rate-limit 6/10 --scene-throttle 3/2` is an example rather than a hard-coded default.
 
 ### 2026-08-04 — Bounded interactive RMS history graph
 
@@ -438,12 +498,16 @@ Implemented:
 - captured legacy constructor stdout/stderr into application logs so initialization messages cannot overwrite the loading screen or desynchronize curses;
 - replaced coarse one-character RMS markers with Unicode Braille cells, providing a virtual 2-by-4 subpixel grid per terminal character;
 - interpolated adjacent RMS buckets into a continuous terminal line and assigned each Braille cell the most recent scene color represented in that cell;
-- overlaid a full scene-colored marker on the first RMS sample after each actual scene transition while leaving the initial scene and remaining curve in Braille form;
+- overlaid the derived scene marker on the initial RMS sample and the first sample after each actual scene transition, while assigning scrolling timestamps only to real transitions;
 - changed Braille scrolling from subpixel steps to complete-cell steps, keeping the two horizontal subpixels grouped into the same glyph for its entire visible lifetime;
 - replaced one-y-value-per-subcolumn interpolation with a full Bresenham-style line rasterizer, filling intermediate vertical pixels so steep RMS changes remain visibly connected;
+- added scrolling `MM'SS"` labels below scene-transition markers while keeping the total elapsed counter fixed at the right edge;
+- retained the newest transition timestamp when labels overlap and enforced a two-space gap between visible labels and the fixed counter;
 - added the same stable scene-color markers beside names in both the integrated and standalone scene selectors, which act as the graph legend;
+- replaced arbitrary scene colors with a centralized, name-derived visual identity: recognized color words and aliases select the matching family, a stable hash selects one of four shades, and names without a color word receive a stable gray Unicode shape instead of a dot;
+- shared that identity between Braille graph coloring, transition overlays, and both scene selectors; the mapping has no static scene list and therefore applies automatically after dynamic scene additions or reloads, with a safe ANSI fallback on terminals without 256-color support;
 - added `--no-graph`, which preserves the static display and centers an activation hint in the graph area;
-- kept the graph entirely outside `Oculizer`, `HeadlessOculizerService`, and `oculizer_service.py` so Phase 8 service operation remains headless and unaffected;
+- kept the graph entirely outside `Oculizer`, `HeadlessOculizerService`, and `oculizer_service.py` so Phase 8b service operation remains headless and unaffected;
 - preserved all nine recent log lines when space permits and reduced only the visible log tail on short terminals to reserve a usable graph, without affecting the complete file log;
 - handled terminals still too small for the graph by leaving the constrained center area untouched.
 
@@ -453,7 +517,7 @@ Validated:
 - compiled the interactive entry point and graph module with `SyntaxWarning` promoted to an error;
 - ran the complete automated test suite.
 
-Remaining work: validate the chosen refresh rate and terminal layout on the target Raspberry Pi during Phase 8. The bounded UI-only design is expected to have negligible memory use and no material effect on audio or DMX latency.
+Remaining work: validate the chosen refresh rate and terminal layout on the target Raspberry Pi during Phase 8b. The bounded UI-only design is expected to have negligible memory use and no material effect on audio or DMX latency.
 
 ### 2026-08-04 — Static main terminal display
 
@@ -544,7 +608,7 @@ Validated:
 - passed 62 automated tests, including local UDP delivery, live-source lifecycle adaptation, WAV validation, stereo-to-mono conversion, looping, hardware isolation, and existing routing and backend regressions;
 - bounded memory to one source block plus the existing fixed-size analysis and prediction queues; steady-state predictor CPU remains the dominant cost and no additional analysis pass was introduced.
 
-Remaining work: none for phase 7b. MP3 and public online streams remain deferred; phase 8 is active again.
+Remaining work: none for phase 7b. MP3 and public online streams remain deferred; phases 8a and 8b follow.
 
 ### 2026-08-04 — Headless operator-control design
 
@@ -562,7 +626,7 @@ Validated:
 - confirmed that interactive QLC+ selection already supports forcing a logical scene and returning to automatic prediction;
 - confirmed that the headless runtime currently has lifecycle signal handling but no external operator-control endpoint.
 
-Remaining work: implement and test the control endpoint and CLI during phase 8; the contract documented above is not yet available at runtime.
+Remaining work: implement and test the shared control endpoint and CLI during phase 8a; the contract documented above is not yet available at runtime.
 
 ### 2026-08-03 — Documentation consolidation
 
@@ -823,7 +887,7 @@ Roadmap decision:
 - the QLC+ launch path will not ask the operator to choose a DMX fixture profile;
 - scene commands will be separated from curses so manual and automatic callers share the same backend behavior;
 - phase 4 will provide a non-interactive runtime with signal-aware safe shutdown;
-- phase 8 will package that runtime and QLC+ as ordered Raspberry Pi systemd services with no TTY requirement.
+- phase 8b will package that runtime and QLC+ as ordered Raspberry Pi systemd services with no TTY requirement.
 
 Rationale:
 
@@ -1195,7 +1259,7 @@ Live validation and final policy:
 - do not add a heartbeat or feedback loop without a concrete QLC+ consumer;
 - in Raspberry Pi production, systemd must couple the QLC+ and Oculizer lifecycles so a QLC+ restart also restarts Oculizer and reapplies deterministic startup state;
 - an uncatchable hard kill cannot run application cleanup; service restart must restore safety immediately, while complete host power loss is handled by loss of QLC+/DMX output;
-- phase 7 is accepted as complete and phase 8 deployment work is now active.
+- phase 7 is accepted as complete; phase 8a control work precedes phase 8b deployment.
 
 ## Instructions for developers and coding agents
 

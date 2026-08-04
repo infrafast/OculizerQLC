@@ -135,13 +135,15 @@ An alternative general configuration can be supplied with `--config PATH`.
 
 ### Interactive RMS graph
 
-The main interactive display shows a bounded 30-second RMS history by default. It samples the RMS value already produced by the audio pipeline at 10 Hz and displays total elapsed time as `MM'SS"` at the right end of the horizontal axis. Both axes are fixed: the horizontal window is always 30 seconds, including its initial empty history, and the vertical RMS range is always absolute `0.0–1.0`. Samples compressed into the same terminal column are averaged, producing one point per time position rather than a filled vertical column. Every RMS point is a colored marker whose stable color identifies the scene active at the end of that column, so scene transitions remain visible while the graph scrolls. The same marker is displayed beside each scene in both the integrated and standalone scene selectors, providing the color legend without placing scene names inside the graph. The graph is a UI-only observer: it does not perform audio analysis or participate in scene or lighting control. The bottom of the display always reserves nine log rows, including empty rows before messages arrive, so graph geometry never depends on log activity. The complete log remains available in `oculizer.log`.
+The main interactive display shows a bounded 30-second RMS history by default. It samples the RMS value already produced by the audio pipeline at 10 Hz and displays total elapsed time as `MM'SS"` at the right end of the horizontal axis. Both axes are fixed: the horizontal window is always 30 seconds, including its initial empty history, and the vertical RMS range is always absolute `0.0–1.0`. Samples compressed into the same terminal column are averaged, producing one point per time position rather than a filled vertical column. Every RMS point has the stable visual identity of the scene active at the end of that column, so scene transitions remain visible while the graph scrolls. The same identity is displayed beside each scene in both the integrated and standalone scene selectors, providing the legend without placing scene names inside the graph. The graph is a UI-only observer: it does not perform audio analysis or participate in scene or lighting control. The bottom of the display always reserves nine log rows, including empty rows before messages arrive, so graph geometry never depends on log activity. The complete log remains available in `oculizer.log`.
 
 Time aggregation uses startup-anchored fixed buckets. A sample always belongs to the same bucket, so the historical curve cannot be regrouped or change shape between frames. When a bucket boundary is crossed, the complete history advances by exactly one terminal column.
 
 The curve uses Unicode Braille cells in the style of high-resolution terminal dashboards. Each character provides a virtual 2-by-4 point grid, giving twice the horizontal and four times the vertical resolution of one-character markers. Two time buckets remain fixed inside each Braille cell, and scrolling occurs only at complete cell boundaries so historical glyphs do not regroup while moving. Adjacent RMS samples are connected with a full integer line rasterizer, including intermediate vertical pixels during steep changes. Because curses can assign only one color to a complete character cell, a Braille cell containing a scene transition uses the most recent scene represented in that cell.
 
-The first RMS sample after each scene change is overlaid with a full colored `●` marker for immediate visual identification. The marker uses the new scene's stable color, replaces only the local Braille cell, and is not emitted for the initial scene.
+The first RMS sample and the first sample after each scene change are overlaid with their scene marker for immediate visual identification. Scene names containing a color word use a `●` in that color family; the remainder of the name deterministically selects one of four shades, so `pink_strobe_pulse` and `sequence_pink`, for example, use different pinks. Common aliases such as `rose`, `violet`, `gold`, `teal`, and `grey` are recognized. A name with no color word uses a deterministic, visually distinct Unicode shape in a gray shade instead of a dot. This convention is computed from the name rather than stored in a scene table, so newly added and reloaded scenes receive it automatically. A 256-color terminal displays the full shade palette; limited terminals fall back to the closest ANSI color and intensity. The initial marker identifies the startup scene but receives no transition timestamp; subsequent markers retain their scrolling timestamps below the axis.
+
+Each transition marker also receives a scrolling elapsed-time label in `MM'SS"` format below the horizontal axis. The total elapsed-time counter remains fixed at the far right. Labels keep a two-space separation; when transitions are too close for both labels to remain readable, the newest transition label is retained.
 
 To maximize vertical graph resolution, runtime status is compacted above the graph: audio, profile, stream mode, and predictor share the first status line; current scene, prediction, and latest prediction share the second; optional cluster and AGC diagnostics share a third line. Fields are separated with ` | `.
 
@@ -157,7 +159,7 @@ Disable it when a minimal static display is preferred:
 python oculize.py --no-graph [other options]
 ```
 
-The graph is intentionally absent from `oculizer_service.py`, which remains fully headless for Phase 8 and later service deployment.
+The graph is intentionally absent from `oculizer_service.py`, which remains fully headless for Phase 8b and later service deployment.
 
 ### Virtual Enttec DMX output
 
@@ -228,6 +230,8 @@ Main options:
 | `--single-stream` | Use one input for FFT and prediction |
 | `--predictor-version` | Predictor version |
 | `--scene-cache-size` | Prediction smoothing window |
+| `--scene-rate-limit MAX/SECONDS` | Maximum automatic music transitions in a rolling window; disabled when omitted |
+| `--scene-throttle BURST/RECOVERY_SECONDS` | Burst credit capacity and time to recover one automatic music transition; disabled when omitted |
 | `--prediction-channels` | Audio channels used for prediction |
 | `--average-dual-channels` | Average the first two FFT input channels |
 | `--test` | Prediction only, without FFT or DMX |
@@ -237,7 +241,18 @@ During operation:
 
 - `q` quits the application;
 - `r` reloads scenes;
+- `l` opens the live scene-control editor;
 - `Ctrl+T` opens the integrated manual selector.
+
+The main status line after AGC always reports prediction smoothing and transition controls. Cache smoothing is always active and displays its current size. Optional policies display `Off` rather than a misleading zero when they were omitted:
+
+```text
+AGC: gain=1.20x lvl=0.0420 | Cache: 25 | Rate: Off | Throttle: Off
+```
+
+Press `l` to edit all three values while audio and automatic routing continue. Use Up/Down to select a field, Left/Right or `+`/`-` to adjust it, `0` to disable the selected rate or throttle, Enter to validate and apply all fields atomically, and Escape to cancel. Adjusting an `Off` policy enables it with a safe starting value (`4/5` for rate or `3/2` for throttle). Cache size and policy counts are constrained to `1–100`; time values are constrained to `0.5–300` seconds. Invalid or incomplete values cannot be applied.
+
+Changing cache size preserves the newest available predictions, resizes the bounded deque under the prediction lock, and immediately recomputes its smoothed result. Changing the rate clears rolling-window usage, while changing the throttle refills its credits. The same thread-safe router API is intentionally reusable by the Phase 8a shared control socket.
 
 ## Manual scene selection
 
@@ -272,6 +287,49 @@ Omit `--input-device` to use `config/oculizer.json`. `SIGINT` and `SIGTERM` use 
 Service output uses explicit carriage-return line endings for readable terminal logs. Verbose third-party model dumps are captured at debug level; normal startup reports only concise predictor progress and warnings.
 
 Unmapped predictions resolve explicitly to `ambient1`. Requested and resolved scenes are logged, while different predictions resolving to the same active target send no duplicate OSC pulse. Expand `routing.scenes` in `config/qlc_config.json` as real QLC+ functions are added.
+
+Automatic music transitions can receive two optional final-stage protections, independently of `--scene-cache-size` and of the selected lighting backend. `--scene-rate-limit 6/10` places an absolute ceiling of six effective scene changes in any rolling ten-second window. `--scene-throttle 3/2` starts with three transition credits, consumes one for each effective music-scene change, and progressively recovers one credit every two seconds up to the three-credit capacity. This permits a musically useful burst without imposing a fixed, mechanical interval between every scene. Both options are disabled when omitted, preserving the original behavior. Only successful changes of the resolved output target consume limits; duplicate predictions and multiple QLC+ labels resolving to the same fallback target do not. A blocked prediction is not queued: the latest prediction is reconsidered continuously and is applied when the policies permit it.
+
+Manual selection and return to automatic mode, entry into and recovery from silence, and announcement entry and release bypass these limits. This keeps operator actions and safety or semantic transitions responsive while limiting only potentially unpleasant switching among ordinary music scenes. The options are available identically in `oculize.py` and `oculizer_service.py`.
+
+Phase 8a plans a shared local control socket hosted by either the interactive or headless runtime. `oculizerctl limits` will expose `--cache`, `--rate`, and `--throttle`, including explicit `off` values for optional policies. Named configurable presets `responsive`, `normal`, `calm`, and `reset` will atomically apply all three values through `oculizerctl preset <name>`, allowing QLC+ Virtual Console buttons and a second terminal to use the same control path. The interactive status line already reads live router state each render and will therefore reflect socket changes; a revision check will prevent a stale open `l` editor from overwriting a newer external update. Phase 8b then covers Raspberry Pi installation and service deployment. The socket and client remain roadmap work and are not available yet.
+
+Recommended initial QLC+ Virtual Console presets are shown below. They are deliberately starting points for live tuning rather than universal musical rules:
+
+| QLC+ button | `--scene-cache-size` | `--scene-throttle` | `--scene-rate-limit` | Intended behavior |
+| --- | ---: | ---: | ---: | --- |
+| `responsive` | `3` | `4/1` | `10/10` | Fast prediction response, bursts of up to four changes, then rapid credit recovery, with a permissive absolute safety cap |
+| `normal` | `7` | `3/2` | `6/10` | Moderate prediction smoothing, three-change musical bursts, and balanced progressive recovery |
+| `calm` | `15` | `2/3` | `4/15` | Stronger prediction smoothing, short two-change bursts, slower recovery, and a conservative absolute ceiling |
+| `reset` | `25` | `Off` | `Off` | Restore the current Linux/Raspberry Pi default smoothing and disable both final transition policies |
+
+Equivalent future commands will be:
+
+```bash
+oculizerctl preset responsive
+oculizerctl preset normal
+oculizerctl preset calm
+oculizerctl preset reset
+```
+
+`reset` intentionally restores the project's current Linux/Raspberry Pi default cache size of `25`. If deployment defaults later become configurable per installation, the preset should resolve to that recorded startup default rather than permanently hard-code `25`.
+
+When either option is present, the interactive loading screen summarizes the effective policy and displays a short recommendation when the combination is redundant or likely to feel slow. It never changes the supplied values. No analysis line is shown when both options are omitted. The interpreter deliberately uses a small set of understandable cases:
+
+| Case | Example | Startup interpretation |
+| --- | --- | --- |
+| No limit | options omitted | No message; original behavior |
+| Light rate limit | `--scene-rate-limit 12/5` | Light burst protection that may rarely engage |
+| Moderate rate limit | `--scene-rate-limit 4/5` | Moderate rolling-window protection, without fixed spacing |
+| Strong rate limit | `--scene-rate-limit 2/5` | Strong protection, although a short two-change burst remains possible |
+| Small throttle | `--scene-throttle 2/2` | Two-change organic bursts followed by progressive recovery |
+| Generous throttle | `--scene-throttle 4/2` | Larger dynamic bursts followed by progressive recovery |
+| Slow throttle | `--scene-throttle 2/5` | Warning that credit recovery may make the show feel slow |
+| Complementary | `--scene-rate-limit 6/10 --scene-throttle 3/2` | Absolute safety ceiling plus organic three-change bursts |
+| Rate caps burst | `--scene-rate-limit 2/10 --scene-throttle 3/2` | Rolling limit prevents the throttle's complete initial burst |
+| Redundant rate | `--scene-rate-limit 8/5 --scene-throttle 3/2` | Throttle already allows only about five changes in five seconds; recommendation to omit or tighten the rate limit |
+
+The displayed throttle envelope is an understandable estimate, not a promise about priority transitions, since manual, silence, and announcement routes intentionally bypass these protections.
 
 Once silence is active, heavy model inference is suspended and queued audio is discarded. RMS monitoring continues in the audio callback; inference resumes from fresh audio only after the level crosses `resume_threshold`. One prediction already in progress may finish immediately after silence activation, but periodic silent `wave` classifications and queue-depth growth then stop.
 

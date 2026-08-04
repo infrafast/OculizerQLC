@@ -1,13 +1,72 @@
 """Small bounded RMS history model for the interactive terminal UI."""
 
 from collections import deque
+from dataclasses import dataclass
+import hashlib
 import math
+import re
 import time
 
 
+@dataclass(frozen=True)
+class SceneVisual:
+    """Terminal-independent visual identity derived from a scene name."""
+
+    family: str
+    shade: int
+    symbol: str
+    has_named_color: bool
+
+
+SCENE_COLOR_FAMILIES = {
+    "black": (238, 240, 242, 244),
+    "blue": (19, 27, 33, 75),
+    "brown": (94, 130, 137, 180),
+    "cyan": (30, 37, 44, 51),
+    "gray": (242, 245, 248, 251),
+    "green": (28, 40, 46, 82),
+    "lime": (64, 76, 112, 118),
+    "magenta": (90, 127, 164, 201),
+    "orange": (166, 208, 214, 215),
+    "pink": (198, 205, 212, 219),
+    "purple": (55, 91, 129, 141),
+    "red": (160, 196, 203, 210),
+    "white": (250, 252, 254, 255),
+    "yellow": (178, 220, 226, 229),
+}
+
+_COLOR_ALIASES = {
+    "aqua": "cyan", "azure": "blue", "gold": "yellow", "golden": "yellow",
+    "grey": "gray", "indigo": "purple", "lavender": "purple",
+    "maroon": "red", "navy": "blue", "rose": "pink", "scarlet": "red",
+    "teal": "cyan", "turquoise": "cyan", "violet": "purple",
+}
+_NEUTRAL_SYMBOLS = ("◆", "▲", "■", "✦", "✚", "✖", "◇", "▼", "★", "▪")
+
+
+def _stable_number(value):
+    return int.from_bytes(hashlib.sha256(str(value).encode("utf-8")).digest()[:8], "big")
+
+
+def scene_visual(scene_name):
+    """Derive a colored dot or a gray icon from an arbitrary scene name."""
+    name = str(scene_name)
+    tokens = re.findall(r"[a-z]+", name.lower())
+    family = None
+    for token in tokens:
+        candidate = _COLOR_ALIASES.get(token, token)
+        if candidate in SCENE_COLOR_FAMILIES:
+            family = candidate
+            break
+    stable = _stable_number(name.lower())
+    if family is not None:
+        return SceneVisual(family, stable % 4, "●", True)
+    return SceneVisual("gray", stable % 4, _NEUTRAL_SYMBOLS[stable % len(_NEUTRAL_SYMBOLS)], False)
+
+
 def scene_color_index(scene_name, palette_size=6):
-    """Return a stable palette index shared by graph and scene selectors."""
-    return sum(ord(char) for char in str(scene_name)) % palette_size
+    """Return a legacy stable palette index (prefer scene_visual for new UI)."""
+    return _stable_number(str(scene_name).lower()) % palette_size
 
 
 def format_elapsed(elapsed_seconds):
@@ -27,6 +86,7 @@ class RmsGraph:
         self.started_at = self.clock()
         self.last_sample_at = None
         self.last_scene = None
+        self.initial_sample_at = None
         self.samples = deque(maxlen=max(2, int(duration_seconds * sample_rate_hz) + 1))
 
     def sample(self, rms, scene_name, now=None):
@@ -36,6 +96,8 @@ class RmsGraph:
             return False
         value = 0.0 if rms is None else max(0.0, float(rms))
         scene = str(scene_name)
+        if self.last_scene is None:
+            self.initial_sample_at = now
         scene_changed = self.last_scene is not None and scene != self.last_scene
         self.samples.append((now, value, scene, scene_changed))
         self.last_sample_at = now
@@ -140,7 +202,40 @@ class RmsGraph:
 
         right = format_elapsed(now - self.started_at)
         axis = " " * label_width + "+" + "-" * plot_width
-        labels = " " * max(0, width - len(right)) + right
+        label_characters = [" "] * width
+        fixed_start = max(0, width - len(right))
+        label_characters[fixed_start:width] = right[-width:]
+
+        # Place newest transition labels first. Older labels that would overlap
+        # are omitted, while the fixed elapsed counter always owns the right
+        # edge and remains separated by two spaces.
+        transition_labels = []
+        for timestamp, _value, _scene, scene_changed in self.samples:
+            if not scene_changed:
+                continue
+            bucket = math.floor((timestamp - self.started_at) / bucket_duration)
+            if bucket < first_bucket or bucket > last_bucket:
+                continue
+            x = bucket - first_bucket
+            marker_column = label_width + 1 + x // 2
+            transition_labels.append((timestamp, marker_column))
+
+        occupied_ranges = []
+        latest_allowed_end = fixed_start - 2
+        for timestamp, marker_column in reversed(transition_labels):
+            text = format_elapsed(timestamp - self.started_at)
+            end = min(latest_allowed_end, marker_column + (len(text) + 1) // 2)
+            start = max(label_width, end - len(text))
+            end = start + len(text)
+            if end > latest_allowed_end:
+                continue
+            if any(start < occupied_end + 2 and end + 2 > occupied_start
+                   for occupied_start, occupied_end in occupied_ranges):
+                continue
+            label_characters[start:end] = text
+            occupied_ranges.append((start, end))
+
+        labels = "".join(label_characters)
         lines.append(axis[:width])
         lines.append(labels[:width])
         rendered_cells = {
@@ -148,10 +243,10 @@ class RmsGraph:
             for (row, column), (mask, scene) in braille_cells.items()
         }
 
-        # Overlay one visually distinct marker at the first sample of each new
-        # scene. The initial scene is deliberately not marked as a transition.
+        # Overlay the scene identity at startup and at the first sample of each
+        # subsequent scene. Only actual transitions receive an axis timestamp.
         for timestamp, value, scene, scene_changed in self.samples:
-            if not scene_changed:
+            if not scene_changed and timestamp != self.initial_sample_at:
                 continue
             bucket = math.floor((timestamp - self.started_at) / bucket_duration)
             if bucket < first_bucket or bucket > last_bucket:
@@ -162,7 +257,7 @@ class RmsGraph:
             y = min(virtual_height - 1, round(average / scale_max * (virtual_height - 1)))
             cell_row = plot_height - 1 - y // 4
             cell_column = label_width + 1 + x // 2
-            rendered_cells[(cell_row, cell_column)] = ("●", scene)
+            rendered_cells[(cell_row, cell_column)] = (scene_visual(scene).symbol, scene)
 
         colored_cells = [
             (row, column, character, scene)

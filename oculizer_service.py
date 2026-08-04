@@ -4,11 +4,22 @@ import argparse
 import logging
 import signal
 import sys
+import re
 
 from oculizer.headless import HeadlessOculizerService
 from oculizer.light import Oculizer, OUTPUT_CHOICES
 from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.scenes import SceneManager
+
+
+def parse_scene_rate_limit(value):
+    match = re.fullmatch(r"([1-9][0-9]*)/([0-9]+(?:\.[0-9]+)?)", value.strip())
+    if match is None:
+        raise argparse.ArgumentTypeError("expected COUNT/SECONDS, for example 4/5")
+    count, seconds = int(match.group(1)), float(match.group(2))
+    if not 1 <= count <= 100 or not 0.5 <= seconds <= 300:
+        raise argparse.ArgumentTypeError("count must be 1-100 and seconds 0.5-300")
+    return count, seconds
 
 
 def configure_service_streams() -> None:
@@ -30,6 +41,10 @@ def parse_args():
     parser.add_argument("--prediction-channels", default=None)
     parser.add_argument("--predictor-version", choices=["v1", "v3", "v4", "v5", "vday"], default="v4")
     parser.add_argument("--scene-cache-size", type=int, default=25)
+    parser.add_argument("--scene-rate-limit", type=parse_scene_rate_limit, default=None, metavar="MAX/SECONDS",
+                        help="Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)")
+    parser.add_argument("--scene-throttle", type=parse_scene_rate_limit, default=None, metavar="BURST/RECOVERY_SECONDS",
+                        help="Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)")
     parser.add_argument("--qlc-config", default=None, help="Unified QLC+ configuration (default: config/qlc_config.json)")
     parser.add_argument("--osc-host", default=None)
     parser.add_argument("--osc-port", type=int, default=None)
@@ -72,8 +87,8 @@ def parse_args():
         parser.error("--filter-dmx requires --dmx-dry-run")
     if args.audio_file and args.prediction_device:
         parser.error("--audio-file cannot be combined with --prediction-device")
-    if args.scene_cache_size < 1:
-        parser.error("--scene-cache-size must be at least 1")
+    if not 1 <= args.scene_cache_size <= 100:
+        parser.error("--scene-cache-size must be between 1 and 100")
     if isinstance(args.prediction_device, str) and args.prediction_device.isdigit():
         args.prediction_device = int(args.prediction_device)
     return args
@@ -111,6 +126,8 @@ def build_service(args) -> HeadlessOculizerService:
         speech_config=args.speech_config,
         master_config=args.master_config,
         frequency_config=args.frequency_config,
+        scene_rate_limit=args.scene_rate_limit,
+        scene_throttle=args.scene_throttle,
     )
 
 

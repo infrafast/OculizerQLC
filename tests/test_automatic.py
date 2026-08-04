@@ -43,8 +43,164 @@ class FakeOculizer:
     def set_prediction_suspended(self, suspended):
         self.prediction_suspended = suspended
 
+    def set_scene_cache_size(self, size):
+        if not 1 <= size <= 100:
+            raise ValueError
+        self.scene_cache_size = size
+
 
 class AutomaticSceneRouterTests(unittest.TestCase):
+    def test_live_controls_apply_atomically_and_reset_runtime_budgets(self):
+        engine = FakeOculizer()
+        engine.scene_cache_size = 25
+        now = [0.0]
+        router = AutomaticSceneRouter(
+            engine,
+            scene_rate_limit=(2, 5.0),
+            scene_throttle=(2, 2.0),
+            clock=lambda: now[0],
+        )
+        engine.current_predicted_scene = "party"
+        self.assertTrue(router.step())
+
+        status = router.configure_transition_policy(
+            scene_cache_size=5,
+            scene_rate_limit=(6, 10.0),
+            scene_throttle=(3, 2.0),
+        )
+
+        self.assertEqual(status["scene_cache_size"], 5)
+        self.assertEqual(status["scene_rate_used"], 0)
+        self.assertEqual(status["throttle_tokens"], 3.0)
+
+    def test_invalid_live_controls_preserve_all_previous_values(self):
+        engine = FakeOculizer()
+        engine.scene_cache_size = 25
+        router = AutomaticSceneRouter(
+            engine,
+            scene_rate_limit=(4, 5.0),
+            scene_throttle=(3, 2.0),
+        )
+
+        with self.assertRaises(ValueError):
+            router.configure_transition_policy(
+                scene_cache_size=4,
+                scene_rate_limit=(1, 0),
+                scene_throttle=(2, 1.0),
+            )
+
+        status = router.get_transition_policy_status()
+        self.assertEqual(status["scene_cache_size"], 25)
+        self.assertEqual(status["scene_rate_limit"], (4, 5.0))
+        self.assertEqual(status["scene_throttle"], (3, 2.0))
+
+    def test_scene_throttle_allows_burst_then_applies_latest_after_recovery(self):
+        engine = FakeOculizer()
+        engine.targets.update({name: name for name in ("one", "two", "three", "held", "latest")})
+        now = [0.0]
+        router = AutomaticSceneRouter(engine, scene_throttle=(3, 2.0), clock=lambda: now[0])
+
+        for scene in ("one", "two", "three"):
+            engine.current_predicted_scene = scene
+            self.assertTrue(router.step())
+        engine.current_predicted_scene = "held"
+        self.assertFalse(router.step())
+        now[0] = 1.9
+        self.assertFalse(router.step())
+        now[0] = 2.0
+        engine.current_predicted_scene = "latest"
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["one", "two", "three", "latest"])
+        self.assertEqual(len(router.automatic_change_times), 0)
+
+    def test_rate_limit_can_cap_throttle_initial_burst(self):
+        engine = FakeOculizer()
+        engine.targets.update({name: name for name in ("one", "two", "three")})
+        router = AutomaticSceneRouter(
+            engine,
+            scene_rate_limit=(2, 10.0),
+            scene_throttle=(3, 2.0),
+            clock=lambda: 0.0,
+        )
+
+        for scene in ("one", "two"):
+            engine.current_predicted_scene = scene
+            self.assertTrue(router.step())
+        engine.current_predicted_scene = "three"
+        self.assertFalse(router.step())
+
+        self.assertEqual(engine.changes, ["one", "two"])
+        self.assertEqual(router.throttle_tokens, 1.0)
+
+    def test_scene_rate_limit_uses_a_rolling_window(self):
+        engine = FakeOculizer()
+        engine.targets.update({name: name for name in ("one", "two", "three", "four")})
+        now = [0.0]
+        router = AutomaticSceneRouter(engine, scene_rate_limit=(2, 5.0), clock=lambda: now[0])
+
+        engine.current_predicted_scene = "one"
+        self.assertTrue(router.step())
+        now[0] = 1.0
+        engine.current_predicted_scene = "two"
+        self.assertTrue(router.step())
+        now[0] = 4.9
+        engine.current_predicted_scene = "three"
+        self.assertFalse(router.step())
+        now[0] = 5.0
+        engine.current_predicted_scene = "four"
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["one", "two", "four"])
+
+    def test_silence_and_resume_bypass_transition_limits(self):
+        engine = FakeOculizer()
+        engine.current_predicted_scene = "wave"
+        now = [0.0]
+        router = AutomaticSceneRouter(
+            engine,
+            silence_config=SilenceConfig(duration_seconds=0, scene="off"),
+            scene_rate_limit=(1, 60.0),
+            scene_throttle=(1, 60.0),
+            clock=lambda: now[0],
+        )
+
+        engine.current_audio_rms = 0.1
+        self.assertTrue(router.step())
+        now[0] = 1.0
+        engine.current_audio_rms = 0.0
+        self.assertTrue(router.step())
+        now[0] = 2.0
+        engine.current_audio_rms = 0.1
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["wave", "off", "wave"])
+
+    def test_manual_override_bypasses_transition_limits(self):
+        engine = FakeOculizer()
+        engine.current_predicted_scene = "party"
+        router = AutomaticSceneRouter(
+            engine,
+            scene_rate_limit=(1, 60.0),
+            scene_throttle=(1, 60.0),
+        )
+
+        self.assertTrue(router.step())
+        self.assertTrue(router.set_manual_override("off"))
+
+        self.assertEqual(engine.changes, ["party", "off"])
+
+    def test_clearing_manual_override_resumes_immediately_despite_limits(self):
+        engine = FakeOculizer()
+        engine.current_predicted_scene = "party"
+        router = AutomaticSceneRouter(engine, scene_throttle=(1, 60.0))
+
+        self.assertTrue(router.step())
+        self.assertTrue(router.set_manual_override("off"))
+        self.assertTrue(router.clear_manual_override())
+
+        self.assertEqual(engine.changes, ["party", "off", "party"])
+
     def test_applies_prediction_fallback_and_deduplicates_resolved_target(self):
         engine = FakeOculizer()
         router = AutomaticSceneRouter(engine)

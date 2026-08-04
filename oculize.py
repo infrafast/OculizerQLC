@@ -12,10 +12,12 @@ from oculizer.light import OUTPUT_CHOICES
 from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.automatic import AutomaticSceneRouter
 from oculizer.modulation import FrequencyBandModulator, MasterModulator
-from oculizer.rms_graph import RmsGraph, scene_color_index
+from oculizer.rms_graph import RmsGraph, SCENE_COLOR_FAMILIES, scene_visual
+from oculizer.scene_limits import describe_scene_limits
 import logging
 from collections import deque, OrderedDict
 import math
+import re
 
 COLOR_PAIRS = {
     'title': (curses.COLOR_WHITE, curses.COLOR_BLACK),
@@ -68,6 +70,38 @@ def setup_colors():
     for i, (name, (fg, bg)) in enumerate(COLOR_PAIRS.items(), start=1):
         curses.init_pair(i, fg, bg)
         COLOR_PAIRS[name] = i
+
+
+_SCENE_PAIR_CACHE = {}
+_ANSI_SCENE_COLORS = {
+    'black': curses.COLOR_WHITE, 'blue': curses.COLOR_BLUE,
+    'brown': curses.COLOR_YELLOW, 'cyan': curses.COLOR_CYAN,
+    'gray': curses.COLOR_WHITE, 'green': curses.COLOR_GREEN,
+    'lime': curses.COLOR_GREEN, 'magenta': curses.COLOR_MAGENTA,
+    'orange': curses.COLOR_YELLOW, 'pink': curses.COLOR_MAGENTA,
+    'purple': curses.COLOR_MAGENTA, 'red': curses.COLOR_RED,
+    'white': curses.COLOR_WHITE, 'yellow': curses.COLOR_YELLOW,
+}
+
+
+def scene_curses_style(scene_name, background=curses.COLOR_BLACK):
+    """Return the shared dynamic scene visual and its best terminal style."""
+    visual = scene_visual(scene_name)
+    key = (visual.family, visual.shade, background)
+    if key not in _SCENE_PAIR_CACHE:
+        pair = 32 + list(SCENE_COLOR_FAMILIES).index(visual.family) * 4 + visual.shade
+        foreground = (
+            SCENE_COLOR_FAMILIES[visual.family][visual.shade]
+            if getattr(curses, 'COLORS', 0) >= 256
+            else _ANSI_SCENE_COLORS[visual.family]
+        )
+        if pair < getattr(curses, 'COLOR_PAIRS', 0):
+            curses.init_pair(pair, foreground, background)
+            _SCENE_PAIR_CACHE[key] = pair
+        else:
+            _SCENE_PAIR_CACHE[key] = COLOR_PAIRS['info']
+    attribute = curses.A_BOLD if visual.shade >= 2 else curses.A_NORMAL
+    return visual, curses.color_pair(_SCENE_PAIR_CACHE[key]) | attribute
 
 
 def initialize_screen(stdscr):
@@ -153,7 +187,8 @@ class AudioOculizerController:
                  osc_port=None, osc_dry_run=None, silence_config=None,
                  speech_config=None, master_config=None, frequency_config=None,
                  prediction_window_seconds=2.0, audio_file=None, osc_log_filters=(),
-                 dmx_dry_run=False, filter_dmx=False, graph_enabled=True):
+                 dmx_dry_run=False, filter_dmx=False, graph_enabled=True,
+                 scene_rate_limit=None, scene_throttle=None):
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
@@ -201,6 +236,8 @@ class AudioOculizerController:
             self.oculizer,
             silence_config=silence_config,
             speech_config=speech_config,
+            scene_rate_limit=scene_rate_limit,
+            scene_throttle=scene_throttle,
         )
         self.master_modulator = MasterModulator(self.oculizer, config=master_config)
         self.frequency_modulator = FrequencyBandModulator(self.oculizer, config=frequency_config)
@@ -456,7 +493,7 @@ class AudioOculizerController:
                     # Pad scene name to column width
                     scene_str = scene_str.ljust(max(0, column_width - 3))
                     try:
-                        self.stdscr.addstr(display_y, display_x, "●", self._scene_color(scene))
+                        self.stdscr.addstr(display_y, display_x, self._scene_symbol(scene), self._scene_color(scene))
                         self.stdscr.addstr(display_y, display_x + 2, scene_str[:max_x-display_x-3], color)
                     except curses.error:
                         pass
@@ -592,19 +629,106 @@ class AudioOculizerController:
                 self.scene_manager.reload_scenes()
                 self.info_message = "Scenes reloaded"
                 logging.info("Scenes reloaded")
+            elif key == ord('l'):
+                self.run_scene_limits_mode()
             return True
         except Exception as e:
             self.error_message = f"Error handling user input: {str(e)}"
             logging.error(f"Error handling user input: {str(e)}")
             return False
 
-    def _scene_color(self, scene_name):
-        palette = (
-            'scene_green', 'scene_yellow', 'scene_blue',
-            'scene_magenta', 'scene_cyan', 'scene_red',
+    @staticmethod
+    def _adjust_limit_value(values, selected, direction):
+        """Adjust one bounded editor field; direction is -1 or +1."""
+        if selected == 0:
+            values["cache"] = min(100, max(1, values["cache"] + direction))
+            return
+        policy = "rate" if selected in (1, 2) else "throttle"
+        defaults = (4, 5.0) if policy == "rate" else (3, 2.0)
+        current = values[policy] or defaults
+        count, seconds = current
+        if selected in (1, 3):
+            count = min(100, max(1, count + direction))
+        else:
+            seconds = min(300.0, max(0.5, seconds + direction * 0.5))
+        values[policy] = (count, seconds)
+
+    def run_scene_limits_mode(self):
+        """Edit cache, rolling rate, and token throttle without restarting."""
+        status = self.scene_router.get_transition_policy_status()
+        values = {
+            "cache": status["scene_cache_size"],
+            "rate": status["scene_rate_limit"],
+            "throttle": status["scene_throttle"],
+        }
+        selected = 0
+        labels = (
+            "Prediction cache size", "Rate maximum", "Rate window",
+            "Throttle burst", "Throttle recovery",
         )
-        index = scene_color_index(scene_name, len(palette))
-        return curses.color_pair(COLOR_PAIRS[palette[index]]) | curses.A_BOLD
+        while True:
+            self.stdscr.erase()
+            height, width = self.stdscr.getmaxyx()
+            rate = values["rate"]
+            throttle = values["throttle"]
+            rendered_values = (
+                str(values["cache"]),
+                "Off" if rate is None else str(rate[0]),
+                "Off" if rate is None else f"{rate[1]:g}s",
+                "Off" if throttle is None else str(throttle[0]),
+                "Off" if throttle is None else f"{throttle[1]:g}s/credit",
+            )
+            title = "LIVE SCENE CONTROLS"
+            self.stdscr.addstr(1, max(0, (width - len(title)) // 2), title[:width - 1],
+                               curses.color_pair(COLOR_PAIRS['title']) | curses.A_BOLD)
+            for index, (label, value) in enumerate(zip(labels, rendered_values)):
+                row = 4 + index
+                prefix = "> " if index == selected else "  "
+                attribute = curses.color_pair(COLOR_PAIRS['toggle_selected']) if index == selected else curses.color_pair(COLOR_PAIRS['info'])
+                line = f"{prefix}{label}: {value}"
+                if row < height - 3:
+                    self.stdscr.addstr(row, 2, line[:max(0, width - 4)], attribute)
+            help_text = "Up/Down: field | Left/Right or +/-: adjust | 0: Off | Enter: apply | Esc: cancel"
+            note = "Cache range 1-100; policy counts 1-100; times 0.5-300s"
+            if height >= 3:
+                self.stdscr.addstr(height - 2, 0, note[:width - 1], curses.color_pair(COLOR_PAIRS['info']))
+                self.stdscr.addstr(height - 1, 0, help_text[:width - 1], curses.color_pair(COLOR_PAIRS['controls']))
+            self.stdscr.refresh()
+
+            key = self.stdscr.getch()
+            if key == -1:
+                time.sleep(0.02)
+                continue
+            if key == 27:
+                self.info_message = "Scene control changes cancelled"
+                return
+            if key in (curses.KEY_UP, ord('k')):
+                selected = (selected - 1) % len(labels)
+            elif key in (curses.KEY_DOWN, ord('j')):
+                selected = (selected + 1) % len(labels)
+            elif key in (curses.KEY_LEFT, ord('-')):
+                self._adjust_limit_value(values, selected, -1)
+            elif key in (curses.KEY_RIGHT, ord('+'), ord('=')):
+                self._adjust_limit_value(values, selected, 1)
+            elif key == ord('0') and selected != 0:
+                values["rate" if selected in (1, 2) else "throttle"] = None
+            elif key in (curses.KEY_ENTER, 10, 13):
+                try:
+                    self.scene_router.configure_transition_policy(
+                        scene_cache_size=values["cache"],
+                        scene_rate_limit=values["rate"],
+                        scene_throttle=values["throttle"],
+                    )
+                    self.info_message = "Live scene controls applied"
+                    return
+                except ValueError as exc:
+                    self.error_message = str(exc)
+
+    def _scene_color(self, scene_name):
+        return scene_curses_style(scene_name)[1]
+
+    def _scene_symbol(self, scene_name):
+        return scene_visual(scene_name).symbol
 
     def _render_graph_area(self, top, bottom, width, scene_name):
         """Render only inside the unused area between status and logs."""
@@ -736,9 +860,20 @@ class AudioOculizerController:
                     detail_parts.append(f"AGC: gain={n.current_gain:.2f}x lvl={n.ema_rms:.4f}")
                 else:
                     detail_parts.append("AGC: initialising...")
-            if detail_parts:
-                detail_info = " | ".join(detail_parts)
-                self.stdscr.addstr(3, 0, detail_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
+            policy = self.scene_router.get_transition_policy_status()
+            detail_parts.append(f"Cache: {policy['scene_cache_size']}")
+            rate = policy["scene_rate_limit"]
+            detail_parts.append(
+                "Rate: Off" if rate is None
+                else f"Rate: {rate[0]}/{rate[1]:g}s ({policy['scene_rate_used']} used)"
+            )
+            throttle = policy["scene_throttle"]
+            detail_parts.append(
+                "Throttle: Off" if throttle is None
+                else f"Throttle: {throttle[0]}/{throttle[1]:g}s ({policy['throttle_tokens']:.1f} credits)"
+            )
+            detail_info = " | ".join(detail_parts)
+            self.stdscr.addstr(3, 0, detail_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
 
             # Display log messages (bottom)
             visible_logs = list(self.log_messages)
@@ -759,7 +894,7 @@ class AudioOculizerController:
                 self.stdscr.addstr(height-2, 0, self.error_message[:width-1], curses.color_pair(COLOR_PAIRS['error']))
 
             # Display controls (bottom)
-            controls = "Press 'q' to quit, Ctrl+T for toggle mode, 'r' to reload scenes"
+            controls = "Press 'q' to quit, Ctrl+T for toggle mode, 'r' to reload scenes, 'l' for live scene controls"
             self.stdscr.addstr(height-1, 0, controls[:width-1], curses.color_pair(COLOR_PAIRS['controls']))
 
             self.stdscr.noutrefresh()
@@ -782,6 +917,17 @@ class AudioOculizerController:
         except Exception as e:
             self.error_message = f"Error stopping controller: {str(e)}"
             logging.error(f"Error stopping controller: {str(e)}")
+
+def parse_scene_rate_limit(value):
+    """Parse COUNT/SECONDS scene transition policies."""
+    match = re.fullmatch(r"([1-9][0-9]*)/([0-9]+(?:\.[0-9]+)?)", value.strip())
+    if match is None:
+        raise argparse.ArgumentTypeError("expected COUNT/SECONDS, for example 4/5")
+    count, seconds = int(match.group(1)), float(match.group(2))
+    if not 1 <= count <= 100 or not 0.5 <= seconds <= 300:
+        raise argparse.ArgumentTypeError("count must be 1-100 and seconds 0.5-300")
+    return count, seconds
+
 
 def parse_args():
     # Detect OS and set defaults
@@ -851,6 +997,10 @@ Scene Cache Size:
                       help='Average first two input channels together for FFT (useful for Scarlett 18i20)')
     parser.add_argument('--scene-cache-size', type=int, default=default_scene_cache_size,
                       help=f'Number of recent predictions to cache for smoothing (default: {default_scene_cache_size}). 1=instant, 25=heavy smoothing')
+    parser.add_argument('--scene-rate-limit', type=parse_scene_rate_limit, default=None,
+                      metavar='MAX/SECONDS', help='Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)')
+    parser.add_argument('--scene-throttle', type=parse_scene_rate_limit, default=None,
+                      metavar='BURST/RECOVERY_SECONDS', help='Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)')
     parser.add_argument('--prediction-channels', type=str, default=default_prediction_channels,
                       help=f'Channels to use from prediction device (e.g., "1" for channel 1, "1,2" for channels 1-2 averaged, "1-16" for all 16 channels averaged). Default: {default_prediction_channels if default_prediction_channels else "auto-detect"}')
     parser.add_argument('--test', action='store_true',
@@ -895,6 +1045,8 @@ Scene Cache Size:
         parser.error('--dmx-dry-run requires --output enttec')
     if args.filter_dmx and not args.dmx_dry_run:
         parser.error('--filter-dmx requires --dmx-dry-run')
+    if not 1 <= args.scene_cache_size <= 100:
+        parser.error('--scene-cache-size must be between 1 and 100')
     return args
 
 def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
@@ -902,7 +1054,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
          output, qlc_config, osc_host, osc_port, osc_dry_run,
          silence_config, speech_config, master_config, frequency_config,
          prediction_window_seconds, audio_file, osc_log_filters, dmx_dry_run,
-         filter_dmx, graph_enabled):
+         filter_dmx, graph_enabled, scene_rate_limit, scene_throttle):
     setup_colors()
     initialize_screen(stdscr)
     lighting_detail = "Lighting: QLC+ OSC" if output == 'qlc-osc' else (
@@ -917,6 +1069,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         lighting_detail,
         audio_detail,
         f"Profile: {profile_detail} | Predictor: {predictor_version}",
+        *describe_scene_limits(scene_rate_limit, scene_throttle),
     ])
 
     startup_output = io.StringIO()
@@ -948,6 +1101,8 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
                 dmx_dry_run=dmx_dry_run,
                 filter_dmx=filter_dmx,
                 graph_enabled=graph_enabled,
+                scene_rate_limit=scene_rate_limit,
+                scene_throttle=scene_throttle,
             )
     finally:
         _log_captured_startup_output(startup_output)
@@ -1066,4 +1221,6 @@ if __name__ == "__main__":
             args.dmx_dry_run,
             args.filter_dmx,
             not args.no_graph,
+            args.scene_rate_limit,
+            args.scene_throttle,
         ))

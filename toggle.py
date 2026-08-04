@@ -12,7 +12,7 @@ import math
 
 from oculizer.light import Oculizer, OUTPUT_CHOICES
 from oculizer.runtime_config import configured_audio_input, load_runtime_config
-from oculizer.rms_graph import scene_color_index
+from oculizer.rms_graph import SCENE_COLOR_FAMILIES, scene_visual
 
 
 def setup_logging():
@@ -109,19 +109,28 @@ def init_colors():
     curses.init_pair(6, curses.COLOR_MAGENTA, -1)
     # Search text: Yellow text on default background
     curses.init_pair(7, curses.COLOR_YELLOW, -1)
-    for pair, color in enumerate((
-        curses.COLOR_GREEN,
-        curses.COLOR_YELLOW,
-        curses.COLOR_BLUE,
-        curses.COLOR_MAGENTA,
-        curses.COLOR_CYAN,
-        curses.COLOR_RED,
-    ), start=8):
-        curses.init_pair(pair, color, -1)
+    for family_index, (family, shades) in enumerate(SCENE_COLOR_FAMILIES.items()):
+        for shade, xterm_color in enumerate(shades):
+            pair = 32 + family_index * 4 + shade
+            fallback = {
+                'black': curses.COLOR_WHITE, 'blue': curses.COLOR_BLUE,
+                'brown': curses.COLOR_YELLOW, 'cyan': curses.COLOR_CYAN,
+                'gray': curses.COLOR_WHITE, 'green': curses.COLOR_GREEN,
+                'lime': curses.COLOR_GREEN, 'magenta': curses.COLOR_MAGENTA,
+                'orange': curses.COLOR_YELLOW, 'pink': curses.COLOR_MAGENTA,
+                'purple': curses.COLOR_MAGENTA, 'red': curses.COLOR_RED,
+                'white': curses.COLOR_WHITE, 'yellow': curses.COLOR_YELLOW,
+            }[family]
+            if pair < getattr(curses, 'COLOR_PAIRS', 0):
+                curses.init_pair(pair, xterm_color if curses.COLORS >= 256 else fallback, -1)
 
 
 def scene_color(scene_name):
-    return curses.color_pair(8 + scene_color_index(scene_name)) | curses.A_BOLD
+    visual = scene_visual(scene_name)
+    pair = 32 + list(SCENE_COLOR_FAMILIES).index(visual.family) * 4 + visual.shade
+    if pair >= getattr(curses, 'COLOR_PAIRS', 0):
+        pair = 4
+    return curses.color_pair(pair) | (curses.A_BOLD if visual.shade >= 2 else curses.A_NORMAL)
 
 def find_scene_by_prefix(scenes, prefix):
     if not prefix:
@@ -226,7 +235,7 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
 
                 # Pad scene name to column width
                 scene_str = scene_str.ljust(max(0, column_width - 3))
-                stdscr.addstr(display_y, display_x, "●", scene_color(scene))
+                stdscr.addstr(display_y, display_x, scene_visual(scene).symbol, scene_color(scene))
                 stdscr.addstr(display_y, display_x + 2, scene_str, color)
 
             # Display instructions

@@ -1,6 +1,6 @@
 import unittest
 
-from oculizer.rms_graph import RmsGraph, format_elapsed, scene_color_index
+from oculizer.rms_graph import RmsGraph, format_elapsed, scene_color_index, scene_visual
 
 
 class RmsGraphTests(unittest.TestCase):
@@ -24,7 +24,7 @@ class RmsGraphTests(unittest.TestCase):
         lines = graph.render_lines(40, 8, now=5.0)
 
         self.assertEqual(len(lines), 8)
-        self.assertTrue(any(any(0x2800 <= ord(char) <= 0x28FF for char in line) for line in lines))
+        self.assertTrue(any(scene_visual("wave").symbol in line for line in lines))
         self.assertEqual(lines[-1].strip(), "00'05\"")
         self.assertTrue(lines[-1].endswith("00'05\""))
         self.assertTrue(lines[0].startswith("1.000"))
@@ -32,6 +32,28 @@ class RmsGraphTests(unittest.TestCase):
     def test_elapsed_time_format_uses_minutes_and_seconds(self):
         self.assertEqual(format_elapsed(0), "00'00\"")
         self.assertEqual(format_elapsed(68), "01'08\"")
+
+    def test_color_word_selects_matching_family_and_dot(self):
+        visual = scene_visual("pink_strobe_pulse")
+
+        self.assertEqual(visual.family, "pink")
+        self.assertEqual(visual.symbol, "●")
+        self.assertTrue(visual.has_named_color)
+
+    def test_scenes_in_same_color_family_get_stable_variations(self):
+        first = scene_visual("pink_strobe_pulse")
+        second = scene_visual("sequence_pink")
+
+        self.assertEqual(first.family, second.family)
+        self.assertNotEqual(first.shade, second.shade)
+        self.assertEqual(first, scene_visual("pink_strobe_pulse"))
+
+    def test_scene_without_color_uses_gray_non_dot_icon(self):
+        visual = scene_visual("quiet_ambient")
+
+        self.assertEqual(visual.family, "gray")
+        self.assertNotEqual(visual.symbol, "●")
+        self.assertFalse(visual.has_named_color)
 
     def test_small_area_is_left_untouched(self):
         graph = RmsGraph(clock=lambda: 0.0)
@@ -126,18 +148,55 @@ class RmsGraphTests(unittest.TestCase):
         markers = [
             (character, scene)
             for _row, _column, character, scene in cells
-            if character == "●"
+            if character == scene_visual("party").symbol
         ]
 
-        self.assertEqual(markers, [("●", "party")])
+        self.assertEqual(markers, [(scene_visual("party").symbol, "party")])
 
-    def test_initial_scene_does_not_create_transition_marker(self):
+    def test_initial_scene_creates_identity_marker_without_transition_timestamp(self):
         graph = RmsGraph(clock=lambda: 0.0)
         graph.sample(0.1, "ambient", now=0.0)
 
-        _lines, cells = graph.render_frame(40, 8, now=0.0)
+        lines, cells = graph.render_frame(40, 8, now=0.0)
 
-        self.assertFalse(any(character == "●" for _row, _column, character, _scene in cells))
+        markers = [
+            (character, scene)
+            for _row, _column, character, scene in cells
+            if character == scene_visual("ambient").symbol
+        ]
+        self.assertEqual(markers, [(scene_visual("ambient").symbol, "ambient")])
+        self.assertEqual(lines[-1].strip(), "00'00\"")
+        self.assertEqual(lines[-1].count("00'00\""), 1)
+
+    def test_scene_transition_timestamp_scrolls_below_marker(self):
+        graph = RmsGraph(duration_seconds=30.0, clock=lambda: 0.0)
+        graph.sample(0.1, "ambient", now=0.0)
+        graph.sample(0.2, "party", now=5.0)
+
+        lines, _cells = graph.render_frame(60, 8, now=10.0)
+
+        self.assertIn("00'05\"", lines[-1])
+        self.assertTrue(lines[-1].endswith("00'10\""))
+
+    def test_overlapping_transition_timestamps_keep_the_latest(self):
+        graph = RmsGraph(duration_seconds=30.0, sample_rate_hz=10.0, clock=lambda: 0.0)
+        graph.sample(0.1, "ambient", now=0.0)
+        graph.sample(0.2, "party", now=5.0)
+        graph.sample(0.3, "wave", now=6.0)
+
+        lines, _cells = graph.render_frame(40, 8, now=10.0)
+
+        self.assertNotIn("00'05\"", lines[-1])
+        self.assertIn("00'06\"", lines[-1])
+
+    def test_transition_timestamp_never_overwrites_fixed_counter(self):
+        graph = RmsGraph(duration_seconds=30.0, clock=lambda: 0.0)
+        graph.sample(0.1, "ambient", now=0.0)
+        graph.sample(0.2, "party", now=29.0)
+
+        lines, _cells = graph.render_frame(40, 8, now=30.0)
+
+        self.assertTrue(lines[-1].endswith("00'30\""))
 
 
 if __name__ == "__main__":

@@ -25,6 +25,23 @@ class TerminalInitializationTests(unittest.TestCase):
         self.assertIn("This can take several seconds.", rendered)
         screen.refresh.assert_called_once_with()
 
+    def test_loading_screen_accepts_scene_limit_analysis(self):
+        screen = Mock()
+        screen.getmaxyx.return_value = (24, 100)
+
+        with (
+            patch.dict(oculize.COLOR_PAIRS, {"info": 7}),
+            patch("oculize.curses.color_pair", return_value=42),
+        ):
+            oculize.show_loading_screen(
+                screen,
+                ["Scene limits: max 6 changes/10s | burst 3, +1 credit/2s", "Analysis: complementary limits."],
+            )
+
+        rendered = [call.args[2] for call in screen.addstr.call_args_list]
+        self.assertIn("Scene limits: max 6 changes/10s | burst 3, +1 credit/2s", rendered)
+        self.assertIn("Analysis: complementary limits.", rendered)
+
     def test_python_warnings_are_captured_by_logging(self):
         with (
             patch("oculize.logging.FileHandler"),
