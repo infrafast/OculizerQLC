@@ -1,9 +1,12 @@
 import threading
 import time
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import Mock
 
 from oculizer.automatic import AutomaticSceneRouter
+from oculizer.control_socket import send_control_request
 from oculizer.headless import HeadlessOculizerService
 from oculizer_service import configure_service_streams
 from oculizer.runtime_config import SilenceConfig, SpeechConfig
@@ -18,6 +21,7 @@ class FakeOculizer:
         self.current_audio_rms = None
         self.current_audioset_scores = None
         self.prediction_suspended = False
+        self.scene_cache_size = 25
 
     def resolve_scene_target(self, scene):
         return self.targets.get(scene)
@@ -346,6 +350,29 @@ class AutomaticSceneRouterTests(unittest.TestCase):
 
 
 class HeadlessServiceTests(unittest.TestCase):
+    def test_headless_service_exposes_shared_control_socket(self):
+        engine = FakeOculizer()
+        engine.current_predicted_scene = "party"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "control.sock"
+            service = HeadlessOculizerService(engine, poll_seconds=0.001, control_socket_path=path)
+            result = []
+            thread = threading.Thread(target=lambda: result.append(service.run()))
+            thread.start()
+            deadline = time.time() + 1.0
+            while not path.exists() and time.time() < deadline:
+                time.sleep(0.001)
+
+            status = send_control_request(path, {"command": "status"})
+            paused = send_control_request(path, {"command": "pause"})
+            service.request_stop()
+            thread.join(timeout=2.0)
+
+        self.assertEqual(status["mode"], "auto")
+        self.assertEqual(paused["mode"], "pause")
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(result, [0])
+
     def test_configures_explicit_carriage_return_line_endings(self):
         stdout = Mock()
         stderr = Mock()

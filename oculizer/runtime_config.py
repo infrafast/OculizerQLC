@@ -262,3 +262,43 @@ def configured_master_modulation(config: dict[str, Any]) -> MasterModulationConf
 
 def configured_frequency_modulation(config: dict[str, Any]) -> FrequencyModulationConfig:
     return _parse_frequency_modulation(config.get("audio", {}).get("frequency_modulation", {}))
+
+
+def configured_scene_presets(config: dict[str, Any], reset_cache_size=None) -> dict[str, dict[str, Any]]:
+    """Return validated named cache/rate/throttle control presets."""
+    defaults = {
+        "responsive": {"cache": 3, "rate": (10, 10.0), "throttle": (4, 1.0)},
+        "normal": {"cache": 7, "rate": (6, 10.0), "throttle": (3, 2.0)},
+        "calm": {"cache": 15, "rate": (4, 15.0), "throttle": (2, 3.0)},
+        "reset": {"cache": 25, "rate": None, "throttle": None},
+    }
+    configured = config.get("control", {}).get("presets", defaults)
+    if not isinstance(configured, dict) or not configured:
+        raise ValueError("control.presets must be a non-empty object")
+    result = {}
+    for name, values in configured.items():
+        if not isinstance(name, str) or not name.strip() or not isinstance(values, dict):
+            raise ValueError("each control preset must have a non-empty name and object value")
+        cache = values.get("cache")
+        if isinstance(cache, bool) or not isinstance(cache, int) or not 1 <= cache <= 100:
+            raise ValueError(f"control.presets.{name}.cache must be between 1 and 100")
+        parsed = {"cache": cache}
+        for key in ("rate", "throttle"):
+            value = values.get(key)
+            if value is None:
+                parsed[key] = None
+                continue
+            if not isinstance(value, (list, tuple)) or len(value) != 2:
+                raise ValueError(f"control.presets.{name}.{key} must be [count, seconds] or null")
+            count, seconds = value
+            if (isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 100
+                    or isinstance(seconds, bool) or not isinstance(seconds, (int, float))
+                    or not 0.5 <= seconds <= 300):
+                raise ValueError(f"control.presets.{name}.{key} values are out of range")
+            parsed[key] = (count, float(seconds))
+        result[name] = parsed
+    if reset_cache_size is not None and "reset" in result:
+        if isinstance(reset_cache_size, bool) or not isinstance(reset_cache_size, int) or not 1 <= reset_cache_size <= 100:
+            raise ValueError("reset cache size must be between 1 and 100")
+        result["reset"] = {**result["reset"], "cache": reset_cache_size}
+    return result

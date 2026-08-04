@@ -5,10 +5,34 @@ from pathlib import Path
 from unittest.mock import patch
 
 from oculizer.light.control import Oculizer
-from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_presets, configured_silence, load_runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
+    def test_loads_default_and_custom_scene_control_presets(self):
+        defaults = configured_scene_presets({})
+        self.assertEqual(defaults["normal"], {
+            "cache": 7, "rate": (6, 10.0), "throttle": (3, 2.0),
+        })
+        custom = configured_scene_presets({
+            "control": {"presets": {"show": {
+                "cache": 4, "rate": [5, 8], "throttle": None,
+            }}},
+        })
+        self.assertEqual(custom["show"], {
+            "cache": 4, "rate": (5, 8.0), "throttle": None,
+        })
+        reset = configured_scene_presets({}, reset_cache_size=9)
+        self.assertEqual(reset["reset"]["cache"], 9)
+
+    def test_rejects_invalid_scene_control_preset(self):
+        with self.assertRaisesRegex(ValueError, "cache"):
+            configured_scene_presets({
+                "control": {"presets": {"bad": {
+                    "cache": 0, "rate": None, "throttle": None,
+                }}},
+            })
+
     def test_loads_audio_input_and_defaults_to_os_device(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "oculizer.json"

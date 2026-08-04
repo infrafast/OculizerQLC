@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 _UNCHANGED = object()
 
 
+class PolicyConflictError(RuntimeError):
+    """Raised when a stale editor attempts to replace newer policy state."""
+
+
 def _synchronized(method):
     def locked(self, *args, **kwargs):
         with self.route_lock:
@@ -48,6 +52,7 @@ class AutomaticSceneRouter:
         self.last_limited_target = None
         self.priority_route_pending = False
         self.route_lock = threading.RLock()
+        self.policy_revision = 0
 
     @staticmethod
     def _validate_policy(value, label):
@@ -68,8 +73,14 @@ class AutomaticSceneRouter:
     @_synchronized
     def configure_transition_policy(self, scene_rate_limit=_UNCHANGED,
                                     scene_throttle=_UNCHANGED,
-                                    scene_cache_size=_UNCHANGED):
+                                    scene_cache_size=_UNCHANGED,
+                                    expected_revision=None):
         """Atomically validate and apply live routing/prediction controls."""
+        if expected_revision is not None and expected_revision != self.policy_revision:
+            raise PolicyConflictError(
+                f"scene controls changed externally (expected revision {expected_revision}, "
+                f"current {self.policy_revision})"
+            )
         if scene_rate_limit is not _UNCHANGED:
             self._validate_policy(scene_rate_limit, "scene rate limit")
         if scene_throttle is not _UNCHANGED:
@@ -82,15 +93,21 @@ class AutomaticSceneRouter:
             ):
                 raise ValueError("scene cache size must be between 1 and 100")
 
-        if scene_cache_size is not _UNCHANGED:
+        changed = False
+        if scene_cache_size is not _UNCHANGED and scene_cache_size != self.oculizer.scene_cache_size:
             self.oculizer.set_scene_cache_size(scene_cache_size)
+            changed = True
         if scene_rate_limit is not _UNCHANGED and scene_rate_limit != self.scene_rate_limit:
             self.scene_rate_limit = scene_rate_limit
             self.automatic_change_times.clear()
+            changed = True
         if scene_throttle is not _UNCHANGED and scene_throttle != self.scene_throttle:
             self.scene_throttle = scene_throttle
             self.throttle_tokens = float(scene_throttle[0]) if scene_throttle else None
             self.throttle_updated_at = self.clock()
+            changed = True
+        if changed:
+            self.policy_revision += 1
         self.last_limited_target = None
         logger.info(
             "Live scene controls applied: cache=%d rate=%s throttle=%s",
@@ -119,6 +136,7 @@ class AutomaticSceneRouter:
             "scene_rate_used": rate_used,
             "scene_throttle": self.scene_throttle,
             "throttle_tokens": tokens,
+            "policy_revision": self.policy_revision,
         }
 
     def _music_change_allowed(self, target: str, now: float) -> bool:

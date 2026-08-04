@@ -9,9 +9,11 @@ from contextlib import redirect_stderr, redirect_stdout
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
 from oculizer.light import OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
-from oculizer.automatic import AutomaticSceneRouter
+from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_presets, configured_silence, configured_speech, load_runtime_config
+from oculizer.automatic import AutomaticSceneRouter, PolicyConflictError
+from oculizer.control_socket import ControlSocketServer, default_control_socket_path
 from oculizer.modulation import FrequencyBandModulator, MasterModulator
+from oculizer.runtime_control import RuntimeControl
 from oculizer.rms_graph import RmsGraph, SCENE_COLOR_FAMILIES, scene_visual
 from oculizer.scene_limits import describe_scene_limits
 import logging
@@ -188,7 +190,8 @@ class AudioOculizerController:
                  speech_config=None, master_config=None, frequency_config=None,
                  prediction_window_seconds=2.0, audio_file=None, osc_log_filters=(),
                  dmx_dry_run=False, filter_dmx=False, graph_enabled=True,
-                 scene_rate_limit=None, scene_throttle=None):
+                 scene_rate_limit=None, scene_throttle=None, presets=None,
+                 control_socket_path=None):
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
@@ -241,6 +244,12 @@ class AudioOculizerController:
         )
         self.master_modulator = MasterModulator(self.oculizer, config=master_config)
         self.frequency_modulator = FrequencyBandModulator(self.oculizer, config=frequency_config)
+        self.runtime_control = RuntimeControl(
+            self.oculizer, self.scene_router, self.master_modulator,
+            self.frequency_modulator, presets=presets,
+            health_check=lambda: self.oculizer.is_alive(),
+        )
+        self.control_server = ControlSocketServer(control_socket_path, self.runtime_control) if control_socket_path else None
         
         self.dual_stream = dual_stream
         self.predictor_version = predictor_version
@@ -303,6 +312,8 @@ class AudioOculizerController:
             self.master_modulator.startup()
             self.frequency_modulator.startup()
             self.oculizer.start()
+            if self.control_server is not None:
+                self.control_server.start()
             self.run()
         except Exception as e:
             self.error_message = f"Error starting controller: {str(e)}"
@@ -343,11 +354,9 @@ class AudioOculizerController:
                     time.sleep(0.1)
                     continue
                 
-                if self.scene_router.step():
+                if self.runtime_control.tick():
                     current_scene = self.scene_manager.current_scene['name']
                     self.info_message = f"Changed to scene: {current_scene}"
-                self.master_modulator.update()
-                self.frequency_modulator.update()
                         
             except Exception as e:
                 self.error_message = f"Error in update loop: {str(e)}"
@@ -425,7 +434,7 @@ class AudioOculizerController:
                 predicted_scene = self.oculizer.current_predicted_scene
                 
                 # Update current scene name based on override state
-                if not override_active and self.scene_router.step():
+                if not override_active and self.runtime_control.step():
                     current_scene_name = self.scene_manager.current_scene['name']
                 
                 # Calculate grid layout
@@ -529,7 +538,7 @@ class AudioOculizerController:
                             self.oculizer.reload_scene_configuration()
                             self.scene_manager.scenes = sort_scenes_alphabetically(self.scene_manager.scenes)
                             if override_active:
-                                self.scene_router.set_manual_override(override_scene)
+                                self.runtime_control.set_scene(override_scene)
                             else:
                                 self.scene_router.last_target = None
                                 self.scene_router.step()
@@ -564,7 +573,7 @@ class AudioOculizerController:
                         # Let's use regular Enter for selection and implement Shift+Enter detection
                         if 0 <= selected_index < total_scenes:
                             new_scene = scene_list[selected_index][0]
-                            if self.scene_router.set_manual_override(new_scene):
+                            if self.runtime_control.set_scene(new_scene):
                                 current_scene_name = self.scene_manager.current_scene['name']
                                 search_string = ""
                                 override_active = True
@@ -575,7 +584,7 @@ class AudioOculizerController:
                         if override_active:
                             override_active = False
                             override_scene = None
-                            self.scene_router.clear_manual_override()
+                            self.runtime_control.set_auto()
                             current_scene_name = self.scene_manager.current_scene['name']
                             self.info_message = "Override disabled - following predictions"
                             logging.info("Toggle mode: Override disabled via ESC, resuming predictions")
@@ -607,7 +616,7 @@ class AudioOculizerController:
             self.in_toggle_mode = False
             self.toggle_override_active = False
             if self.scene_router.manual_override is not None:
-                self.scene_router.clear_manual_override()
+                self.runtime_control.set_auto()
 
     def handle_user_input(self):
         try:
@@ -656,6 +665,7 @@ class AudioOculizerController:
     def run_scene_limits_mode(self):
         """Edit cache, rolling rate, and token throttle without restarting."""
         status = self.scene_router.get_transition_policy_status()
+        initial_revision = status["policy_revision"]
         values = {
             "cache": status["scene_cache_size"],
             "rate": status["scene_rate_limit"],
@@ -718,10 +728,15 @@ class AudioOculizerController:
                         scene_cache_size=values["cache"],
                         scene_rate_limit=values["rate"],
                         scene_throttle=values["throttle"],
+                        expected_revision=initial_revision,
                     )
                     self.info_message = "Live scene controls applied"
                     return
-                except ValueError as exc:
+                except PolicyConflictError as exc:
+                    self.error_message = str(exc)
+                    self.info_message = "External scene-control change detected; reopen 'l' to reload"
+                    return
+                except (ValueError, RuntimeError) as exc:
                     self.error_message = str(exc)
 
     def _scene_color(self, scene_name):
@@ -829,7 +844,7 @@ class AudioOculizerController:
 
             # Compact scene and prediction status into a second line.
             current_scene_name = self.scene_manager.current_scene['name']
-            scene_parts = [f"Current scene: {current_scene_name}"]
+            scene_parts = [f"Mode: {self.runtime_control.mode}", f"Current scene: {current_scene_name}"]
             scene_status_color = COLOR_PAIRS['info']
             if self.oculizer.current_predicted_scene is not None:
                 predicted_scene = self.oculizer.current_predicted_scene
@@ -906,6 +921,8 @@ class AudioOculizerController:
 
     def stop(self):
         try:
+            if self.control_server is not None:
+                self.control_server.stop()
             self.master_modulator.shutdown()
             self.frequency_modulator.shutdown()
             self.oculizer.stop()
@@ -1001,6 +1018,8 @@ Scene Cache Size:
                       metavar='MAX/SECONDS', help='Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)')
     parser.add_argument('--scene-throttle', type=parse_scene_rate_limit, default=None,
                       metavar='BURST/RECOVERY_SECONDS', help='Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)')
+    parser.add_argument('--control-socket', default=default_control_socket_path(), help='Unix runtime control socket path')
+    parser.add_argument('--no-control-socket', action='store_true', help='Disable the local runtime control socket')
     parser.add_argument('--prediction-channels', type=str, default=default_prediction_channels,
                       help=f'Channels to use from prediction device (e.g., "1" for channel 1, "1,2" for channels 1-2 averaged, "1-16" for all 16 channels averaged). Default: {default_prediction_channels if default_prediction_channels else "auto-detect"}')
     parser.add_argument('--test', action='store_true',
@@ -1037,6 +1056,7 @@ Scene Cache Size:
     args.prediction_config = configured_prediction(config)
     args.master_config = configured_master_modulation(config)
     args.frequency_config = configured_frequency_modulation(config)
+    args.scene_presets = configured_scene_presets(config, reset_cache_size=args.scene_cache_size)
     if args.profile is None and args.output == 'enttec':
         args.profile = default_profile
     if args.audio_file and args.prediction_device:
@@ -1054,7 +1074,8 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
          output, qlc_config, osc_host, osc_port, osc_dry_run,
          silence_config, speech_config, master_config, frequency_config,
          prediction_window_seconds, audio_file, osc_log_filters, dmx_dry_run,
-         filter_dmx, graph_enabled, scene_rate_limit, scene_throttle):
+         filter_dmx, graph_enabled, scene_rate_limit, scene_throttle,
+         scene_presets, control_socket_path):
     setup_colors()
     initialize_screen(stdscr)
     lighting_detail = "Lighting: QLC+ OSC" if output == 'qlc-osc' else (
@@ -1103,6 +1124,8 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
                 graph_enabled=graph_enabled,
                 scene_rate_limit=scene_rate_limit,
                 scene_throttle=scene_throttle,
+                presets=scene_presets,
+                control_socket_path=control_socket_path,
             )
     finally:
         _log_captured_startup_output(startup_output)
@@ -1223,4 +1246,6 @@ if __name__ == "__main__":
             not args.no_graph,
             args.scene_rate_limit,
             args.scene_throttle,
+            args.scene_presets,
+            None if args.no_control_socket else args.control_socket,
         ))

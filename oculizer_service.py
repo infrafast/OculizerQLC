@@ -7,8 +7,9 @@ import sys
 import re
 
 from oculizer.headless import HeadlessOculizerService
+from oculizer.control_socket import default_control_socket_path
 from oculizer.light import Oculizer, OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_presets, configured_silence, configured_speech, load_runtime_config
 from oculizer.scenes import SceneManager
 
 
@@ -45,6 +46,8 @@ def parse_args():
                         help="Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)")
     parser.add_argument("--scene-throttle", type=parse_scene_rate_limit, default=None, metavar="BURST/RECOVERY_SECONDS",
                         help="Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)")
+    parser.add_argument("--control-socket", default=default_control_socket_path(), help="Unix runtime control socket path")
+    parser.add_argument("--no-control-socket", action="store_true", help="Disable the local runtime control socket")
     parser.add_argument("--qlc-config", default=None, help="Unified QLC+ configuration (default: config/qlc_config.json)")
     parser.add_argument("--osc-host", default=None)
     parser.add_argument("--osc-port", type=int, default=None)
@@ -79,6 +82,7 @@ def parse_args():
     args.prediction_config = configured_prediction(config)
     args.master_config = configured_master_modulation(config)
     args.frequency_config = configured_frequency_modulation(config)
+    args.scene_presets = configured_scene_presets(config, reset_cache_size=args.scene_cache_size)
     if args.output == "enttec" and not args.profile:
         parser.error("--profile is required with --output enttec")
     if args.dmx_dry_run and args.output != "enttec":
@@ -128,6 +132,8 @@ def build_service(args) -> HeadlessOculizerService:
         frequency_config=args.frequency_config,
         scene_rate_limit=args.scene_rate_limit,
         scene_throttle=args.scene_throttle,
+        presets=args.scene_presets,
+        control_socket_path=None if args.no_control_socket else args.control_socket,
     )
 
 

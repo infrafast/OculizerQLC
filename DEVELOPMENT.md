@@ -359,19 +359,19 @@ Exit criterion: `oculize.py --audio-file <file.wav> --output qlc-osc --osc-dry-r
 
 ### Phase 8a — Shared local runtime control and operator presets
 
-Status: **planned next — interactive and headless control transport pending**
+Status: **complete — implementation and live QLC+ operator validation accepted**
 
-- [ ] host the same configurable Unix-domain control socket from either `oculize.py` or `oculizer_service.py`, with exactly one runtime owning the socket at a time;
-- [ ] add `oculizerctl` commands for `auto`, `pause`, forced logical scenes, status, live cache/rate/throttle inspection, modification, and disabling optional policies;
-- [ ] expose configurable named transition presets suitable for four operator buttons, initially `responsive`, `normal`, `calm`, and `reset`;
-- [ ] make `oculizerctl preset <name>` apply cache, rate, and throttle as one validated atomic update, and add `oculizerctl presets` to list the resolved preset values;
-- [ ] keep preset values in normal Oculizer configuration rather than hard-coding artistic choices in the client or QLC+ workspace;
-- [ ] allow QLC+ Virtual Console buttons to invoke the same preset commands through a local bridge or command action, without creating a second routing implementation;
-- [ ] keep the interactive main-screen cache/rate/throttle status synchronized with changes received through the socket on its normal render cadence;
-- [ ] add a monotonically increasing policy revision so an `l` editor opened before an external change cannot silently overwrite newer socket values; require reload or explicit retry on conflict;
-- [ ] make all updates atomic and thread-safe inside `AutomaticSceneRouter`, with validation before mutation and explicit reset semantics for cache, rolling-window history, and throttle credits;
-- [ ] validate malformed commands, simultaneous terminal/QLC/UI updates, permissions, stale sockets, acknowledgements, and client disconnects;
-- [ ] document how a development terminal discovers the interactive runtime socket and how QLC+ buttons invoke presets.
+- [x] host the same configurable Unix-domain control socket from either `oculize.py` or `oculizer_service.py`, with exactly one runtime owning the socket at a time;
+- [x] add `oculizerctl` commands for `auto`, `pause`, forced logical scenes, status, live cache/rate/throttle inspection, modification, and disabling optional policies;
+- [x] expose configurable named transition presets suitable for four operator buttons: `responsive`, `normal`, `calm`, and `reset`;
+- [x] make `oculizerctl preset <name>` apply cache, rate, and throttle as one validated atomic update, and add `oculizerctl presets` to list the resolved preset values;
+- [x] keep preset values in normal Oculizer configuration rather than hard-coding artistic choices in the client or QLC+ workspace;
+- [x] validate the documented QLC+ 5 `Engine.systemCommand` preset buttons against a live Virtual Console;
+- [x] keep the interactive main-screen cache/rate/throttle status synchronized with changes received through the socket on its normal render cadence;
+- [x] add a monotonically increasing policy revision so an `l` editor opened before an external change cannot silently overwrite newer socket values;
+- [x] make all updates atomic and thread-safe inside `AutomaticSceneRouter`, with validation before mutation and explicit reset semantics for cache, rolling-window history, and throttle credits;
+- [x] validate malformed commands, concurrent clients, permissions, stale sockets, acknowledgements, and client disconnects locally;
+- [x] document how a development terminal discovers the interactive runtime socket and how QLC+ buttons invoke presets.
 
 Exit criterion: while the interactive application or headless runtime is running, a second terminal and QLC+-originated actions can select modes, scenes, and named transition presets; every active interactive display reflects external changes without restart or split state.
 
@@ -441,6 +441,27 @@ Control state is initially process-local and is not restored after a crash or re
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-04 — Phase 8a shared runtime control
+
+Delivered behavior:
+
+- added one bounded, owner-only Unix-domain control socket shared by the interactive and headless runtimes, with stale-socket recovery and active-owner protection;
+- added `oculizerctl` commands for status, automatic operation, pause/blackout, forced scenes, atomic live limits, preset discovery, and preset application;
+- centralized operator state in `RuntimeControl`, so terminal keys, external commands, and the future service integration use the same scene-routing and safety paths;
+- added configurable `responsive`, `normal`, `calm`, and `reset` presets, live prediction-cache resizing, atomic policy revisions, and stale interactive-editor conflict detection;
+- made the interactive header follow externally changed mode and transition values without a restart;
+- documented development-terminal and QLC+ 5 `Engine.systemCommand` invocation examples.
+
+Validation:
+
+- `python3 -m unittest discover -s tests`: 131 tests passed, including malformed requests, concurrent clients, permissions, stale sockets, ordinary-file preservation, policy conflicts, live cache resizing, and headless socket integration;
+- strict Python compilation completed successfully for the modified entry points and runtime modules;
+- a real headless WAV/QLC-OSC dry run accepted `status`, `preset normal`, `pause`, `auto`, and `scene wave` from a second process, then removed its socket during a clean interrupt;
+- a real curses/WAV/QLC-OSC dry run accepted `preset calm` from a second terminal, displayed cache `15`, rate `4/15`, throttle `2/3`, and revision `1`, then exited cleanly and removed its socket;
+- official QLC+ 5 documentation was checked for Virtual Console button functions and detached `Engine.systemCommand` execution.
+
+Acceptance: the operator confirmed on 2026-08-04 that the live QLC+ control workflow behaves as expected. Phase 8a has no remaining work. Raspberry Pi installation paths, service-user ownership, and the production `/run/oculizer/` socket belong to phase 8b.
 
 ### 2026-08-04 — Final automatic scene transition limits and throttle
 

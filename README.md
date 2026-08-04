@@ -292,7 +292,7 @@ Automatic music transitions can receive two optional final-stage protections, in
 
 Manual selection and return to automatic mode, entry into and recovery from silence, and announcement entry and release bypass these limits. This keeps operator actions and safety or semantic transitions responsive while limiting only potentially unpleasant switching among ordinary music scenes. The options are available identically in `oculize.py` and `oculizer_service.py`.
 
-Phase 8a plans a shared local control socket hosted by either the interactive or headless runtime. `oculizerctl limits` will expose `--cache`, `--rate`, and `--throttle`, including explicit `off` values for optional policies. Named configurable presets `responsive`, `normal`, `calm`, and `reset` will atomically apply all three values through `oculizerctl preset <name>`, allowing QLC+ Virtual Console buttons and a second terminal to use the same control path. The interactive status line already reads live router state each render and will therefore reflect socket changes; a revision check will prevent a stale open `l` editor from overwriting a newer external update. Phase 8b then covers Raspberry Pi installation and service deployment. The socket and client remain roadmap work and are not available yet.
+Phase 8a provides a shared local control socket hosted by either the interactive or headless runtime. `oculizerctl limits` exposes `--cache`, `--rate`, and `--throttle`, including explicit `off` values for optional policies. Named configurable presets `responsive`, `normal`, `calm`, and `reset` atomically apply all three values through `oculizerctl preset <name>`, allowing QLC+ Virtual Console buttons and a second terminal to use the same control path. The interactive status line reads live router state each render and therefore reflects socket changes. A policy revision prevents a stale open `l` editor from overwriting a newer external update. Phase 8b covers Raspberry Pi installation and service deployment.
 
 Recommended initial QLC+ Virtual Console presets are shown below. They are deliberately starting points for live tuning rather than universal musical rules:
 
@@ -312,7 +312,49 @@ oculizerctl preset calm
 oculizerctl preset reset
 ```
 
-`reset` intentionally restores the project's current Linux/Raspberry Pi default cache size of `25`. If deployment defaults later become configurable per installation, the preset should resolve to that recorded startup default rather than permanently hard-code `25`.
+`reset` uses `25` on the current Linux/Raspberry Pi defaults shown in the table, but resolves at runtime to the cache size selected at application startup. It therefore restores the actual CLI/platform startup default rather than permanently forcing `25` on every host.
+
+### Shared runtime control (Phase 8a)
+
+Both entry points create the same owner-only Unix socket by default:
+
+```text
+/tmp/oculizer-<uid>.sock
+```
+
+Override it with `--control-socket PATH`, or disable it with `--no-control-socket`. Only one runtime may own a path; a second instance refuses to steal an active socket. A stale socket is recovered, ordinary files are never deleted, permissions are set to `0600`, and clean shutdown removes only the socket created by that process.
+
+From another terminal, use:
+
+```bash
+python3 oculizerctl.py status
+python3 oculizerctl.py auto
+python3 oculizerctl.py pause
+python3 oculizerctl.py scene wave
+python3 oculizerctl.py limits
+python3 oculizerctl.py limits --cache 7 --rate 6/10 --throttle 3/2
+python3 oculizerctl.py limits --rate off --throttle off
+python3 oculizerctl.py presets
+python3 oculizerctl.py preset responsive
+python3 oculizerctl.py preset normal
+python3 oculizerctl.py preset calm
+python3 oculizerctl.py preset reset
+```
+
+Use `--socket PATH` before the subcommand when the runtime uses a non-default path. Responses are acknowledged JSON snapshots including operator mode, manual and resolved scenes, blackout, worker health, policy revision, cache size, rolling-window usage, and available throttle credits. Live changes are process-local and do not rewrite configuration.
+
+`pause` suspends inference, discards stale prediction input, sends safe modulation values, blocks routing/modulation ticks, and asserts blackout. `auto` clears manual override or pause, releases blackout, and resumes from fresh prediction audio. `scene NAME` resolves and forces a logical scene through `AutomaticSceneRouter`; unknown or unavailable scenes return an error.
+
+Presets live under `control.presets` in `config/oculizer.json` as complete `cache`, `rate`, and `throttle` tuples. QLC+ 5 Virtual Console buttons can each trigger a Script function whose JavaScript calls `Engine.systemCommand(...)`. On an installed Raspberry Pi command path, the four scripts can run commands equivalent to:
+
+```javascript
+Engine.systemCommand("/usr/local/bin/oculizerctl preset responsive");
+Engine.systemCommand("/usr/local/bin/oculizerctl preset normal");
+Engine.systemCommand("/usr/local/bin/oculizerctl preset calm");
+Engine.systemCommand("/usr/local/bin/oculizerctl preset reset");
+```
+
+The final executable path belongs to Phase 8b installation. During repository development, use the absolute Python and `oculizerctl.py` paths instead. QLC+ runs system commands detached, so acknowledgement and detailed errors remain visible through `oculizerctl status` or application logs rather than on the Virtual Console button itself. See the official [QLC+ 5 Script Editor documentation](https://docs.qlcplus.org/v5/function-manager/script-editor) for `Engine.systemCommand`.
 
 When either option is present, the interactive loading screen summarizes the effective policy and displays a short recommendation when the combination is redundant or likely to feel slow. It never changes the supplied values. No analysis line is shown when both options are omitted. The interpreter deliberately uses a small set of understandable cases:
 
