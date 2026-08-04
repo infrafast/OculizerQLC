@@ -127,6 +127,8 @@ Useful options:
 | `--no-graph` | Hide the interactive RMS graph |
 | `--list-devices` | List available audio inputs |
 
+`v4` is the validated default predictor. `v5` also supports speech-aware announcement routing and currently uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
+
 Interactive controls:
 
 - `q`: quit;

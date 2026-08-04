@@ -4,15 +4,15 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Available predictor versions
-AVAILABLE_VERSIONS = ['v1', 'v3', 'v4', 'v5', 'vday']  # v2 doesn't have a predictor.py file
+# Predictor versions that support the complete current runtime contract.
+AVAILABLE_VERSIONS = ['v4', 'v5']
 
-def get_predictor(version='v1'):
+def get_predictor(version='v4'):
     """
     Get a ScenePredictor class for the specified version.
     
     Args:
-        version: Version string (e.g., 'v1', 'v3')
+        version: Version string (currently 'v4' or 'v5')
         
     Returns:
         ScenePredictor: Class of the specified predictor version
@@ -46,5 +46,5 @@ def list_available_versions():
     """List all available predictor versions."""
     return AVAILABLE_VERSIONS.copy()
 
-# Backward compatibility - default to v1
-from .v1.predictor import ScenePredictor
+# Backward-compatible direct import now follows the validated default.
+from .v4.predictor import ScenePredictor

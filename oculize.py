@@ -976,7 +976,7 @@ def parse_args():
         epilog="""
 Single-stream mode (default on macOS):
   - Uses Scarlett channel 1 for both FFT reactivity and scene prediction
-  - Predictor: vday (default)
+  - Predictor: v4 (default)
   
 Dual-stream mode (--prediction-device):
   - FFT stream: Scarlett interface for DMX modulation
@@ -1012,8 +1012,8 @@ Scene Cache Size:
     parser.add_argument('--single-stream', action='store_true', default=default_single_stream,
                       help=f'Use single audio stream for both FFT and prediction (default: {not default_single_stream})')
     parser.add_argument('--predictor-version', '--predictor', type=str, default='v4',
-                      choices=['v1', 'v3', 'v4', 'v5', 'vday'],
-                      help='Scene predictor version to use (default: vday)')
+                      choices=['v4', 'v5'],
+                      help='Scene predictor version to use (default: v4)')
     parser.add_argument('--average-dual-channels', action='store_true',
                       help='Average first two input channels together for FFT (useful for Scarlett 18i20)')
     parser.add_argument('--scene-cache-size', type=int, default=10,

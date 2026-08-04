@@ -26,7 +26,7 @@ During development, Oculizer and QLC+ run on the same Mac. In production, both w
 
 - single-stream and dual-stream audio capture;
 - mel-scaled FFT and adaptive normalization;
-- prediction with `v1`, `v3`, `v4`, `v5`, and `vday`;
+- prediction with the supported `v4` and experimental `v5` predictors, both including speech-aware AudioSet scores;
 - configurable prediction smoothing cache;
 - JSON scene loading and reloading;
 - JSON fixture profiles;
@@ -442,6 +442,24 @@ Control state is initially process-local and is not restored after a crash or re
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
 
+### 2026-08-04 — Retired incomplete predictor versions
+
+Delivered behavior:
+
+- removed the unsupported v1, v2, v3, and vday predictor implementations and model artefacts; the runtime, interactive CLI, service CLI, and direct compatibility import now expose only the speech-aware v4 and v5 predictors, with v4 as the default;
+- preserved the exact v1, v3, and vday cluster-to-scene dictionaries under `oculizer/scene_predictors/legacy_mappings/` before removing their models; v2 had no predictor or scene mapping to preserve;
+- documented that vday's archived mapping is directly index-compatible with v4's byte-identical clustering artefacts, whereas v1 and v3 mappings require experimental adaptation because their cluster models differ;
+- added regression coverage for the supported-version contract, default predictor, rejection of v1, and completeness of every archived mapping.
+
+Validation:
+
+- compared every archived JSON dictionary with its source before deletion: v1 100/100, v3 120/120, and vday 100/100 entries were identical;
+- confirmed both application help screens advertise only `{v4,v5}` and v4 as the interactive default;
+- ran 137 unit tests successfully and compiled the modified runtime modules;
+- ran real four-second inference from `tests/mixvoicemusic.wav` after deletion: v4 returned `swamp`/cluster 86 and v5 returned `pink_speedracer`/cluster 27, with speech, singing, and music scores populated by both.
+
+Remaining work: archived mappings may be evaluated against v4/v5 later as explicit artistic experiments; they are not selectable predictor versions.
+
 ### 2026-08-04 — User-focused README cleanup
 
 Delivered behavior:
@@ -488,6 +506,24 @@ Validation:
 - compiled the modified entry points and core controller with `SyntaxWarning` promoted to an error.
 
 Remaining work: none; operators can still select any valid value from `1` to `100` explicitly or at runtime.
+
+### 2026-08-04 — Experimental v5 scene mapping and speech scores
+
+Delivered behavior:
+
+- replaced all 100 v5 `placeholder` targets with the complete v4 cluster-number mapping, making v5 return valid logical scene names;
+- retained and aggregated v5's already-computed EfficientAT logits into the same `speech`, `singing`, and `music` scores used by v4 semantic announcement routing;
+- kept singing classified as music rather than speech and added no extra neural inference;
+- marked the mapping as experimental by design: v5 has distinct scaler, PCA, and KMeans artefacts, so equal cluster numbers do not establish artistic equivalence with v4.
+
+Validation:
+
+- verified exact 100-entry v4/v5 mapping equality and the absence of `placeholder` with a focused test;
+- ran the shared v4/v5 AudioSet score aggregation test;
+- performed a real v5 inference on a four-second WAV window and confirmed a valid `(scene, cluster)` result plus populated speech/music scores;
+- compiled the modified predictor and test with `SyntaxWarning` promoted to an error.
+
+Remaining work: evaluate v5 cluster distribution on the reference WAV corpus and replace the provisional mapping with assignments based on representative samples from each v5 cluster.
 
 ### 2026-08-04 — Phase 8a shared runtime control
 

@@ -18,7 +18,7 @@ from pathlib import Path
 import logging
 
 from oculizer.light.control import Oculizer
-from mappings.v1.predictor import ScenePredictor
+from oculizer.scene_predictors.v4.predictor import ScenePredictor
 
 logger = logging.getLogger(__name__)
 

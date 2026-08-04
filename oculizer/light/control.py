@@ -64,7 +64,7 @@ n_channels = {
 
 class Oculizer(threading.Thread):
     def __init__(self, profile_name, scene_manager, input_device='cable', 
-                 scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v1',
+                 scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v4',
                  average_dual_channels=False, scene_cache_size=10, prediction_channels=None,
                  test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
                  qlc_config_path=None, osc_host=None,
@@ -387,11 +387,8 @@ class Oculizer(threading.Thread):
         ScenePredictor = get_predictor(self.predictor_version)
         
         # Different predictor versions use different sample rates
-        # v1, v3: 32kHz | v4, v5: 48kHz (trained at these rates, must match!)
-        if self.predictor_version in ['v4', 'v5']:
-            self.prediction_sr = 48000
-        else:
-            self.prediction_sr = 32000
+        # Both supported predictors were trained at 48 kHz.
+        self.prediction_sr = 48000
         
         # Historical predictor implementations and EfficientAT print model
         # internals directly. Capture that output so service logs stay concise.
