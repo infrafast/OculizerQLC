@@ -2,8 +2,8 @@
   "control": {
     "presets": {
       "responsive": {"cache": 3, "rate": [10, 10], "throttle": [4, 1]},
-      "normal": {"cache": 7, "rate": [6, 10], "throttle": [3, 2]},
-      "calm": {"cache": 15, "rate": [4, 15], "throttle": [2, 3]},
+      "normal": {"cache": 10, "rate": [6, 10], "throttle": [3, 2]},
+      "calm": {"cache": 25, "rate": [4, 15], "throttle": [2, 3]},
       "reset": {"cache": 10, "rate": null, "throttle": null}
     }
   },
