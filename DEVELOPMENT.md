@@ -42,10 +42,8 @@ During development, Oculizer and QLC+ run on the same Mac. In production, both w
 
 ### Not implemented
 
-- Oculizer-scene to QLC+-function mappings;
-- audio modulations sent to QLC+;
 - QLC+ state feedback or synchronization;
-- headless Oculizer service entry point;
+- external runtime control of the headless service;
 - Raspberry Pi production service units.
 
 Never describe these items as available before they have been implemented and validated.
@@ -336,6 +334,10 @@ Status: **active — deployment design and Linux ARM64 validation pending**
 - [ ] prepare reproducible installation;
 - [ ] create separate systemd services for QLC+ and Oculizer;
 - [ ] run Oculizer through its non-interactive mode with no TTY requirement;
+- [ ] add a local control endpoint to the headless runtime;
+- [ ] add a command-line controller that can select `auto`, `pause`, or a forced logical scene and query status;
+- [ ] route remote scene commands through `AutomaticSceneRouter` and the existing `change_scene()` path rather than bypassing scene state;
+- [ ] validate control permissions, malformed commands, concurrent commands, service restart, and stale-socket recovery;
 - [ ] configure service user, working directory, environment, logs, and graceful stop behavior;
 - [ ] order startup and configure restart policies;
 - [ ] accept the QLC+ `.qxw` workspace path through configuration or a command-line option;
@@ -347,9 +349,52 @@ Status: **active — deployment design and Linux ARM64 validation pending**
 
 Final criterion: a cold Raspberry Pi restart reaches an operational lighting system without local intervention.
 
+### Headless runtime control contract
+
+Interactive operation remains supported independently of the production service. Running `oculize.py --output qlc-osc` keeps automatic prediction active and allows the operator to enter the integrated scene selector with `Ctrl+T`. Selecting a scene enables the existing manual override, and leaving the override returns routing to automatic prediction. The standalone `toggle.py --output qlc-osc` remains a manual-only controller and must not be run concurrently with the service because both processes would maintain independent QLC+ toggle state.
+
+The production service must expose the same routing intentions without requiring a TTY. Implement a local Unix-domain control socket, with its path configurable and defaulting to a service-owned location under `/run/oculizer/`. Provide a small command-line client, provisionally named `oculizerctl`, with these commands:
+
+```text
+oculizerctl auto
+oculizerctl pause
+oculizerctl scene <logical-scene-name>
+oculizerctl status
+```
+
+The service has three mutually exclusive operator modes:
+
+- `auto`: clear any manual override, clear the paused state, and resume routing from fresh audio;
+- `scene <name>`: enter manual override and activate the requested logical scene through the normal configured fallback and QLC+ mapping path;
+- `pause`: suspend prediction routing, discard queued prediction audio, send safe zero values for continuous modulations, and assert blackout. Returning to `auto` must clear blackout and require fresh audio state so a stale prediction cannot flash a scene.
+
+`status` must report at least the operator mode, requested manual scene if any, resolved active scene, blackout state, and whether the audio worker is healthy. Commands must return a clear success or error response and must not silently accept an unknown or unmapped scene.
+
+POSIX signals remain reserved for process lifecycle (`SIGINT` and `SIGTERM`) and possibly a future configuration reload. They are not the scene-control protocol: signals cannot carry arbitrary logical scene names, provide acknowledgements, or report current state. The local socket avoids opening a network port, supports access control through filesystem ownership and permissions, and can later be wrapped by a web, GPIO, MIDI, or home-automation interface without duplicating routing logic.
+
+Control state is initially process-local and is not restored after a crash or reboot. A restarted service follows deterministic safe startup and then enters `auto`; it must never replay a stale forced scene from a leftover socket or state file. Persistent operator state may be reconsidered only with an explicit safe-start policy.
+
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-04 — Headless operator-control design
+
+Decision:
+
+- retain the existing interactive QLC+ workflow while adding service-safe control as a separate interface;
+- use a local Unix-domain socket and acknowledged CLI commands instead of encoding scene choices as POSIX signals;
+- define `auto`, forced `scene`, and safety-oriented `pause` as the initial service modes;
+- make pause assert blackout and safe continuous values, and make auto resume from fresh audio state;
+- keep all commands on the existing automatic router and scene-command path so interactive and headless control share state semantics.
+
+Validated:
+
+- inspected the current integrated selector, manual-override router, headless runtime, and QLC+ backend command path;
+- confirmed that interactive QLC+ selection already supports forcing a logical scene and returning to automatic prediction;
+- confirmed that the headless runtime currently has lifecycle signal handling but no external operator-control endpoint.
+
+Remaining work: implement and test the control endpoint and CLI during phase 8; the contract documented above is not yet available at runtime.
 
 ### 2026-08-03 — Documentation consolidation
 
