@@ -2,7 +2,7 @@
 
 Oculizer is a music-reactive lighting system. It analyzes an audio stream in real time, predicts a suitable mood with a classification model, and automatically selects a lighting scene. A manual mode lets the operator take control during a show. See LandryBulls/Oculizer
 
-The fork is being migrated to a hybrid architecture with QLC+ 5: Oculizer retains audio analysis and intelligent scene selection, while QLC+ runs scenes, chasers, and DMX outputs. The application can start with either the existing Enttec-compatible direct-DMX backend or the QLC+ OSC backend. Automatic scene selection, silence handling, and speech-aware announcement routing are validated with QLC+ on macOS.
+The fork is being migrated to a hybrid architecture with QLC+ 5: Oculizer retains audio analysis and intelligent scene selection, while QLC+ runs scenes, chasers, and DMX outputs. The application can start with either the existing Enttec-compatible direct-DMX backend or the QLC+ OSC backend. Automatic scene selection, silence handling, and speech-aware announcement routing are validated with QLC+.
 
 ## Current features
 
@@ -27,7 +27,7 @@ Oculizer is designed to create a music-driven light show with three levels of co
 2. FFT analysis modulates lighting parameters in real time;
 3. the operator can manually select a scene and later return to automatic mode.
 
-The QLC+ 5 target will preserve this logic while moving hardware patching, lighting functions, and DMX output into QLC+. Development currently takes place on macOS with a local QLC+ instance. The production target is a Raspberry Pi 5 running Raspberry Pi OS, with QLC+ 5 and Oculizer on the same machine. Production operation will use a non-interactive Oculizer mode managed as a service; curses will remain an optional operator interface rather than a service dependency.
+The QLC+ 5 target preserve this logic while moving hardware patching, lighting functions, and DMX output into QLC+. Development currently takes place on macOS with a local QLC+ instance. The production target is a Raspberry Pi 5 running Raspberry Pi OS, with QLC+ 5 and Oculizer on the same machine. Production operation will use a non-interactive Oculizer mode managed as a service; curses will remain an optional operator interface rather than a service dependency.
 
 ## Current prerequisites
 
