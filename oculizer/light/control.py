@@ -65,7 +65,7 @@ n_channels = {
 class Oculizer(threading.Thread):
     def __init__(self, profile_name, scene_manager, input_device='cable', 
                  scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v1',
-                 average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
+                 average_dual_channels=False, scene_cache_size=10, prediction_channels=None,
                  test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
                  qlc_config_path=None, osc_host=None,
                  osc_port=None, osc_dry_run=None, prediction_window_seconds=2.0,

@@ -4,13 +4,13 @@
       "responsive": {"cache": 3, "rate": [10, 10], "throttle": [4, 1]},
       "normal": {"cache": 7, "rate": [6, 10], "throttle": [3, 2]},
       "calm": {"cache": 15, "rate": [4, 15], "throttle": [2, 3]},
-      "reset": {"cache": 25, "rate": null, "throttle": null}
+      "reset": {"cache": 10, "rate": null, "throttle": null}
     }
   },
   "audio": {
     "input_device": "default",
     "prediction": {
-      "window_seconds": 2.0
+      "window_seconds": 4.0
     },
     "master_modulation": {
       "enabled": false,

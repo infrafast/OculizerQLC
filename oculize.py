@@ -184,7 +184,7 @@ def get_index_from_position(row, col, num_columns, total_scenes):
 class AudioOculizerController:
     def __init__(self, stdscr, profile='garage', input_device='scarlett', 
                  dual_stream=True, prediction_device=None, predictor_version='v4',
-                 average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
+                 average_dual_channels=False, scene_cache_size=10, prediction_channels=None,
                  test_mode=False, output='enttec', qlc_config=None, osc_host=None,
                  osc_port=None, osc_dry_run=None, silence_config=None,
                  speech_config=None, master_config=None, frequency_config=None,
@@ -767,7 +767,12 @@ class AudioOculizerController:
             self.stdscr.addstr(top + offset, 0, line[:width - 1], curses.color_pair(COLOR_PAIRS['info']))
         for row, column, character, point_scene in points:
             if row + 1 < area_height and column < width - 1:
-                self.stdscr.addstr(top + row + 1, column, character, self._scene_color(point_scene))
+                self.stdscr.addstr(
+                    top + row + 1,
+                    column,
+                    character,
+                    self._scene_color(point_scene) | curses.A_BOLD,
+                )
 
     def update_display(self):
         try:
@@ -955,7 +960,6 @@ def parse_args():
         default_input_device = 'blackhole'
         default_prediction_device = 'blackhole'
         default_single_stream = True
-        default_scene_cache_size = 1  # Instant response
         default_prediction_channels = '1'
         default_profile = 'rockville'
     else:
@@ -963,7 +967,6 @@ def parse_args():
         default_input_device = 'scarlett'
         default_prediction_device = 'cable_output'
         default_single_stream = False
-        default_scene_cache_size = 25  # Heavy smoothing
         default_prediction_channels = None  # Auto-detect
         default_profile = 'garage2025'
     
@@ -989,10 +992,11 @@ Device Selection:
   - You can still use device indices if needed (e.g., --prediction-device 84)
 
 Scene Cache Size:
-  - Controls smoothing of scene predictions (default: 1 on macOS, 25 on others)
+  - Controls smoothing of scene predictions (default: 10 on all platforms)
   - 1: Instant response, may flicker between scenes
   - 3-5: Minimal smoothing (~0.3-0.5s)
-  - 25: Heavy smoothing (2.5s lag) - tested behavior on Windows
+  - 10: Balanced smoothing (~1s)
+  - 25: Heavy smoothing (~2.5s)
         """
     )
     parser.add_argument('--config', default=None,
@@ -1012,8 +1016,8 @@ Scene Cache Size:
                       help='Scene predictor version to use (default: vday)')
     parser.add_argument('--average-dual-channels', action='store_true',
                       help='Average first two input channels together for FFT (useful for Scarlett 18i20)')
-    parser.add_argument('--scene-cache-size', type=int, default=default_scene_cache_size,
-                      help=f'Number of recent predictions to cache for smoothing (default: {default_scene_cache_size}). 1=instant, 25=heavy smoothing')
+    parser.add_argument('--scene-cache-size', type=int, default=10,
+                      help='Number of recent predictions to cache for smoothing (default: 10). 1=instant, 25=heavy smoothing')
     parser.add_argument('--scene-rate-limit', type=parse_scene_rate_limit, default=None,
                       metavar='MAX/SECONDS', help='Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)')
     parser.add_argument('--scene-throttle', type=parse_scene_rate_limit, default=None,
@@ -1168,11 +1172,9 @@ if __name__ == "__main__":
             if is_macos:
                 args.prediction_device = 'blackhole'
                 args.prediction_channels = '1'
-                args.scene_cache_size = 1
             else:
                 args.prediction_device = 'cable_output'
                 args.prediction_channels = None
-                args.scene_cache_size = 25
             
             # Disable FFT stream by using a dummy device that won't be used
             args.input_device = args.prediction_device

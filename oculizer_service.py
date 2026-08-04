@@ -41,7 +41,8 @@ def parse_args():
     parser.add_argument("--prediction-device", default=None, help="Optional separate prediction input")
     parser.add_argument("--prediction-channels", default=None)
     parser.add_argument("--predictor-version", choices=["v1", "v3", "v4", "v5", "vday"], default="v4")
-    parser.add_argument("--scene-cache-size", type=int, default=25)
+    parser.add_argument("--scene-cache-size", type=int, default=10,
+                        help="Number of recent predictions used for smoothing (default: 10)")
     parser.add_argument("--scene-rate-limit", type=parse_scene_rate_limit, default=None, metavar="MAX/SECONDS",
                         help="Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)")
     parser.add_argument("--scene-throttle", type=parse_scene_rate_limit, default=None, metavar="BURST/RECOVERY_SECONDS",

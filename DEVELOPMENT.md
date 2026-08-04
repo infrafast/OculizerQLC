@@ -442,6 +442,53 @@ Control state is initially process-local and is not restored after a crash or re
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
 
+### 2026-08-04 — User-focused README cleanup
+
+Delivered behavior:
+
+- reduced `README.md` to prerequisites, executable installation commands, configuration entry points, launch examples, operator controls, runtime presets, and troubleshooting;
+- removed internal RMS/Braille rendering mechanics, concurrency and buffer details, OSC/DMX implementation commentary, installation rationale, validation history, and roadmap narration from the user guide;
+- retained the corresponding engineering history and design detail in this development guide;
+- strengthened the documentation policy for developers and coding agents so future implementation explanations remain in `DEVELOPMENT.md`.
+
+Validation:
+
+- checked every remaining README section for a direct user task or operational reference;
+- verified Markdown whitespace with `git diff --check`;
+- confirmed that the RMS graph remains documented by its visible purpose and `--no-graph` control, without its internal rendering design.
+
+Remaining work: none. Apply the documentation policy to all future changes.
+
+### 2026-08-04 — Stronger RMS graph glyphs
+
+Delivered behavior:
+
+- applied the curses bold attribute to every scene-colored RMS graph glyph, improving curve visibility without changing scene identities or selector styling;
+- retained the existing terminal-dependent color fallback and introduced no additional sampling, analysis, or rendering pass.
+
+Validation:
+
+- compiled the interactive entry point with `SyntaxWarning` promoted to an error;
+- ran the focused RMS graph tests and checked the patch with `git diff --check`.
+
+Remaining work: visually confirm the result in the operator's terminal; terminals may render `A_BOLD` as a heavier glyph, a brighter color, or both.
+
+### 2026-08-04 — Unified scene-cache default
+
+Delivered behavior:
+
+- changed the implicit `--scene-cache-size` value to `10` for interactive, headless, WAV, live-device, and test operation on every platform;
+- removed test-mode platform overrides so an explicitly supplied cache size is preserved;
+- aligned the core constructor fallback and configured `reset` preset with the new default, while runtime preset resolution continues to restore the actual startup value.
+
+Validation:
+
+- verified both CLI defaults and explicit-value preservation with focused tests;
+- ran the automatic-routing, runtime-configuration, and runtime-control tests;
+- compiled the modified entry points and core controller with `SyntaxWarning` promoted to an error.
+
+Remaining work: none; operators can still select any valid value from `1` to `100` explicitly or at runtime.
+
 ### 2026-08-04 — Phase 8a shared runtime control
 
 Delivered behavior:
@@ -1337,6 +1384,8 @@ Do not mark a roadmap checkbox complete without recording the executed test and 
 
 - `README.md` documents only behavior users can actually run.
 - `DEVELOPMENT.md` owns architecture, decisions, roadmap, and the implementation log.
+- For developers and coding agents: keep installation commands, configuration entry points, operator controls, and troubleshooting steps in `README.md`; put installation rationale, internal algorithms, implementation mechanics, architectural explanations, trade-offs, and validation evidence in `DEVELOPMENT.md`.
+- Do not explain how a user-facing feature is implemented in `README.md` when the user only needs to know what it does and how to enable, configure, or disable it.
 - update documentation in the same change as the corresponding implementation;
 - move a feature from “not implemented” to “implemented” in both documents when its code has been validated;
 - update roadmap status and checkboxes as work progresses;
