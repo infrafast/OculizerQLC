@@ -17,7 +17,7 @@ import math
 import random
 
 # ASCII art for Oculizer
-OCULIZER_ASCII = """
+OCULIZER_ASCII = r"""
     ____            _ _              
    / __ \          | (_)             
   | |  | | ___ _   | |_ _______ _ __ 
@@ -27,7 +27,7 @@ OCULIZER_ASCII = """
 """
 
 # ASCII skull animations
-SKULL_OPEN = """
+SKULL_OPEN = r"""
   _____ 
  /     \\
 |(o) (o)|
@@ -37,7 +37,7 @@ SKULL_OPEN = """
   |||||
 """
 
-SKULL_CLOSED = """
+SKULL_CLOSED = r"""
   _____ 
  /     \\
 |(.) (.)|

@@ -43,6 +43,7 @@ During development, Oculizer and QLC+ run on the same Mac. In production, both w
 ### Not implemented
 
 - QLC+ state feedback or synchronization;
+- pluggable audio input and looped WAV-file playback;
 - external runtime control of the headless service;
 - Raspberry Pi production service units.
 
@@ -325,9 +326,41 @@ Status: **complete — validated with live QLC+ lifecycle and restart tests on m
 - [x] keep logs and metrics concise;
 - [x] validate graceful interruption and QLC+ restart behavior, and document the hard-kill boundary.
 
+### Phase 7b — Pluggable audio source and looped WAV input
+
+Status: **active — implementation pending**
+
+Objective: allow the complete prediction and modulation pipeline to run on a host with no capture device by substituting a WAV file for live input, while establishing a small audio-source boundary that can support other source types later.
+
+- [ ] define a minimal `AudioSource` protocol for starting, stopping, joining, and delivering timestamped or real-time-paced audio chunks;
+- [ ] adapt the existing `sounddevice` capture path behind the protocol without changing its current runtime behavior;
+- [ ] implement a WAV-file source using existing standard-library or already-required decoding facilities where possible;
+- [ ] add `--audio-file PATH` to select file input and loop it continuously by default for this development mode;
+- [ ] validate the WAV path, format, channel layout, and readable audio frames before starting the lighting runtime;
+- [ ] convert channels and resample through the same established analysis path used by live capture;
+- [ ] pace file chunks against a monotonic clock so prediction, silence detection, speech routing, and continuous modulation operate at real-time speed;
+- [ ] reset prediction smoothing, transient baselines, and queued audio at each loop boundary so the end and beginning of the file cannot contaminate each other;
+- [ ] preserve normal signal handling and bounded shutdown while sleeping or crossing a loop boundary;
+- [ ] support the interactive application and OSC dry-run mode with no `sounddevice` device available;
+- [ ] add unit tests for source selection, WAV validation, channel conversion, timing, looping, loop-boundary reset, and shutdown without audio or lighting hardware;
+- [ ] measure idle and playback CPU, memory, timing drift, and allocation behavior before accepting the phase.
+
+Initial scope is intentionally limited to live capture through `sounddevice` and local PCM WAV playback. MP3 decoding and public network streams are not part of phase 7b. The abstraction may later accept implementations such as `SoundDeviceAudioSource`, `WavFileAudioSource`, and `OnlineStreamAudioSource`, but no network client, reconnect logic, compressed-audio decoder, or speculative dependency may be added until a concrete requirement is approved.
+
+Design constraints:
+
+- source implementations deliver audio only; they must not duplicate FFT, model inference, routing, or lighting logic;
+- disk reads and pacing must remain outside the real-time analysis callback;
+- buffering must be bounded, and a large WAV file must not be loaded completely into memory merely to enable looping;
+- file mode must not import or initialize `sounddevice`, allowing it to work on hosts with no PortAudio library or capture device;
+- source selection must be explicit and mutually exclusive: a configured live device and `--audio-file` cannot both control the same analysis stream;
+- future compressed-file or online sources must reuse this boundary and meet the same chunk, timing, shutdown, and bounded-buffer requirements.
+
+Exit criterion: `oculize.py --audio-file <file.wav> --output qlc-osc --osc-dry-run` runs the existing automatic scene, speech, silence, master, and frequency-band pipelines at real-time pace on an audio-less host, loops cleanly, and stops safely without importing or opening `sounddevice`.
+
 ### Phase 8 — Raspberry Pi 5 production target
 
-Status: **active — deployment design and Linux ARM64 validation pending**
+Status: **pending — begins after phase 7b**
 
 - [ ] validate every dependency on Linux ARM64;
 - [ ] remove assumptions about macOS paths or devices;
@@ -377,6 +410,24 @@ Control state is initially process-local and is not restored after a crash or re
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-04 — Phase 7b WAV-source planning
+
+Decision:
+
+- insert a pluggable audio-source milestone before Raspberry Pi deployment;
+- implement only the existing live `sounddevice` source and a real-time-paced, continuously looped PCM WAV source in the first slice;
+- keep audio analysis, prediction, semantic routing, and lighting behavior independent of the selected source;
+- explicitly defer MP3 files and public online streams while keeping the source contract extensible enough to add them later;
+- require bounded streaming rather than loading an entire file into memory.
+
+Validated:
+
+- confirmed that the current audio-less development host can import the application after installing PortAudio but exposes no input device;
+- confirmed that the current runtime is coupled to `sounddevice` capture and therefore cannot exercise the main pipeline on that host;
+- reviewed the existing single-stream, dual-stream, prediction, modulation, and shutdown responsibilities to define the phase boundary.
+
+Remaining work: implement phase 7b and its hardware-independent tests before resuming phase 8.
 
 ### 2026-08-04 — Headless operator-control design
 
