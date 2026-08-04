@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--output", choices=OUTPUT_CHOICES, default="qlc-osc")
     parser.add_argument("--profile", default=None, help="Fixture profile required only for Enttec")
     parser.add_argument("--input-device", default=None, help="Prediction audio input selector")
+    parser.add_argument("--audio-file", default=None, help="Loop a local PCM WAV file instead of opening an audio device")
     parser.add_argument("--prediction-device", default=None, help="Optional separate prediction input")
     parser.add_argument("--prediction-channels", default=None)
     parser.add_argument("--predictor-version", choices=["v1", "v3", "v4", "v5", "vday"], default="v4")
@@ -33,6 +34,23 @@ def parse_args():
     parser.add_argument("--osc-host", default=None)
     parser.add_argument("--osc-port", type=int, default=None)
     parser.add_argument("--osc-dry-run", action="store_true", default=None)
+    parser.add_argument(
+        "--dmx-dry-run",
+        action="store_true",
+        help="Render Enttec DMX frames through a rate-limited virtual controller",
+    )
+    parser.add_argument(
+        "--filter-dmx", "--filter-DMX",
+        action="store_true",
+        help="Hide all virtual DMX frame summaries from logs",
+    )
+    parser.add_argument(
+        "--filter-osc",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="Hide one exact OSC path from dry-run logs; repeat for multiple paths",
+    )
     args = parser.parse_args()
 
     try:
@@ -48,6 +66,12 @@ def parse_args():
     args.frequency_config = configured_frequency_modulation(config)
     if args.output == "enttec" and not args.profile:
         parser.error("--profile is required with --output enttec")
+    if args.dmx_dry_run and args.output != "enttec":
+        parser.error("--dmx-dry-run requires --output enttec")
+    if args.filter_dmx and not args.dmx_dry_run:
+        parser.error("--filter-dmx requires --dmx-dry-run")
+    if args.audio_file and args.prediction_device:
+        parser.error("--audio-file cannot be combined with --prediction-device")
     if args.scene_cache_size < 1:
         parser.error("--scene-cache-size must be at least 1")
     if isinstance(args.prediction_device, str) and args.prediction_device.isdigit():
@@ -74,7 +98,11 @@ def build_service(args) -> HeadlessOculizerService:
         osc_host=args.osc_host,
         osc_port=args.osc_port,
         osc_dry_run=args.osc_dry_run,
+        osc_log_filters=args.filter_osc,
+        dmx_dry_run=args.dmx_dry_run,
+        filter_dmx=args.filter_dmx,
         prediction_window_seconds=args.prediction_config.window_seconds,
+        audio_file=args.audio_file,
     )
     oculizer.restrict_scenes_to_backend()
     return HeadlessOculizerService(

@@ -10,7 +10,6 @@ Date: 12/19/24
 """
 
 import numpy as np
-import sounddevice as sd
 import threading
 import time
 import queue
@@ -70,6 +69,7 @@ class DualStreamOculizer(Oculizer):
     
     def _get_realtime_device_idx(self):
         """Get audio device index for real-time stream."""
+        import sounddevice as sd
         devices = sd.query_devices()
         for i, device in enumerate(devices):
             if self.realtime_device == 'blackhole' and 'BlackHole' in device['name']:
@@ -172,6 +172,7 @@ class DualStreamOculizer(Oculizer):
     
     def start(self):
         """Start both audio streams and prediction."""
+        import sounddevice as sd
         # Start base class audio stream (delayed)
         super().start()
         

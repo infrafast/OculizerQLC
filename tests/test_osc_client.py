@@ -88,6 +88,23 @@ class OscClientTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "closed"):
             client.send("/test", 1.0)
 
+    def test_dry_run_exact_path_filter_suppresses_only_selected_logs(self):
+        client = OscClient(
+            OscConfig(dry_run=True),
+            log_filter_paths=["/oculizer/bass", "/oculizer/mid"],
+        )
+        with self.assertLogs("oculizer.light.osc_client", level="INFO") as captured:
+            self.assertTrue(client.send("/oculizer/bass", 0.5))
+            self.assertTrue(client.send("/oculizer/master", 0.75))
+
+        output = "\n".join(captured.output)
+        self.assertNotIn("/oculizer/bass", output)
+        self.assertIn("/oculizer/master", output)
+
+    def test_rejects_invalid_log_filter_path(self):
+        with self.assertRaisesRegex(ValueError, "log-filter path"):
+            OscClient(OscConfig(dry_run=True), log_filter_paths=["oculizer/bass"])
+
     def test_sends_press_release_level_and_blackout_over_udp(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver:
             receiver.bind(("127.0.0.1", 0))

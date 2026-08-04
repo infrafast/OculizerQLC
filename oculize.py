@@ -1,60 +1,35 @@
 import os
+import io
 import time
 import threading
 import curses
 import argparse
 import platform
+from contextlib import redirect_stderr, redirect_stdout
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
 from oculizer.light import OUTPUT_CHOICES
 from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.automatic import AutomaticSceneRouter
 from oculizer.modulation import FrequencyBandModulator, MasterModulator
+from oculizer.rms_graph import RmsGraph, scene_color_index
 import logging
 from collections import deque, OrderedDict
-import sounddevice as sd
 import math
-import random
-
-# ASCII art for Oculizer
-OCULIZER_ASCII = r"""
-    ____            _ _              
-   / __ \          | (_)             
-  | |  | | ___ _   | |_ _______ _ __ 
-  | |  | |/ __| | | | | |_  / _ \ '__|
-  | |__| | (__| |_| | | |/ /  __/ |   
-   \____/ \___|\__,_|_|_/___\___|_|   
-"""
-
-# ASCII skull animations
-SKULL_OPEN = r"""
-  _____ 
- /     \\
-|(o) (o)|
- \  ^  /
-  |||||
-
-  |||||
-"""
-
-SKULL_CLOSED = r"""
-  _____ 
- /     \\
-|(.) (.)|
- \  -  /
-  |||||
-  |||||
-"""
 
 COLOR_PAIRS = {
     'title': (curses.COLOR_WHITE, curses.COLOR_BLACK),
     'info': (curses.COLOR_WHITE, curses.COLOR_BLACK),
     'error': (curses.COLOR_WHITE, curses.COLOR_BLACK),
     'warning': (curses.COLOR_WHITE, curses.COLOR_BLACK),
-    'ascii_art': (curses.COLOR_WHITE, curses.COLOR_BLACK),
     'log': (curses.COLOR_WHITE, curses.COLOR_BLACK),
     'controls': (curses.COLOR_WHITE, curses.COLOR_BLACK),
-    'skull': (curses.COLOR_WHITE, curses.COLOR_BLACK),
+    'scene_green': (curses.COLOR_GREEN, curses.COLOR_BLACK),
+    'scene_yellow': (curses.COLOR_YELLOW, curses.COLOR_BLACK),
+    'scene_blue': (curses.COLOR_BLUE, curses.COLOR_BLACK),
+    'scene_magenta': (curses.COLOR_MAGENTA, curses.COLOR_BLACK),
+    'scene_cyan': (curses.COLOR_CYAN, curses.COLOR_BLACK),
+    'scene_red': (curses.COLOR_RED, curses.COLOR_BLACK),
     # Toggle mode colors
     'toggle_active': (curses.COLOR_WHITE, curses.COLOR_GREEN),  # Active scene (when not overridden)
     'toggle_selected': (curses.COLOR_BLACK, curses.COLOR_YELLOW),  # Selected for navigation
@@ -62,10 +37,6 @@ COLOR_PAIRS = {
     'toggle_normal': (curses.COLOR_WHITE, curses.COLOR_BLACK),  # Default
     'toggle_predicted': (curses.COLOR_WHITE, curses.COLOR_BLACK),  # Predicted by AI (not active)
     'toggle_override': (curses.COLOR_BLACK, curses.COLOR_MAGENTA),  # Manually overridden scene (active)
-    # Glitch static colors
-    'glitch_red': (curses.COLOR_WHITE, curses.COLOR_BLACK),
-    'glitch_green': (curses.COLOR_WHITE, curses.COLOR_BLACK),
-    'glitch_blue': (curses.COLOR_WHITE, curses.COLOR_BLACK),
 }
 
 def setup_logging():
@@ -87,12 +58,55 @@ def setup_logging():
         format=log_format,
         handlers=[file_handler]
     )
+    # Route warnings.warn() through logging. Direct writes to stderr scroll the
+    # physical terminal behind curses' virtual screen and corrupt subsequent
+    # differential rendering.
+    logging.captureWarnings(True)
 
 def setup_colors():
     curses.start_color()
     for i, (name, (fg, bg)) in enumerate(COLOR_PAIRS.items(), start=1):
         curses.init_pair(i, fg, bg)
         COLOR_PAIRS[name] = i
+
+
+def initialize_screen(stdscr):
+    """Synchronize the physical terminal with the GUI background once."""
+    background = curses.color_pair(COLOR_PAIRS['info'])
+    stdscr.bkgd(' ', background)
+    stdscr.clear()
+    stdscr.refresh()
+
+
+def show_loading_screen(stdscr, details):
+    """Show immediate startup feedback while heavy components are constructed."""
+    height, width = stdscr.getmaxyx()
+    lines = [
+        "Loading Oculizer...",
+        *details,
+        "Loading profiles, scenes, models and audio pipeline.",
+        "This can take several seconds.",
+    ]
+    start_row = max(0, (height - len(lines)) // 2)
+    for offset, line in enumerate(lines):
+        if start_row + offset >= height:
+            break
+        column = max(0, (width - len(line)) // 2)
+        attribute = curses.A_BOLD if offset == 0 else curses.A_NORMAL
+        stdscr.addstr(
+            start_row + offset,
+            column,
+            line[:max(0, width - column - 1)],
+            curses.color_pair(COLOR_PAIRS['info']) | attribute,
+        )
+    stdscr.refresh()
+
+
+def _log_captured_startup_output(output):
+    """Preserve legacy startup prints without writing outside curses."""
+    for line in output.getvalue().splitlines():
+        if line.strip():
+            logging.info("Startup: %s", line.strip())
 
 # Toggle mode helper functions (from toggle.py)
 def sort_scenes_alphabetically(scenes):
@@ -109,7 +123,7 @@ def find_scene_by_prefix(scenes, prefix):
 
 def calculate_grid_dimensions(scene_list, max_x, max_y):
     # Find the longest scene name to determine column width
-    max_name_length = max(len(scene[0]) for scene in scene_list) + 2  # Add 2 for padding
+    max_name_length = max(len(scene[0]) for scene in scene_list) + 4  # Marker plus padding
     
     # Calculate number of columns that can fit
     num_columns = max(1, min(len(scene_list), max_x // max_name_length))
@@ -137,11 +151,15 @@ class AudioOculizerController:
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
                  test_mode=False, output='enttec', qlc_config=None, osc_host=None,
                  osc_port=None, osc_dry_run=None, silence_config=None,
-                 speech_config=None, master_config=None, frequency_config=None, prediction_window_seconds=2.0):
+                 speech_config=None, master_config=None, frequency_config=None,
+                 prediction_window_seconds=2.0, audio_file=None, osc_log_filters=(),
+                 dmx_dry_run=False, filter_dmx=False, graph_enabled=True):
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
         self.test_mode = test_mode
+        self.graph_enabled = bool(graph_enabled)
+        self.rms_graph = RmsGraph()
         
         # Load profile first to get available fixtures for SceneManager
         profile_fixtures = self._load_profile_fixtures(profile) if output == 'enttec' else set()
@@ -172,6 +190,10 @@ class AudioOculizerController:
             osc_port=osc_port,
             osc_dry_run=osc_dry_run,
             prediction_window_seconds=prediction_window_seconds,
+            audio_file=audio_file,
+            osc_log_filters=osc_log_filters,
+            dmx_dry_run=dmx_dry_run,
+            filter_dmx=filter_dmx,
         )
         if output == 'qlc-osc':
             self.oculizer.restrict_scenes_to_backend()
@@ -189,15 +211,6 @@ class AudioOculizerController:
         self.profile_name = profile
         self.error_message = ""
         self.info_message = ""
-        
-        # Glitch effect variables
-        self.glitch_particles = []
-        self.last_glitch_time = time.time()
-        self.flicker_state = 0
-        
-        # Scanline effect variables
-        self.scanline_position = 0
-        self.scanline_speed = 2.0  # Lines per frame
         
         # Toggle mode state
         self.in_toggle_mode = False
@@ -263,9 +276,25 @@ class AudioOculizerController:
         update_thread.daemon = True
         update_thread.start()
 
+        display_interval = 0.25
+        last_display_at = 0.0
+        last_terminal_size = None
         while True:
-            self.handle_user_input()
-            self.update_display()
+            user_interaction = self.handle_user_input()
+            current_scene_name = self.scene_manager.current_scene['name']
+            if self.graph_enabled:
+                self.rms_graph.sample(
+                    self.oculizer.current_audio_rms,
+                    current_scene_name,
+                )
+
+            now = time.monotonic()
+            terminal_size = self.stdscr.getmaxyx()
+            terminal_resized = terminal_size != last_terminal_size
+            if user_interaction or terminal_resized or now - last_display_at >= display_interval:
+                self.update_display()
+                last_display_at = now
+                last_terminal_size = terminal_size
             time.sleep(0.05)
 
     def update_loop(self):
@@ -401,8 +430,8 @@ class AudioOculizerController:
                     display_x = col * column_width
                     
                     scene_str = scene
-                    if len(scene_str) > column_width - 2:
-                        scene_str = scene_str[:column_width - 5] + "..."
+                    if len(scene_str) > column_width - 4:
+                        scene_str = scene_str[:max(0, column_width - 7)] + "..."
                     
                     # Determine scene display style with new override logic
                     if override_active and scene == override_scene:
@@ -425,9 +454,10 @@ class AudioOculizerController:
                         color = curses.color_pair(COLOR_PAIRS['toggle_normal'])
                     
                     # Pad scene name to column width
-                    scene_str = scene_str.ljust(column_width - 1)
+                    scene_str = scene_str.ljust(max(0, column_width - 3))
                     try:
-                        self.stdscr.addstr(display_y, display_x, scene_str[:max_x-display_x-1], color)
+                        self.stdscr.addstr(display_y, display_x, "●", self._scene_color(scene))
+                        self.stdscr.addstr(display_y, display_x + 2, scene_str[:max_x-display_x-3], color)
                     except curses.error:
                         pass
                 
@@ -545,6 +575,8 @@ class AudioOculizerController:
     def handle_user_input(self):
         try:
             key = self.stdscr.getch()
+            if key == -1:
+                return False
             if key == ord('q'):
                 self.stop()
                 exit()
@@ -560,119 +592,58 @@ class AudioOculizerController:
                 self.scene_manager.reload_scenes()
                 self.info_message = "Scenes reloaded"
                 logging.info("Scenes reloaded")
+            return True
         except Exception as e:
             self.error_message = f"Error handling user input: {str(e)}"
             logging.error(f"Error handling user input: {str(e)}")
+            return False
 
-    def update_glitch_particles(self, height, width):
-        """Update and generate glitch particles for static effect."""
-        current_time = time.time()
-        
-        # Remove expired particles
-        self.glitch_particles = [p for p in self.glitch_particles if current_time - p['time'] < 0.1]
-        
-        # Spawn new particles (more frequent - 8% chance per frame)
-        if random.random() < 0.08:
-            num_particles = random.randint(2, 5)
-            for _ in range(num_particles):
-                y = random.randint(0, height - 1)
-                x = random.randint(0, width - 1)
-                color = 'title'  # All white static
-                char = random.choice([
-                    '█', '▓', '▒', '░', '◆', '◇', '●', '○', '■', '□',
-                    '▀', '▄', '▌', '▐', '░', '▒', '▓', '█',
-                    '╔', '╗', '╚', '╝', '╠', '╣', '╦', '╩', '╬',
-                    '┌', '┐', '└', '┘', '├', '┤', '┬', '┴', '┼',
-                    '⚡', '⚠', '◢', '◣', '◤', '◥', '⬒', '⬓', '⬔', '⬕',
-                    '⌘', '⌥', '⎋', '⏎', '⏏', '⌫', '⌦',
-                    '☰', '☱', '☲', '☳', '☴', '☵', '☶', '☷',
-                    '⊕', '⊗', '⊙', '⊚', '⊛', '⊜', '⊝',
-                    '⟁', '⟂', '⟐', '⟡', '⟢', '⟣',
-                    '▸', '▹', '►', '▻', '◂', '◃', '◄', '◅',
-                    '※', '‡', '⁂', '⁎', '⁕', '⁜', '⁂',
-                    '◉', '◎', '◐', '◑', '◒', '◓', '◔', '◕',
-                    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                ])
-                self.glitch_particles.append({
-                    'y': y,
-                    'x': x,
-                    'color': color,
-                    'char': char,
-                    'time': current_time
-                })
-    
-    def render_glitch_particles(self):
-        """Render static glitch particles on screen."""
-        for particle in self.glitch_particles:
-            try:
-                self.stdscr.addstr(
-                    particle['y'], 
-                    particle['x'], 
-                    particle['char'], 
-                    curses.color_pair(COLOR_PAIRS[particle['color']]) | curses.A_BOLD
-                )
-            except curses.error:
-                pass  # Ignore errors from drawing at screen edges
-    
-    def render_scanline(self, height, width):
-        """Render a CRT-style scanline that sweeps down the screen."""
-        # Update scanline position
-        self.scanline_position += self.scanline_speed
-        if self.scanline_position >= height:
-            self.scanline_position = 0
-        
-        # Render the scanline (a bright horizontal line)
-        scanline_y = int(self.scanline_position)
-        try:
-            # Draw a line of underscores or dashes across the screen
-            scanline_char = '─' * (width - 1)
-            self.stdscr.addstr(scanline_y, 0, scanline_char, curses.color_pair(COLOR_PAIRS['title']) | curses.A_DIM)
-        except curses.error:
-            pass  # Ignore errors at screen edges
-    
-    def get_flicker_attribute(self):
-        """Get brightness flicker attribute (fast frequency)."""
-        # Simple every-other-frame flicker
-        self.flicker_state = (self.flicker_state + 1) % 2
-        
-        # curses.A_DIM is too dark, so we'll just return normal
-        # The flicker effect will be provided by the static glitches instead
-        return curses.A_NORMAL
+    def _scene_color(self, scene_name):
+        palette = (
+            'scene_green', 'scene_yellow', 'scene_blue',
+            'scene_magenta', 'scene_cyan', 'scene_red',
+        )
+        index = scene_color_index(scene_name, len(palette))
+        return curses.color_pair(COLOR_PAIRS[palette[index]]) | curses.A_BOLD
+
+    def _render_graph_area(self, top, bottom, width, scene_name):
+        """Render only inside the unused area between status and logs."""
+        area_height = bottom - top + 1
+        if area_height <= 0 or width < 2:
+            return
+        if not self.graph_enabled:
+            message = "No graph, activate it by removing  --no-graph option at startup "
+            row = top + area_height // 2
+            col = max(0, (width - len(message)) // 2)
+            self.stdscr.addstr(row, col, message[:width - col - 1], curses.color_pair(COLOR_PAIRS['info']))
+            return
+
+        header = "RMS history (30s)"
+        self.stdscr.addstr(top, 0, header[:width - 1], curses.color_pair(COLOR_PAIRS['info']) | curses.A_BOLD)
+
+        lines, points = self.rms_graph.render_frame(width - 1, area_height - 1)
+        for offset, line in enumerate(lines, start=1):
+            if offset >= area_height:
+                break
+            self.stdscr.addstr(top + offset, 0, line[:width - 1], curses.color_pair(COLOR_PAIRS['info']))
+        for row, column, character, point_scene in points:
+            if row + 1 < area_height and column < width - 1:
+                self.stdscr.addstr(top + row + 1, column, character, self._scene_color(point_scene))
 
     def update_display(self):
         try:
-            self.stdscr.clear()
+            self.stdscr.erase()
             height, width = self.stdscr.getmaxyx()
             
-            # Update glitch particles
-            self.update_glitch_particles(height, width)
-
             # Display title
-            title = "https://github.com/LandryBulls/Oculizer"
+            title = "https://github.com/infrafast/OculizerQLC"
             self.stdscr.addstr(0, (width - len(title)) // 2, title, curses.color_pair(COLOR_PAIRS['title']) | curses.A_BOLD)
 
-            # Display ASCII art with animated skulls
-            ascii_lines = OCULIZER_ASCII.split('\n')
-            ascii_height = len(ascii_lines)
-            start_row = (height - ascii_height) // 2
-            ascii_width = max(len(line) for line in ascii_lines)
-            ascii_start = (width - ascii_width) // 2
-
-            skull = SKULL_OPEN if int(time.time() * 2) % 2 == 0 else SKULL_CLOSED
-            skull_lines = skull.split('\n')
-            skull_height = len(skull_lines)
-            skull_width = max(len(line) for line in skull_lines)
-
-            for i, line in enumerate(ascii_lines):
-                self.stdscr.addstr(start_row + i, ascii_start, line, curses.color_pair(COLOR_PAIRS['ascii_art']))
-                
-                # Add skulls on both sides if there's enough vertical space
-                if i < skull_height:
-                    self.stdscr.addstr(start_row + i, ascii_start - skull_width - 2, skull_lines[i], curses.color_pair(COLOR_PAIRS['skull']))
-                    self.stdscr.addstr(start_row + i, ascii_start + ascii_width + 2, skull_lines[i], curses.color_pair(COLOR_PAIRS['skull']))
-
             # Display audio device info with channel details (top left)
-            if self.test_mode:
+            if self.oculizer.audio_file is not None:
+                audio_info = f"Audio file: {self.oculizer.audio_file.name} (looped)"
+            elif self.test_mode:
+                import sounddevice as sd
                 # In test mode, only show prediction device
                 pred_device_info = sd.query_devices(self.oculizer.scene_prediction_device)
                 pred_device_name = pred_device_info['name']
@@ -685,6 +656,7 @@ class AudioOculizerController:
                 
                 audio_info = f"Prediction: {pred_device_name[:30]}{pred_ch}"
             elif self.dual_stream and self.oculizer.scene_prediction_device:
+                import sounddevice as sd
                 fft_device_info = sd.query_devices(self.oculizer.device_idx)
                 fft_device_name = fft_device_info['name']
                 pred_device_info = sd.query_devices(self.oculizer.scene_prediction_device)
@@ -702,8 +674,9 @@ class AudioOculizerController:
                 else:
                     pred_ch = " all"
                 
-                audio_info = f"FFT: {fft_device_name[:20]}{fft_ch} | Pred: {pred_device_name[:20]}{pred_ch}"
+                audio_info = f"FFT: {fft_device_name[:20]}{fft_ch} / Pred: {pred_device_name[:20]}{pred_ch}"
             else:
+                import sounddevice as sd
                 fft_device_info = sd.query_devices(self.oculizer.device_idx)
                 fft_device_name = fft_device_info['name']
                 if self.average_dual_channels:
@@ -712,80 +685,69 @@ class AudioOculizerController:
                     fft_ch = " ch1"
                 audio_info = f"Audio: {fft_device_name}{fft_ch}"
             
-            self.stdscr.addstr(2, 0, audio_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
-            
-            # Display profile
-            profile_info = f"Profile: {self.oculizer.profile_name}"
-            self.stdscr.addstr(3, 0, profile_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
-
-            # Display predictor version
-            predictor_info = f"Predictor: {self.predictor_version}"
-            self.stdscr.addstr(4, 0, predictor_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
-            
-            # Display stream mode
+            # Compact primary status into one line to preserve graph height.
             if self.test_mode:
-                stream_mode = "Stream Mode: TEST (prediction only, no FFT/DMX)"
+                stream_mode = "TEST"
             elif self.dual_stream:
-                stream_mode = "Stream Mode: DUAL (separate devices for FFT and prediction)"
+                stream_mode = "DUAL"
             else:
-                stream_mode = "Stream Mode: SINGLE (shared device for FFT and prediction)"
-            self.stdscr.addstr(5, 0, stream_mode[:width-1], curses.color_pair(COLOR_PAIRS['info']))
-
-            # Display channel mode
-            row_offset = 6
+                stream_mode = "SINGLE"
+            primary_parts = [
+                audio_info,
+                f"Profile: {self.oculizer.profile_name}",
+                f"Stream mode: {stream_mode}",
+                f"Predictor: {self.predictor_version}",
+            ]
             if self.average_dual_channels:
-                channel_info = "FFT Mode: Dual Channel (Averaged)"
-                self.stdscr.addstr(row_offset, 0, channel_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
-                row_offset += 1
+                primary_parts.append("FFT: ch1-2 averaged")
+            primary_info = " | ".join(primary_parts)
+            self.stdscr.addstr(1, 0, primary_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
 
-            # Display current scene (top left)
+            # Compact scene and prediction status into a second line.
             current_scene_name = self.scene_manager.current_scene['name']
-            scene_info = f"Current scene: {current_scene_name}"
-            scene_row = row_offset
-            self.stdscr.addstr(scene_row, 0, scene_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
-            
-            # Display prediction and fallback info
-            pred_row = scene_row + 1
+            scene_parts = [f"Current scene: {current_scene_name}"]
+            scene_status_color = COLOR_PAIRS['info']
             if self.oculizer.current_predicted_scene is not None:
                 predicted_scene = self.oculizer.current_predicted_scene
-                
-                # Check if fallback was applied
                 fallback_scene = None
                 if hasattr(self.scene_manager, 'fallback_mappings') and predicted_scene in self.scene_manager.fallback_mappings:
                     fallback_scene = self.scene_manager.fallback_mappings[predicted_scene]
-                
                 if fallback_scene and fallback_scene == current_scene_name:
-                    # Fallback was applied
-                    pred_info = f"Predicted: {predicted_scene} → {fallback_scene} (fallback)"
-                    self.stdscr.addstr(pred_row, 0, pred_info[:width-1], curses.color_pair(COLOR_PAIRS['warning']))
-                    pred_row += 1
+                    scene_parts.append(f"Predicted: {predicted_scene} → {fallback_scene} (fallback)")
+                    scene_status_color = COLOR_PAIRS['warning']
                 else:
-                    # No fallback, show normal prediction
-                    pred_info = f"Predicted: {predicted_scene}"
-                    self.stdscr.addstr(pred_row, 0, pred_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
-                    pred_row += 1
-            
+                    scene_parts.append(f"Predicted: {predicted_scene}")
+            else:
+                scene_parts.append("Predicted: -")
             if self.oculizer.latest_prediction is not None:
-                pred_info = f"Latest prediction: {self.oculizer.latest_prediction}"
-                self.stdscr.addstr(pred_row, 0, pred_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
-            
-            if self.oculizer.current_cluster is not None:
-                cluster_info = f"Cluster: {self.oculizer.current_cluster}"
-                self.stdscr.addstr(pred_row + 2, 0, cluster_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
+                scene_parts.append(f"Latest prediction: {self.oculizer.latest_prediction}")
+            else:
+                scene_parts.append("Latest prediction: -")
+            scene_info = " | ".join(scene_parts)
+            self.stdscr.addstr(2, 0, scene_info[:width-1], curses.color_pair(scene_status_color))
 
-            # Display adaptive gain normalizer status
+            # Keep secondary diagnostics on one optional line.
+            detail_parts = []
+            if self.oculizer.current_cluster is not None:
+                detail_parts.append(f"Cluster: {self.oculizer.current_cluster}")
             if self.oculizer.normalizer is not None:
                 n = self.oculizer.normalizer
                 if n.ema_rms is not None:
-                    norm_info = f"AGC: gain={n.current_gain:.2f}x  lvl={n.ema_rms:.4f}"
+                    detail_parts.append(f"AGC: gain={n.current_gain:.2f}x lvl={n.ema_rms:.4f}")
                 else:
-                    norm_info = "AGC: initialising..."
-                self.stdscr.addstr(pred_row + 3, 0, norm_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
+                    detail_parts.append("AGC: initialising...")
+            if detail_parts:
+                detail_info = " | ".join(detail_parts)
+                self.stdscr.addstr(3, 0, detail_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
 
             # Display log messages (bottom)
-            log_start = height - len(self.log_messages) - 4
+            visible_logs = list(self.log_messages)
+            graph_top = 4
+            log_capacity = self.log_messages.maxlen
+            log_start = height - log_capacity - 4
+            self._render_graph_area(graph_top, log_start - 2, width, current_scene_name)
             self.stdscr.addstr(log_start, 0, "Log Messages:", curses.color_pair(COLOR_PAIRS['log']) | curses.A_BOLD)
-            for i, message in enumerate(self.log_messages):
+            for i, message in enumerate(visible_logs):
                 self.stdscr.addstr(log_start + i + 1, 0, message[:width-1], curses.color_pair(COLOR_PAIRS['log']))
 
             # Display info message (bottom - with blank line above)
@@ -800,10 +762,8 @@ class AudioOculizerController:
             controls = "Press 'q' to quit, Ctrl+T for toggle mode, 'r' to reload scenes"
             self.stdscr.addstr(height-1, 0, controls[:width-1], curses.color_pair(COLOR_PAIRS['controls']))
 
-            # Render glitch particles on top of everything
-            self.render_glitch_particles()
-
-            self.stdscr.refresh()
+            self.stdscr.noutrefresh()
+            curses.doupdate()
         except Exception as e:
             import sys
             print(f"Error updating display: {str(e)}", file=sys.stderr)
@@ -878,6 +838,8 @@ Scene Cache Size:
                       help=f'Enttec fixture profile (default for Enttec: {default_profile}; unused for QLC+)')
     parser.add_argument('-i', '--input-device', type=str, default=None,
                       help='Override the configured FFT audio input with default, an alias, a name, or an index')
+    parser.add_argument('--audio-file', type=str, default=None,
+                      help='Loop a local PCM WAV file in real time instead of opening an audio device')
     parser.add_argument('--prediction-device', type=str, default=None,
                       help=f'Device for scene prediction in dual-stream mode (default: {default_prediction_device} if dual-stream, otherwise None). Can be a device name (cable_output, scarlett, etc.) or device index number.')
     parser.add_argument('--single-stream', action='store_true', default=default_single_stream,
@@ -903,6 +865,14 @@ Scene Cache Size:
                       help='Override the QLC+ OSC destination port')
     parser.add_argument('--osc-dry-run', action='store_true', default=None,
                       help='Log OSC messages without sending UDP packets')
+    parser.add_argument('--dmx-dry-run', action='store_true',
+                      help='Render Enttec DMX frames through a rate-limited virtual controller')
+    parser.add_argument('--filter-dmx', '--filter-DMX', action='store_true',
+                      help='Hide all virtual DMX frame summaries from logs')
+    parser.add_argument('--filter-osc', action='append', default=[], metavar='PATH',
+                      help='Hide one exact OSC path from dry-run logs; repeat for multiple paths')
+    parser.add_argument('--no-graph', action='store_true',
+                      help='Disable the interactive RMS history graph')
     parser.add_argument('--list-devices', action='store_true',
                       help='List available audio devices and exit')
     args = parser.parse_args()
@@ -919,35 +889,70 @@ Scene Cache Size:
     args.frequency_config = configured_frequency_modulation(config)
     if args.profile is None and args.output == 'enttec':
         args.profile = default_profile
+    if args.audio_file and args.prediction_device:
+        parser.error('--audio-file cannot be combined with --prediction-device')
+    if args.dmx_dry_run and args.output != 'enttec':
+        parser.error('--dmx-dry-run requires --output enttec')
+    if args.filter_dmx and not args.dmx_dry_run:
+        parser.error('--filter-dmx requires --dmx-dry-run')
     return args
 
 def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
          average_dual_channels, scene_cache_size, prediction_channels, test_mode,
          output, qlc_config, osc_host, osc_port, osc_dry_run,
-         silence_config, speech_config, master_config, frequency_config, prediction_window_seconds):
+         silence_config, speech_config, master_config, frequency_config,
+         prediction_window_seconds, audio_file, osc_log_filters, dmx_dry_run,
+         filter_dmx, graph_enabled):
     setup_colors()
-    controller = AudioOculizerController(
-        stdscr, 
-        profile=profile,
-        input_device=input_device,
-        dual_stream=dual_stream,
-        prediction_device=prediction_device,
-        predictor_version=predictor_version,
-        average_dual_channels=average_dual_channels,
-        scene_cache_size=scene_cache_size,
-        prediction_channels=prediction_channels,
-        test_mode=test_mode,
-        output=output,
-        qlc_config=qlc_config,
-        osc_host=osc_host,
-        osc_port=osc_port,
-        osc_dry_run=osc_dry_run,
-        silence_config=silence_config,
-        speech_config=speech_config,
-        master_config=master_config,
-        frequency_config=frequency_config,
-        prediction_window_seconds=prediction_window_seconds,
+    initialize_screen(stdscr)
+    lighting_detail = "Lighting: QLC+ OSC" if output == 'qlc-osc' else (
+        "Lighting: virtual Enttec DMX" if dmx_dry_run else "Lighting: Enttec DMX"
     )
+    audio_detail = (
+        f"Audio: WAV file {os.path.basename(audio_file)}"
+        if audio_file else f"Audio input: {input_device}"
+    )
+    profile_detail = profile if profile is not None else "QLC+ logical scenes"
+    show_loading_screen(stdscr, [
+        lighting_detail,
+        audio_detail,
+        f"Profile: {profile_detail} | Predictor: {predictor_version}",
+    ])
+
+    startup_output = io.StringIO()
+    try:
+        with redirect_stdout(startup_output), redirect_stderr(startup_output):
+            controller = AudioOculizerController(
+                stdscr,
+                profile=profile,
+                input_device=input_device,
+                dual_stream=dual_stream,
+                prediction_device=prediction_device,
+                predictor_version=predictor_version,
+                average_dual_channels=average_dual_channels,
+                scene_cache_size=scene_cache_size,
+                prediction_channels=prediction_channels,
+                test_mode=test_mode,
+                output=output,
+                qlc_config=qlc_config,
+                osc_host=osc_host,
+                osc_port=osc_port,
+                osc_dry_run=osc_dry_run,
+                silence_config=silence_config,
+                speech_config=speech_config,
+                master_config=master_config,
+                frequency_config=frequency_config,
+                prediction_window_seconds=prediction_window_seconds,
+                audio_file=audio_file,
+                osc_log_filters=osc_log_filters,
+                dmx_dry_run=dmx_dry_run,
+                filter_dmx=filter_dmx,
+                graph_enabled=graph_enabled,
+            )
+    finally:
+        _log_captured_startup_output(startup_output)
+    # Replace the loading screen with a clean differential-rendering baseline.
+    initialize_screen(stdscr)
     
     try:
         controller.start()
@@ -965,6 +970,7 @@ if __name__ == "__main__":
     
     # List devices if requested (don't use curses for this)
     if args.list_devices:
+        import sounddevice as sd
         print("\nAvailable audio devices:")
         devices = sd.query_devices()
         print(devices)
@@ -974,7 +980,11 @@ if __name__ == "__main__":
                 print(f"{i}: {device['name']} ({device['max_input_channels']} channels)")
     else:
         # Handle test mode
-        if args.test:
+        if args.audio_file:
+            dual_stream = False
+            prediction_device = None
+            logging.info("Starting with looped WAV input: %s", args.audio_file)
+        elif args.test:
             # In test mode, set up prediction-only with virtual cable
             is_macos = platform.system() == 'Darwin'
             if is_macos:
@@ -1051,4 +1061,9 @@ if __name__ == "__main__":
             args.master_config,
             args.frequency_config,
             args.prediction_config.window_seconds,
+            args.audio_file,
+            args.filter_osc,
+            args.dmx_dry_run,
+            args.filter_dmx,
+            not args.no_graph,
         ))

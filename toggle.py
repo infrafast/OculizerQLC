@@ -12,6 +12,7 @@ import math
 
 from oculizer.light import Oculizer, OUTPUT_CHOICES
 from oculizer.runtime_config import configured_audio_input, load_runtime_config
+from oculizer.rms_graph import scene_color_index
 
 
 def setup_logging():
@@ -53,6 +54,12 @@ def parse_args():
                       help='Override the QLC+ OSC destination port')
     parser.add_argument('--osc-dry-run', action='store_true', default=None,
                       help='Log OSC messages without sending UDP packets')
+    parser.add_argument('--dmx-dry-run', action='store_true',
+                      help='Render Enttec DMX frames through a rate-limited virtual controller')
+    parser.add_argument('--filter-dmx', '--filter-DMX', action='store_true',
+                      help='Hide all virtual DMX frame summaries from logs')
+    parser.add_argument('--filter-osc', action='append', default=[], metavar='PATH',
+                      help='Hide one exact OSC path from dry-run logs; repeat for multiple paths')
     parser.add_argument('--list-devices', action='store_true',
                       help='List available audio input devices and exit')
     args = parser.parse_args()
@@ -64,6 +71,10 @@ def parse_args():
         args.input = configured_audio_input(config)
     if args.profile is None and args.output == 'enttec':
         args.profile = default_profile
+    if args.dmx_dry_run and args.output != 'enttec':
+        parser.error('--dmx-dry-run requires --output enttec')
+    if args.filter_dmx and not args.dmx_dry_run:
+        parser.error('--filter-dmx requires --dmx-dry-run')
     return args
 
 
@@ -98,6 +109,19 @@ def init_colors():
     curses.init_pair(6, curses.COLOR_MAGENTA, -1)
     # Search text: Yellow text on default background
     curses.init_pair(7, curses.COLOR_YELLOW, -1)
+    for pair, color in enumerate((
+        curses.COLOR_GREEN,
+        curses.COLOR_YELLOW,
+        curses.COLOR_BLUE,
+        curses.COLOR_MAGENTA,
+        curses.COLOR_CYAN,
+        curses.COLOR_RED,
+    ), start=8):
+        curses.init_pair(pair, color, -1)
+
+
+def scene_color(scene_name):
+    return curses.color_pair(8 + scene_color_index(scene_name)) | curses.A_BOLD
 
 def find_scene_by_prefix(scenes, prefix):
     if not prefix:
@@ -110,7 +134,7 @@ def find_scene_by_prefix(scenes, prefix):
 
 def calculate_grid_dimensions(scene_list, max_x, max_y):
     # Find the longest scene name to determine column width
-    max_name_length = max(len(scene[0]) for scene in scene_list) + 2  # Add 2 for padding
+    max_name_length = max(len(scene[0]) for scene in scene_list) + 4  # Marker plus padding
     
     # Calculate number of columns that can fit
     num_columns = max(1, min(len(scene_list), max_x // max_name_length))
@@ -187,8 +211,8 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
                 display_x = col * column_width
 
                 scene_str = scene
-                if len(scene_str) > column_width - 2:
-                    scene_str = scene_str[:column_width - 5] + "..."
+                if len(scene_str) > column_width - 4:
+                    scene_str = scene_str[:max(0, column_width - 7)] + "..."
 
                 # Determine scene display style
                 if scene == current_scene_name:
@@ -201,8 +225,9 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
                     color = curses.color_pair(4)
 
                 # Pad scene name to column width
-                scene_str = scene_str.ljust(column_width - 1)
-                stdscr.addstr(display_y, display_x, scene_str, color)
+                scene_str = scene_str.ljust(max(0, column_width - 3))
+                stdscr.addstr(display_y, display_x, "●", scene_color(scene))
+                stdscr.addstr(display_y, display_x + 2, scene_str, color)
 
             # Display instructions
             instructions = "Ctrl+T return, Ctrl+Q quit, Ctrl+R reload | Type to search, arrows, Enter to activate"
@@ -286,7 +311,8 @@ def run_toggle_mode(stdscr, scene_manager, light_controller, profile):
         curses.mousemask(0)  # Disable mouse events
 
 def main(stdscr, profile, input_device, average_dual_channels, output, qlc_config,
-         osc_host, osc_port, osc_dry_run):
+         osc_host, osc_port, osc_dry_run, osc_log_filters, dmx_dry_run,
+         filter_dmx):
     # Load profile fixtures for scene manager
     from pathlib import Path
     profile_fixtures = set()
@@ -318,6 +344,9 @@ def main(stdscr, profile, input_device, average_dual_channels, output, qlc_confi
         osc_host=osc_host,
         osc_port=osc_port,
         osc_dry_run=osc_dry_run,
+        osc_log_filters=osc_log_filters,
+        dmx_dry_run=dmx_dry_run,
+        filter_dmx=filter_dmx,
     )
 
     if output == 'qlc-osc':
@@ -353,4 +382,7 @@ if __name__ == '__main__':
             args.osc_host,
             args.osc_port,
             args.osc_dry_run,
+            args.filter_osc,
+            args.dmx_dry_run,
+            args.filter_dmx,
         ))

@@ -4,7 +4,6 @@ import numpy as np
 from scipy.fftpack import rfft
 import time
 import curses
-import sounddevice as sd
 from oculizer.config import audio_parameters
 
 SAMPLERATE = audio_parameters['SAMPLERATE']
@@ -90,6 +89,7 @@ class AdaptiveNormalizer:
         return data * self.current_gain
 
 def get_blackhole_device_idx():
+    import sounddevice as sd
     devices = sd.query_devices()
     for i, device in enumerate(devices):
         if 'BlackHole' in device['name']:
@@ -121,6 +121,7 @@ class AudioListener(threading.Thread):
             self.error_queue.put(f"Error processing audio data: {str(e)}")
 
     def run(self):
+        import sounddevice as sd
         self.running.set()
         try:
             with sd.InputStream(

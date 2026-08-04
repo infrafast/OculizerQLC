@@ -17,7 +17,9 @@ The fork is being migrated to a hybrid architecture with QLC+ 5: Oculizer retain
 - profile-specific scene substitution through `profile_fallbacks.json`;
 - prediction-only test mode without FFT or DMX hardware;
 - direct DMX output through a DMXKing/Enttec-compatible interface;
+- virtual Enttec dry-run output with rate-limited changed-channel summaries;
 - selectable `enttec` and `qlc-osc` lighting backends with OSC dry-run and destination overrides.
+- real-time, continuously looped PCM WAV input for development hosts without an audio capture device.
 
 ## Intended use
 
@@ -131,7 +133,75 @@ python toggle.py --input 0 --output enttec
 
 An alternative general configuration can be supplied with `--config PATH`.
 
+### Interactive RMS graph
+
+The main interactive display shows a bounded 30-second RMS history by default. It samples the RMS value already produced by the audio pipeline at 10 Hz and displays total elapsed time as `MM'SS"` at the right end of the horizontal axis. Both axes are fixed: the horizontal window is always 30 seconds, including its initial empty history, and the vertical RMS range is always absolute `0.0–1.0`. Samples compressed into the same terminal column are averaged, producing one point per time position rather than a filled vertical column. Every RMS point is a colored marker whose stable color identifies the scene active at the end of that column, so scene transitions remain visible while the graph scrolls. The same marker is displayed beside each scene in both the integrated and standalone scene selectors, providing the color legend without placing scene names inside the graph. The graph is a UI-only observer: it does not perform audio analysis or participate in scene or lighting control. The bottom of the display always reserves nine log rows, including empty rows before messages arrive, so graph geometry never depends on log activity. The complete log remains available in `oculizer.log`.
+
+Time aggregation uses startup-anchored fixed buckets. A sample always belongs to the same bucket, so the historical curve cannot be regrouped or change shape between frames. When a bucket boundary is crossed, the complete history advances by exactly one terminal column.
+
+The curve uses Unicode Braille cells in the style of high-resolution terminal dashboards. Each character provides a virtual 2-by-4 point grid, giving twice the horizontal and four times the vertical resolution of one-character markers. Two time buckets remain fixed inside each Braille cell, and scrolling occurs only at complete cell boundaries so historical glyphs do not regroup while moving. Adjacent RMS samples are connected with a full integer line rasterizer, including intermediate vertical pixels during steep changes. Because curses can assign only one color to a complete character cell, a Braille cell containing a scene transition uses the most recent scene represented in that cell.
+
+The first RMS sample after each scene change is overlaid with a full colored `●` marker for immediate visual identification. The marker uses the new scene's stable color, replaces only the local Braille cell, and is not emitted for the initial scene.
+
+To maximize vertical graph resolution, runtime status is compacted above the graph: audio, profile, stream mode, and predictor share the first status line; current scene, prediction, and latest prediction share the second; optional cluster and AGC diagnostics share a third line. Fields are separated with ` | `.
+
+The interactive loop keeps input polling responsive at 20 Hz and RMS acquisition at 10 Hz, while limiting terminal rendering to 4 Hz. User input and terminal resizing trigger an immediate render. After DMX and predictor construction has emitted any startup messages, curses applies the GUI's black background and performs one physical clear to synchronize the complete terminal surface. Subsequent frames use differential `noutrefresh()`/`doupdate()` updates instead of forcing another full-screen clear, reducing flicker and terminal traffic without changing audio, prediction, or lighting timing.
+
+Immediately after curses starts, a common loading screen identifies the lighting backend, audio source, profile, and predictor being prepared, and explains that model and pipeline loading can take several seconds. Legacy constructor output is captured into the application log instead of overwriting this screen. This loading feedback applies to Enttec, virtual Enttec, and QLC+ OSC interactive modes; the headless service continues to report startup through ordinary logs.
+
+Python runtime warnings are captured by the logging system rather than written directly to stderr. This is required because an out-of-band multi-line warning would scroll the physical terminal without updating curses' virtual screen. Captured warnings remain available in `oculizer.log` and in the interactive log window.
+
+Disable it when a minimal static display is preferred:
+
+```bash
+python oculize.py --no-graph [other options]
+```
+
+The graph is intentionally absent from `oculizer_service.py`, which remains fully headless for Phase 8 and later service deployment.
+
+### Virtual Enttec DMX output
+
+Use `--dmx-dry-run` with the Enttec backend to exercise fixture profiles, scenes, effects, orchestrators, and complete DMX-universe rendering without detecting or opening a serial interface:
+
+```bash
+python oculize.py \
+  --profile garage2025 \
+  --audio-file path/to/audio.wav \
+  --output enttec \
+  --dmx-dry-run \
+  --predictor-version v4
+```
+
+The virtual controller retains the 513-byte start-code-plus-universe buffer expected by the existing fixture renderers. It logs only channels changed since the previous summary and emits at most three summaries per second. Shutdown produces a final virtual blackout summary.
+
+Add `--filter-dmx` to disable all frame and final-blackout summaries while retaining ordinary initialization and lifecycle messages. `--filter-DMX` is accepted as a compatibility alias:
+
+```bash
+python oculize.py \
+  --profile garage2025 \
+  --audio-file path/to/audio.wav \
+  --output enttec \
+  --dmx-dry-run \
+  --filter-dmx
+```
+
+`--osc-dry-run` and `--filter-osc` apply only to the QLC+ OSC backend and are unnecessary in Enttec dry-run mode.
+
 ## Automatic operation
+
+### WAV-file input
+
+Use a local uncompressed PCM WAV file instead of a live capture device with `--audio-file`. The file is streamed in bounded chunks, converted to mono, resampled through the existing analysis path, paced in real time, and looped continuously:
+
+```bash
+python oculize.py \
+  --audio-file path/to/audio.wav \
+  --output qlc-osc \
+  --osc-dry-run \
+  --predictor-version v4
+```
+
+File mode does not discover or open a `sounddevice` input and cannot be combined with `--prediction-device`. It drives the same prediction, speech, silence, scene-routing, master, bass, mid, and high processing as single-stream live capture. Temporal prediction and modulation state is reset at each loop boundary. Only uncompressed PCM WAV is supported; MP3 and online streams are deferred possible implementations of the same audio-source boundary.
 
 Example single-stream setup on macOS:
 
@@ -315,6 +385,17 @@ python oculize.py --output qlc-osc
 ```
 
 Use `--qlc-config PATH` to select another unified QLC+ configuration. `--osc-host HOST` and `--osc-port PORT` override its destination, while `--osc-dry-run` exercises startup and shutdown without sending packets. Selecting `qlc-osc` never loads a fixture profile or initializes audio or serial DMX hardware in the standalone manual selector.
+
+Dry-run logging can hide noisy exact OSC paths by repeating `--filter-osc PATH`. Filtering changes logging only; it does not disable a control or affect real OSC transmission:
+
+```bash
+python oculize.py \
+  --audio-file path/to/audio.wav \
+  --output qlc-osc \
+  --osc-dry-run \
+  --filter-osc /oculizer/bass \
+  --filter-osc /oculizer/mid
+```
 
 The standalone `toggle.py` selector does not open an audio stream in `qlc-osc` mode because manual selection has no audio consumer. Audio capture remains enabled for direct reactive Enttec rendering and for automatic scene prediction in `oculize.py`.
 

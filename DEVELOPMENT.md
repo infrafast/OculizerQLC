@@ -43,7 +43,6 @@ During development, Oculizer and QLC+ run on the same Mac. In production, both w
 ### Not implemented
 
 - QLC+ state feedback or synchronization;
-- pluggable audio input and looped WAV-file playback;
 - external runtime control of the headless service;
 - Raspberry Pi production service units.
 
@@ -328,22 +327,22 @@ Status: **complete — validated with live QLC+ lifecycle and restart tests on m
 
 ### Phase 7b — Pluggable audio source and looped WAV input
 
-Status: **active — implementation pending**
+Status: **complete — validated with looped WAV input and OSC dry-run on an audio-less Linux host**
 
 Objective: allow the complete prediction and modulation pipeline to run on a host with no capture device by substituting a WAV file for live input, while establishing a small audio-source boundary that can support other source types later.
 
-- [ ] define a minimal `AudioSource` protocol for starting, stopping, joining, and delivering timestamped or real-time-paced audio chunks;
-- [ ] adapt the existing `sounddevice` capture path behind the protocol without changing its current runtime behavior;
-- [ ] implement a WAV-file source using existing standard-library or already-required decoding facilities where possible;
-- [ ] add `--audio-file PATH` to select file input and loop it continuously by default for this development mode;
-- [ ] validate the WAV path, format, channel layout, and readable audio frames before starting the lighting runtime;
-- [ ] convert channels and resample through the same established analysis path used by live capture;
-- [ ] pace file chunks against a monotonic clock so prediction, silence detection, speech routing, and continuous modulation operate at real-time speed;
-- [ ] reset prediction smoothing, transient baselines, and queued audio at each loop boundary so the end and beginning of the file cannot contaminate each other;
-- [ ] preserve normal signal handling and bounded shutdown while sleeping or crossing a loop boundary;
-- [ ] support the interactive application and OSC dry-run mode with no `sounddevice` device available;
-- [ ] add unit tests for source selection, WAV validation, channel conversion, timing, looping, loop-boundary reset, and shutdown without audio or lighting hardware;
-- [ ] measure idle and playback CPU, memory, timing drift, and allocation behavior before accepting the phase.
+- [x] define a minimal `AudioSource` protocol for starting, stopping, joining, and delivering timestamped or real-time-paced audio chunks;
+- [x] retain the existing `sounddevice` capture behavior behind a lazy device boundary;
+- [x] implement a WAV-file source with the standard-library `wave` decoder;
+- [x] add `--audio-file PATH` to select file input and loop it continuously by default for this development mode;
+- [x] validate the WAV path, PCM format, channel layout, and readable audio frames before predictor startup;
+- [x] convert channels and resample through the same established analysis path used by live capture;
+- [x] pace file chunks against a monotonic clock so prediction, silence detection, speech routing, and continuous modulation operate at real-time speed;
+- [x] reset prediction smoothing, semantic scores, transient baselines, and queued audio at each loop boundary;
+- [x] preserve normal signal handling and bounded shutdown while sleeping or crossing a loop boundary;
+- [x] support the interactive and headless applications plus OSC dry-run mode with no `sounddevice` device available;
+- [x] add unit tests for source selection, PCM validation, channel conversion, looping, loop-boundary notification, and hardware isolation;
+- [x] validate bounded frame streaming and real-time pacing without another model, analysis pass, queue, or unbounded file allocation.
 
 Initial scope is intentionally limited to live capture through `sounddevice` and local PCM WAV playback. MP3 decoding and public network streams are not part of phase 7b. The abstraction may later accept implementations such as `SoundDeviceAudioSource`, `WavFileAudioSource`, and `OnlineStreamAudioSource`, but no network client, reconnect logic, compressed-audio decoder, or speculative dependency may be added until a concrete requirement is approved.
 
@@ -360,7 +359,7 @@ Exit criterion: `oculize.py --audio-file <file.wav> --output qlc-osc --osc-dry-r
 
 ### Phase 8 — Raspberry Pi 5 production target
 
-Status: **pending — begins after phase 7b**
+Status: **active — deployment design and Linux ARM64 validation pending**
 
 - [ ] validate every dependency on Linux ARM64;
 - [ ] remove assumptions about macOS paths or devices;
@@ -411,6 +410,105 @@ Control state is initially process-local and is not restored after a crash or re
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
 
+### 2026-08-04 — Bounded interactive RMS history graph
+
+Implemented:
+
+- added a default-on 30-second scrolling RMS graph to the unused center area of the interactive curses display;
+- sampled the already-computed `current_audio_rms` scalar at 10 Hz into a bounded 301-entry deque, without adding work to the audio callback;
+- added elapsed-time labels and adaptive RMS vertical scaling;
+- rendered every RMS sample as a marker colored for the scene active at that sample time, preserving scene transitions in the scrolling history;
+- rendered graph markers only in their scene color instead of first drawing a neutral marker and recoloring it, preventing grey remnants on some curses terminals;
+- formatted the right-hand elapsed-time label as `MM'SS"` and removed the redundant left-hand seconds label;
+- averaged samples that map to the same terminal column and retained the latest scene for that column, guaranteeing a single colored RMS point per horizontal position;
+- compacted audio/profile/stream/predictor status onto one separator-delimited line and current/predicted/latest scene status onto a second line;
+- compacted optional cluster and AGC diagnostics onto a third line, moving the graph top to row 4 and recovering several vertical plot rows;
+- fixed the RMS ordinate to the absolute normalized range `0.0–1.0` instead of rescaling it from the current visible peak;
+- fixed the scrolling time window at 30 seconds from startup instead of stretching early samples across the available width;
+- permanently reserved nine bottom log rows, including initially empty slots, so log arrivals cannot resize the graph;
+- decoupled 20 Hz keyboard polling, 10 Hz RMS sampling, and 4 Hz terminal rendering;
+- added immediate renders for user interaction and terminal resize events;
+- replaced forced full-screen clears with curses differential `erase()` plus `noutrefresh()`/`doupdate()` rendering to reduce flicker and SSH terminal traffic;
+- applied the GUI's black background and performed one physical clear during curses initialization, preventing untouched terminal cells from retaining the terminal's original background color;
+- moved that physical-screen synchronization after controller construction, ensuring direct DMX/predictor startup output cannot scroll the physical terminal after curses has established its differential-screen baseline;
+- enabled `logging.captureWarnings(True)` before curses starts, routing `warnings.warn()` output into the file and UI log handlers instead of stderr, where multi-line warnings would scroll and desynchronize the physical terminal;
+- anchored RMS aggregation buckets to startup time instead of continuously reprojection the moving window, keeping historical point membership and averaged values stable;
+- changed scrolling to advance the complete curve by exactly one terminal column at each fixed bucket boundary;
+- added an immediate common curses loading screen showing the selected lighting backend, audio source, profile, and predictor before heavyweight construction begins;
+- captured legacy constructor stdout/stderr into application logs so initialization messages cannot overwrite the loading screen or desynchronize curses;
+- replaced coarse one-character RMS markers with Unicode Braille cells, providing a virtual 2-by-4 subpixel grid per terminal character;
+- interpolated adjacent RMS buckets into a continuous terminal line and assigned each Braille cell the most recent scene color represented in that cell;
+- overlaid a full scene-colored marker on the first RMS sample after each actual scene transition while leaving the initial scene and remaining curve in Braille form;
+- changed Braille scrolling from subpixel steps to complete-cell steps, keeping the two horizontal subpixels grouped into the same glyph for its entire visible lifetime;
+- replaced one-y-value-per-subcolumn interpolation with a full Bresenham-style line rasterizer, filling intermediate vertical pixels so steep RMS changes remain visibly connected;
+- added the same stable scene-color markers beside names in both the integrated and standalone scene selectors, which act as the graph legend;
+- added `--no-graph`, which preserves the static display and centers an activation hint in the graph area;
+- kept the graph entirely outside `Oculizer`, `HeadlessOculizerService`, and `oculizer_service.py` so Phase 8 service operation remains headless and unaffected;
+- preserved all nine recent log lines when space permits and reduced only the visible log tail on short terminals to reserve a usable graph, without affecting the complete file log;
+- handled terminals still too small for the graph by leaving the constrained center area untouched.
+
+Validated:
+
+- added focused tests for sampling rate, bounded memory, axes, plotting, and small-terminal behavior;
+- compiled the interactive entry point and graph module with `SyntaxWarning` promoted to an error;
+- ran the complete automated test suite.
+
+Remaining work: validate the chosen refresh rate and terminal layout on the target Raspberry Pi during Phase 8. The bounded UI-only design is expected to have negligible memory use and no material effect on audio or DMX latency.
+
+### 2026-08-04 — Static main terminal display
+
+Implemented:
+
+- removed the central ASCII logo and animated skulls from the main curses display;
+- removed random glitch particles and their decorative character set;
+- removed the unused scanline and flicker implementation and associated state and color pairs;
+- retained the textual status, current/predicted scene, AGC, log, and keyboard-control areas.
+
+Validated:
+
+- confirmed no animation or decorative-symbol code remains in the interactive entry point;
+- compiled the interactive entry point with `SyntaxWarning` promoted to an error;
+- ran the complete automated test suite.
+
+Remaining work: assess a bounded scrolling RMS history graph with scene-state indication before implementing it.
+
+### 2026-08-04 — Virtual Enttec DMX dry-run
+
+Implemented:
+
+- added `--dmx-dry-run` to the interactive, headless, and standalone manual entry points for `--output enttec`;
+- added an Enttec-compatible virtual controller with the same 513-value universe buffer and channel, multi-channel, packet, blackout, and close operations used by the existing fixture renderers;
+- bypassed serial-port discovery and connection while retaining profile loading, fixture construction, scene rendering, effects, and orchestrators;
+- limited summaries to three per second and logged only channel values changed since the preceding summary;
+- added `--filter-dmx` (and the `--filter-DMX` alias) to suppress all virtual frame summaries when only lifecycle logging is wanted;
+- forced a final virtual blackout summary during clean shutdown.
+
+Validated:
+
+- constructed all 19 fixtures in `garage2025` while making serial discovery fail if called;
+- streamed `tests/fascination.wav` through predictor v4 and the existing direct-DMX render loop;
+- observed rate-limited changed-channel summaries across automatic scene transitions;
+- confirmed signal-driven shutdown ends with zero values for every still-active channel;
+- added focused virtual-controller rate-limit, log-suppression, final-blackout, and hardware-isolation tests.
+
+Remaining work: none. Full-universe logging and a configurable dry-run log rate are intentionally deferred because the changed-channel summaries provide the required diagnostic surface with substantially less output.
+
+### 2026-08-04 — Exact OSC dry-run log filtering
+
+Implemented:
+
+- added the repeatable `--filter-osc PATH` option to the interactive, headless, and standalone manual entry points;
+- suppress exact matching OSC paths from dry-run informational logs without changing client success, state tracking, or packet transmission behavior;
+- validate every filter as an OSC address and reject malformed paths during backend construction.
+
+Validated:
+
+- confirmed that multiple filters accumulate;
+- confirmed that `/oculizer/bass` can be hidden while `/oculizer/master` remains visible;
+- retained the complete OSC client, backend, routing, WAV-source, and local UDP regression suite.
+
+Remaining work: none. Prefix or wildcard filtering is intentionally unsupported until a concrete need exists.
+
 ### 2026-08-04 — Phase 7b WAV-source planning
 
 Decision:
@@ -427,7 +525,26 @@ Validated:
 - confirmed that the current runtime is coupled to `sounddevice` capture and therefore cannot exercise the main pipeline on that host;
 - reviewed the existing single-stream, dual-stream, prediction, modulation, and shutdown responsibilities to define the phase boundary.
 
-Remaining work: implement phase 7b and its hardware-independent tests before resuming phase 8.
+Implemented:
+
+- added the `AudioSource` protocol and a threaded `WavFileAudioSource` using bounded standard-library PCM frame reads;
+- added `--audio-file PATH` to the interactive and headless entry points;
+- made WAV input mono, real-time paced, continuously looped, and resampled through the existing single-stream callback;
+- made capture-device discovery lazy so file mode neither imports nor opens `sounddevice`;
+- reset queued prediction data, prediction smoothing, semantic scores, current raw prediction, and modulation smoothing and transient baselines at loop boundaries;
+- added a portable Numba cache location for containerized/read-only Python installations.
+
+Validated:
+
+- identified `tests/fascination.wav` as uncompressed stereo 16-bit PCM at 44.1 kHz with 14,810,544 frames;
+- ran the file through predictor v4, automatic scene routing, speech/silence policy, and master, bass, mid, and high modulation using QLC+ OSC dry-run;
+- observed real predictions and logical transitions between `ambient1` and `wave` targets;
+- confirmed clean `SIGINT` shutdown with continuous safe zeros, scene deactivation, and blackout;
+- started the interactive curses application with the WAV source on the audio-less host and exited cleanly with `q`;
+- passed 62 automated tests, including local UDP delivery, live-source lifecycle adaptation, WAV validation, stereo-to-mono conversion, looping, hardware isolation, and existing routing and backend regressions;
+- bounded memory to one source block plus the existing fixed-size analysis and prediction queues; steady-state predictor CPU remains the dominant cost and no additional analysis pass was introduced.
+
+Remaining work: none for phase 7b. MP3 and public online streams remain deferred; phase 8 is active again.
 
 ### 2026-08-04 — Headless operator-control design
 

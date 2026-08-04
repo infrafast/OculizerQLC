@@ -36,6 +36,14 @@ class MasterModulator:
         self.last_sent_value: float | None = None
         self.last_sent_at: float | None = None
         self.smoothed_value: float | None = None
+        self.audio_loop_generation = getattr(oculizer, "audio_loop_generation", 0)
+
+    def _reset_for_audio_loop(self) -> None:
+        generation = getattr(self.oculizer, "audio_loop_generation", 0)
+        if generation != self.audio_loop_generation:
+            self.audio_loop_generation = generation
+            self.last_update_at = None
+            self.smoothed_value = None
 
     def _normalize(self, rms: float) -> float:
         if rms <= self.config.input_floor:
@@ -48,6 +56,7 @@ class MasterModulator:
     def update(self) -> bool:
         if not self.config.enabled:
             return False
+        self._reset_for_audio_loop()
         rms = getattr(self.oculizer, "current_audio_rms", None)
         if rms is None:
             return False
@@ -108,10 +117,20 @@ class FrequencyBandModulator:
         self.last_sent_at: dict[str, float] = {}
         self.smoothed_values: dict[str, float] = {}
         self.baselines: dict[str, float] = {}
+        self.audio_loop_generation = getattr(oculizer, "audio_loop_generation", 0)
+
+    def _reset_for_audio_loop(self) -> None:
+        generation = getattr(self.oculizer, "audio_loop_generation", 0)
+        if generation != self.audio_loop_generation:
+            self.audio_loop_generation = generation
+            self.last_update_at = None
+            self.smoothed_values.clear()
+            self.baselines.clear()
 
     def update(self) -> bool:
         if not self.config.enabled:
             return False
+        self._reset_for_audio_loop()
         energies = getattr(self.oculizer, "current_frequency_bands", None)
         spectrum = getattr(self.oculizer, "current_mel_spectrum", None)
         sample_rate = getattr(self.oculizer, "current_mel_sample_rate", None)

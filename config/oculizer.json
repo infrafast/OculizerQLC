@@ -5,7 +5,7 @@
       "window_seconds": 2.0
     },
     "master_modulation": {
-      "enabled": true,
+      "enabled": false,
       "parameter": "master",
       "rate_hz": 25.0,
       "input_floor": 0.001,
@@ -17,7 +17,7 @@
       "refresh_seconds": 1.0
     },
     "frequency_modulation": {
-      "enabled": true,
+      "enabled": false,
       "rate_hz": 25.0,
       "smoothing_factor": 0.3,
       "change_threshold": 0.02,

@@ -219,6 +219,7 @@ def create_qlc_osc_backend(
     host: str | None = None,
     port: int | None = None,
     dry_run: bool | None = None,
+    log_filter_paths=(),
 ) -> QLCOscBackend:
     """Create a QLC+ backend with optional command-line overrides."""
     qlc_config = QLCConfig.from_file(config_path)
@@ -234,7 +235,7 @@ def create_qlc_osc_backend(
         config = replace(config, **overrides)
         config.validate()
     backend = QLCOscBackend(
-        OscClient(config),
+        OscClient(config, log_filter_paths=log_filter_paths),
         qlc_config.routing,
         controls=qlc_config.controls,
         config_path=config_path,

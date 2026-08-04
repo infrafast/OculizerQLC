@@ -9,7 +9,6 @@ Date: 8/20/24
 """
 
 import numpy as np
-import sounddevice as sd
 import librosa
 from oculizer.light.enttec_controller import EnttecProController
 from oculizer.light.dmx_config import get_dmx_config
@@ -35,6 +34,23 @@ from oculizer.light.backends import (
 
 logger = logging.getLogger(__name__)
 
+
+def _terminal_line(message=""):
+    """Write a terminal line safely while curses newline translation is active."""
+    print(message, end="\r\n", flush=True)
+
+
+class _LazySoundDevice:
+    """Preserve the module seam for tests without importing PortAudio eagerly."""
+
+    def __getattr__(self, name):
+        import sounddevice
+
+        return getattr(sounddevice, name)
+
+
+sd = _LazySoundDevice()
+
 global n_channels
 n_channels = {
     'dimmer': 1,
@@ -51,10 +67,13 @@ class Oculizer(threading.Thread):
                  average_dual_channels=False, scene_cache_size=25, prediction_channels=None,
                  test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
                  qlc_config_path=None, osc_host=None,
-                 osc_port=None, osc_dry_run=None, prediction_window_seconds=2.0):
+                 osc_port=None, osc_dry_run=None, prediction_window_seconds=2.0,
+                 audio_file=None, osc_log_filters=(), dmx_dry_run=False,
+                 filter_dmx=False):
         threading.Thread.__init__(self)
         self.profile_name = profile_name
         self.input_device = str(input_device).strip()
+        self.audio_file = Path(audio_file).expanduser().resolve() if audio_file else None
         self.sample_rate = audio_parameters['SAMPLERATE']
         self.block_size = audio_parameters['BLOCKSIZE']
         self.hop_length = audio_parameters['HOP_LENGTH']
@@ -62,6 +81,8 @@ class Oculizer(threading.Thread):
         self.average_dual_channels = average_dual_channels
         self.test_mode = test_mode
         self.output = output
+        self.dmx_dry_run = bool(dmx_dry_run)
+        self.filter_dmx = bool(filter_dmx)
         self.mfft_queue = queue.Queue(maxsize=1)
         self.running = threading.Event()
         self.scene_manager = scene_manager
@@ -85,6 +106,7 @@ class Oculizer(threading.Thread):
                 host=osc_host,
                 port=osc_port,
                 dry_run=osc_dry_run,
+                log_filter_paths=osc_log_filters,
             )
             self.dmx_controller, self.controller_dict = None, {}
             import logging
@@ -106,7 +128,14 @@ class Oculizer(threading.Thread):
             scene_prediction_enabled
             or (not test_mode and self.backend.supports_direct_fixture_output)
         )
-        self.device_idx = self._get_audio_device_idx() if self.audio_processing_enabled else None
+        if self.audio_file is not None and scene_prediction_device is not None:
+            raise ValueError("--audio-file cannot be combined with a separate prediction device")
+        self.device_idx = (
+            self._get_audio_device_idx()
+            if self.audio_processing_enabled and self.audio_file is None
+            else None
+        )
+        self.audio_source = None
         self.scene_changed = threading.Event()
         self.current_orchestrator = None
         # Set scene_changed event to trigger initial orchestrator setup
@@ -147,14 +176,38 @@ class Oculizer(threading.Thread):
         self.current_mel_sample_rate = None
         self.audio_underrun_count = 0
         self.max_queue_depth_seen = 0  # Track maximum queue buildup
+        self.audio_loop_generation = 0
 
         # Adaptive gain normalizer — compensates for differing source levels
         # (e.g. BlackHole has no hardware gain knob unlike the Scarlett 2i2).
         self.adaptive_gain_enabled = adaptive_gain
         self.normalizer = AdaptiveNormalizer() if adaptive_gain else None
+
+        if self.audio_file is not None:
+            from oculizer.audio.sources import WavFileAudioSource
+
+            self.audio_source = WavFileAudioSource(
+                self.audio_file,
+                self.audio_callback,
+                self.block_size,
+                on_loop=self._reset_file_loop_state,
+            )
+            self.capture_sample_rate = self.audio_source.sample_rate
+            self.audio_source.block_size = max(
+                1,
+                int(round(
+                    self.block_size * self.audio_source.sample_rate / self.sample_rate
+                )),
+            )
         
         if scene_prediction_enabled:
             self._init_scene_prediction()
+        if self.audio_file is not None:
+            # Librosa exposes several modules lazily. Resolve the functions on
+            # this construction thread before the WAV and UI threads can use
+            # them concurrently.
+            getattr(librosa, "resample")
+            getattr(librosa.feature, "melspectrogram")
 
     def _get_audio_device_idx(self):
         devices = sd.query_devices()
@@ -756,30 +809,36 @@ class Oculizer(threading.Thread):
 
         for attempt in range(max_retries):
             try:
-                if attempt > 0:
-                    print(f"Retrying DMX connection (attempt {attempt + 1}/{max_retries})...")
+                if self.dmx_dry_run:
+                    from oculizer.light.virtual_enttec_controller import VirtualEnttecController
+
+                    controller = VirtualEnttecController(log_frames=not self.filter_dmx)
+                    _terminal_line("DMX dry-run: virtual Enttec controller initialized")
+                elif attempt > 0:
+                    _terminal_line(f"Retrying DMX connection (attempt {attempt + 1}/{max_retries})...")
                     time.sleep(retry_delay)
                 else:
-                    print("🔌 Connecting to DMX controller...")
-                
-                # Use EnttecProController for DMXKing ultraDMX MAX
-                # On retry attempts, skip cache and do full port scan
-                skip_cache = (attempt > 0)
-                dmx_config = get_dmx_config(skip_cache=skip_cache)
-                controller = EnttecProController(
-                    port=dmx_config['port'],
-                    baudrate=dmx_config['baudrate'],
-                    timeout=dmx_config['timeout']
-                )
-                print(f"✓ DMX controller connected on {dmx_config['port']}")
+                    _terminal_line("🔌 Connecting to DMX controller...")
+
+                if not self.dmx_dry_run:
+                    # Use EnttecProController for DMXKing ultraDMX MAX.
+                    # On retry attempts, skip cache and do full port scan.
+                    skip_cache = (attempt > 0)
+                    dmx_config = get_dmx_config(skip_cache=skip_cache)
+                    controller = EnttecProController(
+                        port=dmx_config['port'],
+                        baudrate=dmx_config['baudrate'],
+                        timeout=dmx_config['timeout']
+                    )
+                    _terminal_line(f"✓ DMX controller connected on {dmx_config['port']}")
                 control_dict = {}
                 curr_channel = 1
-                sleeptime = 0.1
+                sleeptime = 0.0 if self.dmx_dry_run else 0.1
 
                 # Access the global n_channels dictionary
                 global n_channels
                 
-                print(f"💡 Initializing {len(self.profile['lights'])} light fixtures...")
+                _terminal_line(f"💡 Initializing {len(self.profile['lights'])} light fixtures...")
                 # Create custom fixture objects for EnttecProController
                 for light in self.profile['lights']:
                     if light['type'] == 'dimmer':
@@ -842,25 +901,27 @@ class Oculizer(threading.Thread):
                         time.sleep(sleeptime)
                         fixture.set_channels([0] * channels)
 
-                print(f"✓ All {len(control_dict)} light fixtures initialized\n")
+                _terminal_line(f"✓ All {len(control_dict)} light fixtures initialized")
+                _terminal_line()
                 return controller, control_dict
 
             except IOError as e:
                 last_error = e
-                print(f"Failed to connect to DMX interface: {str(e)}")
+                _terminal_line(f"Failed to connect to DMX interface: {str(e)}")
                 if attempt < max_retries - 1:
-                    print("Will retry after unplugging and replugging the device...")
+                    _terminal_line("Will retry after unplugging and replugging the device...")
                     continue
                 
-                print("\nTroubleshooting steps:")
-                print("1. Unplug and replug your DMX interface")
-                print("2. Check if the device shows up in 'System Information > USB'")
-                print("3. Try a different USB port")
-                print("4. If using a USB hub, try connecting directly to the computer")
+                _terminal_line()
+                _terminal_line("Troubleshooting steps:")
+                _terminal_line("1. Unplug and replug your DMX interface")
+                _terminal_line("2. Check if the device shows up in 'System Information > USB'")
+                _terminal_line("3. Try a different USB port")
+                _terminal_line("4. If using a USB hub, try connecting directly to the computer")
                 raise RuntimeError("Failed to connect to DMX interface after multiple attempts") from last_error
             
             except Exception as e:
-                print(f"Unexpected error while setting up DMX controller: {str(e)}")
+                _terminal_line(f"Unexpected error while setting up DMX controller: {str(e)}")
                 raise
 
     def audio_callback(self, indata, frames, time, status):
@@ -910,6 +971,28 @@ class Oculizer(threading.Thread):
                 pass
         self.mfft_queue.put(mfft_data)
 
+    def _reset_file_loop_state(self):
+        """Discard temporal state that must not cross a WAV loop boundary."""
+        with self.prediction_lock:
+            if self.prediction_audio_cache is not None:
+                self.prediction_audio_cache.clear()
+            if self.scene_cache is not None:
+                self.scene_cache.clear()
+            self.current_audioset_scores = None
+            self.latest_prediction = None
+            self.current_predicted_scene = None
+            self.current_cluster = None
+        while not self.prediction_audio_queue.empty():
+            try:
+                self.prediction_audio_queue.get_nowait()
+            except queue.Empty:
+                break
+        self.current_audio_rms = None
+        self.current_mel_spectrum = None
+        self.current_mel_sample_rate = None
+        self.audio_loop_generation = getattr(self, "audio_loop_generation", 0) + 1
+        logger.info("WAV audio source loop restarted; temporal analysis state reset")
+
     def run(self):
         self.running.set()
         
@@ -920,6 +1003,35 @@ class Oculizer(threading.Thread):
             logger.info("Audio stream disabled: selected backend has no active audio consumer")
             while self.running.is_set():
                 time.sleep(0.1)
+            return
+
+        if self.audio_file is not None:
+            source = self.audio_source
+            if self.scene_prediction_enabled:
+                self.prediction_thread = threading.Thread(
+                    target=self.prediction_processing_thread, daemon=True
+                )
+                self.prediction_thread.start()
+            logger.info(
+                "WAV audio source: '%s' (%d Hz, %d channels, looped)",
+                source.path,
+                source.sample_rate,
+                source.channels,
+            )
+            source.start()
+            try:
+                while self.running.is_set() and source.is_alive():
+                    self.process_audio_and_lights()
+                    if self.scene_prediction_enabled:
+                        self.update_scene_prediction()
+                    time.sleep(0.001)
+                if source.error is not None:
+                    raise source.error
+            except Exception:
+                logger.exception("Error in WAV audio source")
+            finally:
+                source.stop()
+                source.join(timeout=2.0)
             return
         
         # In test mode, skip FFT stream entirely and only run predictions
@@ -1020,13 +1132,16 @@ class Oculizer(threading.Thread):
         
         try:
             # Start main audio stream for FFT/DMX control
-            with sd.InputStream(
+            from oculizer.audio.sources import SoundDeviceAudioSource
+
+            with SoundDeviceAudioSource(
                 device=self.device_idx,
                 channels=main_channels,
-                samplerate=self.capture_sample_rate,
-                blocksize=capture_block_size,
+                sample_rate=self.capture_sample_rate,
+                block_size=capture_block_size,
                 callback=self.audio_callback
-            ):
+            ) as source:
+                self.audio_source = source
                 # Start scene prediction stream if enabled and separate device specified
                 if self.scene_prediction_enabled and self.scene_prediction_device is not None:
                     pred_device_info = sd.query_devices(self.scene_prediction_device)
@@ -1258,6 +1373,9 @@ class Oculizer(threading.Thread):
         logger = logging.getLogger(__name__)
         
         self.running.clear()
+
+        if self.audio_source is not None:
+            self.audio_source.stop()
         
         # Stop prediction thread if running
         if self.prediction_thread and self.prediction_thread.is_alive():

@@ -5,7 +5,6 @@ import threading
 import queue
 from collections import deque
 from statistics import mode
-import sounddevice as sd
 import librosa
 import logging
 
@@ -139,6 +138,7 @@ class RealTimeScenePredictor:
     
     def start(self):
         """Start the real-time prediction."""
+        import sounddevice as sd
         # Get device info for display
         device_info = sd.query_devices(self.device_index)
         device_name = device_info['name']
@@ -185,4 +185,3 @@ class RealTimeScenePredictor:
             self.process_thread.join(timeout=1.0)
         
         logger.info("Real-time scene prediction stopped")
-

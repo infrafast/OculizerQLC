@@ -9,7 +9,7 @@ import struct
 import threading
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 
 logger = logging.getLogger(__name__)
@@ -107,8 +107,14 @@ class OscConfig:
 class OscClient:
     """Thread-safe UDP OSC sender for normalized QLC+ controls."""
 
-    def __init__(self, config: OscConfig):
+    def __init__(self, config: OscConfig, log_filter_paths: Iterable[str] = ()):
         config.validate()
+        self.log_filter_paths = frozenset(log_filter_paths)
+        for address in self.log_filter_paths:
+            try:
+                build_float_message(address, 0.0)
+            except ValueError as exc:
+                raise ValueError(f"Invalid OSC log-filter path: {exc}") from exc
         self.config = config
         self._socket = None if config.dry_run else socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._lock = threading.Lock()
@@ -131,13 +137,14 @@ class OscClient:
             if self._closed:
                 raise RuntimeError("OSC client is closed")
             if self.config.dry_run:
-                logger.info(
-                    "OSC dry-run: %s %.4f -> %s:%d",
-                    address,
-                    level,
-                    self.config.host,
-                    self.config.port,
-                )
+                if address not in self.log_filter_paths:
+                    logger.info(
+                        "OSC dry-run: %s %.4f -> %s:%d",
+                        address,
+                        level,
+                        self.config.host,
+                        self.config.port,
+                    )
                 return True
             try:
                 self._socket.sendto(packet, (self.config.host, self.config.port))
