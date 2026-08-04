@@ -1,8 +1,8 @@
 # Oculizer
 
-Oculizer is a music-reactive lighting system. It analyzes an audio stream in real time, predicts a suitable mood with a classification model, and automatically selects a lighting scene. A manual mode lets the operator take control during a show.
+Oculizer is a music-reactive lighting system. It analyzes an audio stream in real time, predicts a suitable mood with a classification model, and automatically selects a lighting scene. A manual mode lets the operator take control during a show. See LandryBulls/Oculizer
 
-The project is being migrated to a hybrid architecture with QLC+ 5: Oculizer retains audio analysis and intelligent scene selection, while QLC+ runs scenes, chasers, and DMX outputs. The application can start with either the existing Enttec-compatible direct-DMX backend or the QLC+ OSC backend. Automatic scene selection, silence handling, and speech-aware announcement routing are validated with QLC+ on macOS.
+The fork is being migrated to a hybrid architecture with QLC+ 5: Oculizer retains audio analysis and intelligent scene selection, while QLC+ runs scenes, chasers, and DMX outputs. The application can start with either the existing Enttec-compatible direct-DMX backend or the QLC+ OSC backend. Automatic scene selection, silence handling, and speech-aware announcement routing are validated with QLC+ on macOS.
 
 ## Current features
 
