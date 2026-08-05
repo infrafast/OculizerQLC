@@ -2,6 +2,7 @@ import threading
 import time
 import tempfile
 import unittest
+from collections import deque
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -22,6 +23,8 @@ class FakeOculizer:
         self.current_audioset_scores = None
         self.prediction_suspended = False
         self.scene_cache_size = 25
+        self.scene_cache = deque(maxlen=25)
+        self.scene_durations = {}
 
     def resolve_scene_target(self, scene):
         return self.targets.get(scene)
@@ -52,8 +55,63 @@ class FakeOculizer:
             raise ValueError
         self.scene_cache_size = size
 
+    def get_scene_max_duration(self, scene):
+        return self.scene_durations.get(scene)
+
 
 class AutomaticSceneRouterTests(unittest.TestCase):
+    def test_expired_scene_uses_recent_distinct_prediction(self):
+        engine = FakeOculizer()
+        engine.targets.update({"strobe": "strobe", "blue": "blue", "ambient1": "ambient1"})
+        engine.scene_cache.extend(["blue", "strobe"])
+        engine.current_predicted_scene = "strobe"
+        now = [0.0]
+        router = AutomaticSceneRouter(engine, scene_max_duration=5, clock=lambda: now[0])
+
+        self.assertTrue(router.step())
+        now[0] = 5.0
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["strobe", "blue"])
+
+    def test_expired_scene_uses_ambient_fallback_and_blocks_immediate_reentry(self):
+        engine = FakeOculizer()
+        engine.targets.update({"strobe": "strobe", "ambient1": "ambient1"})
+        engine.current_predicted_scene = "strobe"
+        now = [0.0]
+        router = AutomaticSceneRouter(
+            engine,
+            scene_max_duration=5,
+            scene_reentry_seconds=10,
+            clock=lambda: now[0],
+        )
+
+        self.assertTrue(router.step())
+        now[0] = 5.0
+        self.assertTrue(router.step())
+        now[0] = 14.9
+        self.assertFalse(router.step())
+        now[0] = 15.0
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["strobe", "ambient1", "strobe"])
+
+    def test_scene_file_duration_overrides_global_default(self):
+        engine = FakeOculizer()
+        engine.targets.update({"strobe": "strobe", "ambient1": "ambient1"})
+        engine.scene_durations["strobe"] = 2.0
+        engine.current_predicted_scene = "strobe"
+        now = [0.0]
+        router = AutomaticSceneRouter(engine, scene_max_duration=30, clock=lambda: now[0])
+
+        self.assertTrue(router.step())
+        now[0] = 1.9
+        self.assertFalse(router.step())
+        now[0] = 2.0
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["strobe", "ambient1"])
+
     def test_live_controls_apply_atomically_and_reset_runtime_budgets(self):
         engine = FakeOculizer()
         engine.scene_cache_size = 25

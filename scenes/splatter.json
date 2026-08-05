@@ -1,5 +1,6 @@
 {
     "name": "splatter",
+    "max_duration_seconds": 8,
     "description": "Random choice color patterns triggered by bass frequencies, with bar sections randomly activating on high frequencies",
     "key_command": "s",
     "midi": 58,

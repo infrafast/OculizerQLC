@@ -13,7 +13,7 @@
       "window_seconds": 4.0
     },
     "master_modulation": {
-      "enabled": false,
+      "enabled": true,
       "parameter": "master",
       "rate_hz": 25.0,
       "input_floor": 0.001,
@@ -25,7 +25,7 @@
       "refresh_seconds": 1.0
     },
     "frequency_modulation": {
-      "enabled": false,
+      "enabled": true,
       "rate_hz": 25.0,
       "smoothing_factor": 0.3,
       "change_threshold": 0.02,
@@ -44,7 +44,7 @@
           "baseline_smoothing": 0.02
         },
         "mid": {
-          "enabled": true,
+          "enabled": false,
           "parameter": "mid",
           "low_hz": 180.0,
           "high_hz": 2000.0,
@@ -54,7 +54,7 @@
           "baseline_smoothing": 0.02
         },
         "high": {
-          "enabled": true,
+          "enabled": false,
           "parameter": "high",
           "low_hz": 2000.0,
           "high_hz": 8000.0,

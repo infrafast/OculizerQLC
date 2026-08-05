@@ -48,6 +48,8 @@ def parse_args():
                         help="Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)")
     parser.add_argument("--scene-throttle", type=parse_scene_rate_limit, default=None, metavar="BURST/RECOVERY_SECONDS",
                         help="Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)")
+    parser.add_argument("--scene-max-duration", type=float, default=30.0, metavar="SECONDS",
+                        help="Maximum automatic music-scene duration (default: 30 seconds)")
     parser.add_argument("--control-socket", default=default_control_socket_path(), help="Unix runtime control socket path")
     parser.add_argument("--no-control-socket", action="store_true", help="Disable the local runtime control socket")
     parser.add_argument("--qlc-config", default=None, help="Unified QLC+ configuration (default: config/qlc_config.json)")
@@ -95,6 +97,8 @@ def parse_args():
         parser.error("--audio-file cannot be combined with --prediction-device")
     if not 1 <= args.scene_cache_size <= 100:
         parser.error("--scene-cache-size must be between 1 and 100")
+    if not 0.5 <= args.scene_max_duration <= 3600:
+        parser.error("--scene-max-duration must be between 0.5 and 3600 seconds")
     if isinstance(args.prediction_device, str) and args.prediction_device.isdigit():
         args.prediction_device = int(args.prediction_device)
     return args
@@ -134,6 +138,7 @@ def build_service(args) -> HeadlessOculizerService:
         frequency_config=args.frequency_config,
         scene_rate_limit=args.scene_rate_limit,
         scene_throttle=args.scene_throttle,
+        scene_max_duration=args.scene_max_duration,
         presets=args.scene_presets,
         control_socket_path=None if args.no_control_socket else args.control_socket,
     )

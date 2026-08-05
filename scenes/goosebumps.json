@@ -1,5 +1,6 @@
 {
     "name": "goosebumps",
+    "max_duration_seconds": 8,
     "description": "Eerie lighting inspired by a creepy TV show intro",
     "type": "effect",
     "midi": 77,

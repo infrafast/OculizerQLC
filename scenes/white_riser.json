@@ -1,5 +1,6 @@
 {
     "name": "white_riser",
+    "max_duration_seconds": 8,
     "description": "white riser strobe",
     "type": "build",
     "midi": 48,

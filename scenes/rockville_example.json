@@ -1,5 +1,5 @@
 {
-    "name": "rockville_bass_treble",
+    "name": "rockville_example",
     "description": "Rockville panel pulses with bass frequencies in blue, strobe bar activates chase mode on high frequencies",
     "key_command": "v",
     "midi": 57,
@@ -27,4 +27,4 @@
             }
         }
     ]
-} 
+}

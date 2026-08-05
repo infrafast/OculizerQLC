@@ -1,5 +1,6 @@
 {
     "name": "swamp",
+    "max_duration_seconds": 8,
     "description": "Eerie swamp scene with flickering blue and green lights",
     "type": "effect",
     "midi": 75,

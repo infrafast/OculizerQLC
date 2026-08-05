@@ -29,13 +29,20 @@ class AutomaticSceneRouter:
     """Apply stable predictions or a manual override through one scene API."""
 
     def __init__(self, oculizer, silence_config=None, speech_config=None, clock=None,
-                 scene_rate_limit=None, scene_throttle=None):
+                 scene_rate_limit=None, scene_throttle=None, scene_max_duration=30.0,
+                 scene_reentry_seconds=10.0):
         self.oculizer = oculizer
         self.silence_config = silence_config or SilenceConfig(enabled=False)
         self.speech_config = speech_config or SpeechConfig(enabled=False)
         self.clock = clock or time.monotonic
         self.manual_override: str | None = None
         self.last_target: str | None = None
+        self.target_started_at: float | None = None
+        self.scene_max_duration = self._validate_duration(scene_max_duration, "scene max duration")
+        self.scene_reentry_seconds = self._validate_duration(
+            scene_reentry_seconds, "scene re-entry delay"
+        )
+        self.blocked_targets: dict[str, float] = {}
         self.last_rejected: str | None = None
         self.silence_started_at: float | None = None
         self.silence_active = False
@@ -53,6 +60,76 @@ class AutomaticSceneRouter:
         self.priority_route_pending = False
         self.route_lock = threading.RLock()
         self.policy_revision = 0
+
+    @staticmethod
+    def _validate_duration(value, label):
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not 0.5 <= float(value) <= 3600
+        ):
+            raise ValueError(f"{label} must be between 0.5 and 3600 seconds")
+        return float(value)
+
+    def _duration_for(self, target: str) -> float:
+        getter = getattr(self.oculizer, "get_scene_max_duration", None)
+        override = getter(target) if getter is not None else None
+        return self.scene_max_duration if override is None else self._validate_duration(
+            override, f"scene '{target}' max duration"
+        )
+
+    def _expire_blocked_targets(self, now: float) -> None:
+        self.blocked_targets = {
+            target: until for target, until in self.blocked_targets.items() if until > now
+        }
+
+    def _replacement_for_expired_target(self, current_target: str, now: float) -> str | None:
+        """Choose a recent distinct mapping, then the safe ambient fallback."""
+        self._expire_blocked_targets(now)
+        recent = list(reversed(getattr(self.oculizer, "scene_cache", ())))
+        recent.append("ambient1")
+        seen_targets = set()
+        for requested in recent:
+            target = self.oculizer.resolve_scene_target(requested)
+            if target is None or target in seen_targets:
+                continue
+            seen_targets.add(target)
+            if target == current_target or target in self.blocked_targets:
+                continue
+            return requested
+        return None
+
+    def _apply_max_duration(self, requested: str, target: str, now: float) -> tuple[str, str] | None:
+        """Return a replacement request/target when the active music scene expires."""
+        self._expire_blocked_targets(now)
+        if target in self.blocked_targets:
+            replacement = self._replacement_for_expired_target(target, now)
+            if replacement is None:
+                return None
+            replacement_target = self.oculizer.resolve_scene_target(replacement)
+            return replacement, replacement_target
+        if target != self.last_target or self.target_started_at is None:
+            return requested, target
+        duration = self._duration_for(target)
+        if now - self.target_started_at < duration:
+            return requested, target
+        self.blocked_targets[target] = now + self.scene_reentry_seconds
+        replacement = self._replacement_for_expired_target(target, now)
+        if replacement is None:
+            logger.warning(
+                "Automatic scene '%s' exceeded %.1fs but no distinct mapped replacement is available",
+                target,
+                duration,
+            )
+            return None
+        replacement_target = self.oculizer.resolve_scene_target(replacement)
+        logger.info(
+            "Automatic scene '%s' reached its %.1fs maximum; selecting '%s'",
+            target,
+            duration,
+            replacement_target,
+        )
+        return replacement, replacement_target
 
     @staticmethod
     def _validate_policy(value, label):
@@ -277,6 +354,7 @@ class AutomaticSceneRouter:
             return False
         self.manual_override = scene_name
         self.last_target = self.oculizer.resolve_scene_target(scene_name)
+        self.target_started_at = None
         logger.info("Manual scene override enabled: %s", scene_name)
         return True
 
@@ -293,6 +371,7 @@ class AutomaticSceneRouter:
     @_synchronized
     def step(self) -> bool:
         requested = self.manual_override
+        duration_exempt = requested is not None
         priority_route = requested is not None or self.priority_route_pending
         silence_was_active = self.silence_active
         if requested is None:
@@ -300,12 +379,14 @@ class AutomaticSceneRouter:
         if requested is None and self.silence_active:
             requested = self.silence_config.scene
             priority_route = True
+            duration_exempt = True
         if requested is None and not self.silence_active:
             speech_was_active = self.speech_active
             semantic_route = self._update_speech_state()
             if semantic_route == "speech":
                 requested = self.speech_config.scene
                 priority_route = True
+                duration_exempt = True
             elif semantic_route == "hold":
                 return False
             elif speech_was_active:
@@ -324,14 +405,20 @@ class AutomaticSceneRouter:
                 self.last_rejected = requested
             return False
         self.last_rejected = None
+        now = self.clock()
+        if not duration_exempt:
+            replacement = self._apply_max_duration(requested, target, now)
+            if replacement is None:
+                return False
+            requested, target = replacement
         if target == self.last_target:
             return False
-        now = self.clock()
         if not priority_route and not self._music_change_allowed(target, now):
             return False
         if not self.oculizer.change_scene(requested):
             return False
         self.last_target = target
+        self.target_started_at = None if duration_exempt else now
         self._record_automatic_change(now, rate_limited=not priority_route)
         self.priority_route_pending = False
         logger.info("Automatic scene request '%s' activated as '%s'", requested, target)

@@ -1,5 +1,6 @@
 {
     "name": "orb_racer",
+    "max_duration_seconds": 15,
     "description": "Racing orbs and bulb",
     "key_command": "r",
     "midi": 82,

@@ -1,6 +1,6 @@
 {
   "name": "wave",
-  "description": "All blue RGB strobes with a slow sine wave pattern",
+  "description": "All blue RGB lights with a slow sine wave pattern",
   "type": "effect",
   "midi": 80,
   "key_command": "w",

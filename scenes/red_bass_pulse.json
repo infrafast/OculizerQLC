@@ -1,5 +1,6 @@
 {
     "name": "red_bass_pulse",
+    "max_duration_seconds": 8,
     "description": "All RGBs pulsing red with bass, high-frequency reactive strobe",
     "key_command": "r",
     "midi": 53,

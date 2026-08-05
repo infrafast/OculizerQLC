@@ -1,5 +1,6 @@
 {
     "name": "discodance",
+    "max_duration_seconds": 8,
     "description": "White disco ball, purple low-frequency RGBs/Rockvilles, high-frequency strobing bars and strobe light",
     "type": "effect",
     "midi": 46,

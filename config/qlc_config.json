@@ -16,13 +16,279 @@
     "unmapped": "fallback",
     "fallback_scene": "ambient1",
     "scenes": {
+      "RGB": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/RGB"
+      },
       "ambient1": {
         "action": "toggle",
         "path": "/oculizer/scenes/ambient1"
       },
+      "ambient2": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/ambient2",
+        "implemented": false
+      },
+      "bass_hopper_blue": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/bass_hopper_blue",
+        "implemented": false
+      },
+      "bass_hopper_pink": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/bass_hopper_pink"
+      },
+      "bass_hopper_rainbow": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/bass_hopper_rainbow"
+      },
+      "bloop": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/bloop"
+      },
+      "blue_bass_pulse": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/blue_bass_pulse"
+      },
+      "blue_bass_racer": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/blue_bass_racer",
+        "implemented": false
+      },
+      "blue_flicker": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/blue_flicker"
+      },
+      "blue_pulse": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/blue_pulse"
+      },
+      "blue_riser": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/blue_riser"
+      },
+      "blue_speedracer": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/blue_speedracer"
+      },
+      "brainblaster": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/brainblaster"
+      },
+      "chill_blue": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/chill_blue",
+        "implemented": false
+      },
+      "chill_pink": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/chill_pink"
+      },
+      "chill_red": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/chill_red",
+        "implemented": false
+      },
+      "disco": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/disco",
+        "implemented": false
+      },
+      "discobrain": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/discobrain",
+        "implemented": false
+      },
+      "discodance": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/discodance",
+        "implemented": false
+      },
+      "discodream": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/discodream",
+        "implemented": false
+      },
+      "discolaser": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/discolaser",
+        "implemented": false
+      },
+      "electric": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/electric",
+        "implemented": false
+      },
+      "fairies": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/fairies",
+        "implemented": false
+      },
+      "flicker": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/flicker"
+      },
+      "fullstrobe": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/fullstrobe"
+      },
+      "goosebumps": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/goosebumps",
+        "implemented": false
+      },
+      "green_bass_pulse": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/green_bass_pulse"
+      },
+      "green_speedracer": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/green_speedracer",
+        "implemented": false
+      },
+      "hell": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/hell"
+      },
+      "hypno": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/hypno",
+        "implemented": false
+      },
+      "laser_strobe": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/laser_strobe"
+      },
+      "orb_racer": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/orb_racer",
+        "implemented": false
+      },
+      "party": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/party"
+      },
+      "pink_speedracer": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/pink_speedracer"
+      },
+      "prance": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/prance"
+      },
+      "quasar": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/quasar"
+      },
+      "rainbow_pulse": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/rainbow_pulse",
+        "implemented": false
+      },
+      "red_bass_pulse": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/red_bass_pulse",
+        "implemented": false
+      },
+      "red_echo": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/red_echo"
+      },
+      "red_flicker": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/red_flicker"
+      },
+      "red_pulse": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/red_pulse"
+      },
+      "red_speedracer": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/red_speedracer",
+        "implemented": false
+      },
+      "rightround": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/rightround"
+      },
+      "sexy": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/sexy",
+        "implemented": false
+      },
+      "sequence_cosmic": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/sequence_cosmic",
+        "implemented": false
+      },
+      "sequence_fire": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/sequence_fire",
+        "implemented": false
+      },
+      "splatter": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/splatter",
+        "implemented": false
+      },
+      "sustain": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/sustain",
+        "implemented": false
+      },
+      "supernova": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/supernova"
+      },
+      "swamp": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/swamp",
+        "implemented": false
+      },
+      "temple": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/temple",
+        "implemented": false
+      },
+      "trance": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/trance"
+      },
+      "vintage": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/vintage",
+        "implemented": false
+      },
       "wave": {
         "action": "toggle",
-        "path": "/oculizer/scenes/wave"
+        "path": "/oculizer/scenes/wave",
+        "implemented": false
+      },
+      "whispers": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/whispers"
+      },
+      "white_echo": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/white_echo"
+      },
+      "white_fairies": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/white_fairies"
+      },
+      "white_flicker": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/white_flicker"
+      },
+      "white_riser": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/white_riser",
+        "implemented": false
+      },
+      "white_speedracer": {
+        "action": "toggle",
+        "path": "/oculizer/scenes/white_speedracer",
+        "implemented": false
       },
       "off": {
         "action": "off"

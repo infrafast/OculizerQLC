@@ -1,5 +1,6 @@
 {
     "name": "green_speedracer",
+    "max_duration_seconds": 15,
     "description": "Racing green",
     "key_command": "y",
     "midi": 54,

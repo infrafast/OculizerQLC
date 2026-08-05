@@ -1,5 +1,6 @@
 {
     "name": "discolaser",
+    "max_duration_seconds": 15,
     "description": "Disco ball with sine wave and dimmer lasers",
     "key_command": "d",
     "midi": 68,

@@ -1,5 +1,6 @@
 {
     "name": "sequence_fire",
+    "max_duration_seconds": 8,
     "description": "Sequential activation with warm fire colors",
     "key_command": "1",
     "midi": 61,
@@ -109,4 +110,4 @@
             }   
         }
     ]
-} 
+}

@@ -1,5 +1,6 @@
 {
     "name": "rainbow_pulse",
+    "max_duration_seconds": 8,
     "description": "All RGBs pulsing with random colors, reactive to low frequencies",
     "key_command": "r",
     "midi": 45,
@@ -150,4 +151,3 @@
         }       
     ]
 }
-

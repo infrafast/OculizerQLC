@@ -1,5 +1,6 @@
 {
     "name": "blue_bass_racer",
+    "max_duration_seconds": 8,
     "description": "All RGBs pulsing blue with bass, high-frequency reactive strobe",
     "key_command": "r",
     "midi": 52,

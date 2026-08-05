@@ -123,6 +123,7 @@ Useful options:
 | `--scene-cache-size N` | Set prediction smoothing (default: `10`) |
 | `--scene-rate-limit N/SECONDS` | Limit automatic scene changes in a rolling window |
 | `--scene-throttle N/SECONDS` | Allow a burst, then progressively recover transition credits |
+| `--scene-max-duration SECONDS` | Force automatic music scenes to rotate after a maximum duration (default: `30`) |
 | `--output enttec|qlc-osc` | Select the lighting output |
 | `--no-graph` | Hide the interactive RMS graph |
 | `--list-devices` | List available audio inputs |
@@ -172,6 +173,22 @@ python oculize.py --no-graph [other options]
 
 The current cache, rate limit, and throttle are shown in the status area. An omitted rate limit or throttle is displayed as `Off`. In the `l` editor, use the arrow keys or `+`/`-` to change values, `0` to disable the selected optional policy, Enter to apply, and Escape to cancel.
 
+Automatic music scenes are limited to 30 seconds by default. Override the global value at startup with, for example, `--scene-max-duration 20`. When a scene expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. The expired target cannot immediately re-enter, preventing rapid ping-pong. Silence, announcement, and manual overrides are exempt.
+
+A scene can override the global duration by declaring a positive duration in its artistic definition under `scenes/`:
+
+```json
+{
+  "name": "white_flicker",
+  "max_duration_seconds": 8,
+  "lights": []
+}
+```
+
+When `max_duration_seconds` is absent, the global value is used. The example only illustrates the field; retain the scene's real `lights` definition.
+
+The supplied v6 scene set applies an eight-second maximum to every scene with an active strobe declaration. Non-strobing racer/alternating effects and selected high-energy scenes use 15 seconds. Calmer v6 scenes inherit the global 30-second default. These limits are safety-oriented starting points and can be tuned in the corresponding `scenes/<name>.json` file.
+
 ## QLC+ OSC operation
 
 Start automatic operation with QLC+:
@@ -184,6 +201,8 @@ python oculize.py \
 ```
 
 Override the OSC destination with `--osc-host HOST` and `--osc-port PORT`.
+
+`config/qlc_config.json` contains every logical scene emitted by predictors v4 and v6 and derives each OSC address as `/oculizer/scenes/<scene-name>`. All 30 v6 scenes carry a temporary `"implemented": false` marker so the operator can track QLC+ widget creation. Oculizer deliberately ignores this marker; change it manually as the QLC+ project progresses. Predictor mappings and artistic scene filenames use the same canonical identifiers; historical aliases and misspellings have been normalized.
 
 Test without sending UDP packets:
 

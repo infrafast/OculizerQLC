@@ -1,5 +1,6 @@
 {
     "name": "sequence_cosmic",
+    "max_duration_seconds": 8,
     "description": "Sequential activation with cosmic colors",
     "key_command": "3",
     "midi": 63,
@@ -109,4 +110,4 @@
             }   
         }
     ]
-} 
+}

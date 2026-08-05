@@ -1,5 +1,6 @@
 {
     "name": "discodream",
+    "max_duration_seconds": 15,
     "description": "Blue reactive RGBs and Rockvilles with red disco ball at full brightness",
     "type": "effect",
     "midi": 41,
@@ -159,4 +160,3 @@
         }   
     ]
 }
-

@@ -1,5 +1,6 @@
 {
     "name": "hypno",
+    "max_duration_seconds": 8,
     "description": "All RGBs pulsing blue, reactive to low frequencies, strobe",
     "key_command": "p",
     "midi": 68,

@@ -1,5 +1,6 @@
 {
     "name": "fairies",
+    "max_duration_seconds": 8,
     "description": "Stochastic purple strobe on all RGBs. All else off.",
     "type": "effect",
     "midi": 64,

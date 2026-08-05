@@ -1,5 +1,6 @@
 {
     "name": "sustain",
+    "max_duration_seconds": 8,
     "description": "Panel sections sustain full brightness after being triggered by bass frequencies, with bar strobe on high frequencies",
     "key_command": "s",
     "midi": 60,
@@ -61,4 +62,4 @@
             }
         }
     ]
-} 
+}

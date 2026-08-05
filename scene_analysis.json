@@ -23,6 +23,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -32,9 +35,6 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
@@ -66,6 +66,10 @@
           "rockville3",
           "rockville4"
         ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -78,10 +82,6 @@
         ],
         "ropes": [
           "ropes"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ]
       },
       "has_rockville": true,
@@ -113,6 +113,10 @@
           "rockville3",
           "rockville4"
         ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -125,10 +129,6 @@
         ],
         "ropes": [
           "ropes"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ]
       },
       "has_rockville": true,
@@ -160,6 +160,10 @@
           "rockville3",
           "rockville4"
         ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -172,15 +176,20 @@
         ],
         "ropes": [
           "ropes"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ]
       },
       "has_rockville": true,
       "rockville_count": 4,
       "total_fixtures": 15
+    },
+    "announcement": {
+      "fixtures": [],
+      "types": {
+        "rockville": []
+      },
+      "has_rockville": false,
+      "rockville_count": 0,
+      "total_fixtures": 0
     },
     "bass_hopper": {
       "fixtures": [
@@ -323,6 +332,34 @@
       "total_fixtures": 8
     },
     "bass_hopper_rainbow": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8"
+      ],
+      "types": {
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ],
+        "rockville": []
+      },
+      "has_rockville": false,
+      "rockville_count": 0,
+      "total_fixtures": 8
+    },
+    "bass_hopper_red": {
       "fixtures": [
         "rgb1",
         "rgb2",
@@ -512,6 +549,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -521,14 +561,48 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
       "rockville_count": 4,
       "total_fixtures": 13
+    },
+    "blue_bass_racer": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
     },
     "blue_flicker": {
       "fixtures": [
@@ -648,26 +722,29 @@
         "rgb3",
         "rgb4",
         "rgb5",
-        "rgb6",
-        "rgb7",
-        "rgb8"
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
       ],
       "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
           "rgb3",
           "rgb4",
-          "rgb5",
-          "rgb6",
-          "rgb7",
-          "rgb8"
-        ],
-        "rockville": []
+          "rgb5"
+        ]
       },
-      "has_rockville": false,
-      "rockville_count": 0,
-      "total_fixtures": 8
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 9
     },
     "brainblaster": {
       "fixtures": [
@@ -721,6 +798,10 @@
         "ropes"
       ],
       "types": {
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -733,10 +814,6 @@
         ],
         "ropes": [
           "ropes"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ],
         "rockville": []
       },
@@ -757,6 +834,34 @@
       "has_rockville": false,
       "rockville_count": 0,
       "total_fixtures": 1
+    },
+    "cherries": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8"
+      ],
+      "types": {
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ],
+        "rockville": []
+      },
+      "has_rockville": false,
+      "rockville_count": 0,
+      "total_fixtures": 8
     },
     "chill_blue": {
       "fixtures": [
@@ -832,7 +937,81 @@
       "rockville_count": 4,
       "total_fixtures": 12
     },
+    "chill_halogen": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
     "chill_pink": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
+    "chill_purple": {
       "fixtures": [
         "rgb1",
         "rgb2",
@@ -1022,6 +1201,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1034,9 +1216,6 @@
         ],
         "pinspot": [
           "pinspot"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
@@ -1090,11 +1269,11 @@
         "pinspot"
       ],
       "types": {
-        "laser": [
-          "lasers"
-        ],
         "pinspot": [
           "pinspot"
+        ],
+        "laser": [
+          "lasers"
         ],
         "rockville": []
       },
@@ -1125,6 +1304,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1134,9 +1316,6 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
@@ -1220,6 +1399,10 @@
           "rockville3",
           "rockville4"
         ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1229,10 +1412,6 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ],
         "other": [
           "bulb"
@@ -1265,6 +1444,36 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 13
+    },
+    "gloss": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8"
+      ],
+      "types": {
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1275,13 +1484,11 @@
           "rgb7",
           "rgb8"
         ],
-        "strobe": [
-          "strobe"
-        ]
+        "rockville": []
       },
-      "has_rockville": true,
-      "rockville_count": 4,
-      "total_fixtures": 13
+      "has_rockville": false,
+      "rockville_count": 0,
+      "total_fixtures": 8
     },
     "goosebumps": {
       "fixtures": [
@@ -1309,6 +1516,13 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1321,13 +1535,6 @@
         ],
         "ropes": [
           "ropes"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
@@ -1395,6 +1602,12 @@
           "rockville3",
           "rockville4"
         ],
+        "laser": [
+          "laser"
+        ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1404,17 +1617,48 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "laser": [
-          "laser"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
       "rockville_count": 4,
       "total_fixtures": 14
+    },
+    "green_bass_racer": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
     },
     "green_pulse": {
       "fixtures": [
@@ -1460,11 +1704,52 @@
         "rgb3",
         "rgb4",
         "rgb5",
-        "rgb6",
-        "rgb7",
-        "rgb8"
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
       ],
       "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 9
+    },
+    "halogen_flicker": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1474,12 +1759,11 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "rockville": []
+        ]
       },
-      "has_rockville": false,
-      "rockville_count": 0,
-      "total_fixtures": 8
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
     },
     "hell": {
       "fixtures": [
@@ -1518,6 +1802,25 @@
       "rockville_count": 4,
       "total_fixtures": 12
     },
+    "hot": {
+      "fixtures": [
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 4
+    },
     "hypno": {
       "fixtures": [
         "rgb1",
@@ -1554,6 +1857,57 @@
       "has_rockville": true,
       "rockville_count": 4,
       "total_fixtures": 12
+    },
+    "kisskiss": {
+      "fixtures": [
+        "orb1",
+        "orb2",
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4",
+        "ropes",
+        "strobe"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "strobe": [
+          "strobe"
+        ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ],
+        "ropes": [
+          "ropes"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 16
     },
     "lamp": {
       "fixtures": [
@@ -1605,6 +1959,43 @@
       "rockville_count": 0,
       "total_fixtures": 2
     },
+    "loveblaster": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
     "off": {
       "fixtures": [
         "lasers",
@@ -1623,6 +2014,16 @@
         "strobe"
       ],
       "types": {
+        "laser": [
+          "lasers"
+        ],
+        "strobe": [
+          "strobe"
+        ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1633,21 +2034,11 @@
           "rgb7",
           "rgb8"
         ],
-        "pinspot": [
-          "pinspot"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
-        ],
         "ropes": [
           "ropes"
         ],
-        "strobe": [
-          "strobe"
-        ],
-        "laser": [
-          "lasers"
+        "pinspot": [
+          "pinspot"
         ],
         "rockville": []
       },
@@ -1670,6 +2061,10 @@
         "rgb8"
       ],
       "types": {
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1679,10 +2074,6 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ],
         "other": [
           "bulb"
@@ -1756,6 +2147,16 @@
         "strobe"
       ],
       "types": {
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1766,28 +2167,18 @@
           "rgb7",
           "rgb8"
         ],
-        "strobe": [
-          "strobe"
-        ],
-        "rockville": [
-          "rockville1",
-          "rockville2",
-          "rockville3",
-          "rockville4"
+        "ropes": [
+          "ropes"
         ],
         "laser": [
           "laser",
           "lasers"
         ],
-        "orb": [
-          "orb1",
-          "orb2"
+        "strobe": [
+          "strobe"
         ],
         "pinspot": [
           "pinspot"
-        ],
-        "ropes": [
-          "ropes"
         ]
       },
       "has_rockville": true,
@@ -1817,6 +2208,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1826,14 +2220,85 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
       "rockville_count": 4,
       "total_fixtures": 13
+    },
+    "pink_bass_racer": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
+    "pink_echo": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
     },
     "pink_pulse": {
       "fixtures": [
@@ -1879,11 +2344,52 @@
         "rgb3",
         "rgb4",
         "rgb5",
-        "rgb6",
-        "rgb7",
-        "rgb8"
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
       ],
       "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 9
+    },
+    "pink_strobe_pulse": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1893,14 +2399,13 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "rockville": []
+        ]
       },
-      "has_rockville": false,
-      "rockville_count": 0,
-      "total_fixtures": 8
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
     },
-    "pink_strobe_pulse": {
+    "pink_wave": {
       "fixtures": [
         "rgb1",
         "rgb2",
@@ -1951,6 +2456,10 @@
         "rgb8"
       ],
       "types": {
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -1960,10 +2469,6 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ],
         "rockville": []
       },
@@ -1984,6 +2489,139 @@
       "has_rockville": false,
       "rockville_count": 0,
       "total_fixtures": 1
+    },
+    "purple_flicker": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
+    "purple_pulse": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8"
+      ],
+      "types": {
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ],
+        "rockville": []
+      },
+      "has_rockville": false,
+      "rockville_count": 0,
+      "total_fixtures": 8
+    },
+    "purple_riser": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
+    "purple_speedracer": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 9
     },
     "quasar": {
       "fixtures": [
@@ -2009,6 +2647,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -2021,9 +2662,6 @@
         ],
         "pinspot": [
           "pinspot"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
@@ -2127,6 +2765,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -2136,14 +2777,104 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
       "rockville_count": 4,
       "total_fixtures": 13
+    },
+    "red_bass_racer": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
+    "red_black_fade": {
+      "fixtures": [
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 4
+    },
+    "red_delay": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
     },
     "red_echo": {
       "fixtures": [
@@ -2263,32 +2994,32 @@
         "rgb3",
         "rgb4",
         "rgb5",
-        "rgb6",
-        "rgb7",
-        "rgb8"
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
       ],
       "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
           "rgb3",
           "rgb4",
-          "rgb5",
-          "rgb6",
-          "rgb7",
-          "rgb8"
-        ],
-        "rockville": []
+          "rgb5"
+        ]
       },
-      "has_rockville": false,
-      "rockville_count": 0,
-      "total_fixtures": 8
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 9
     },
-    "rightround": {
+    "red_strobe_pulse": {
       "fixtures": [
-        "laser",
-        "lasers",
-        "pinspot",
         "rgb1",
         "rgb2",
         "rgb3",
@@ -2318,10 +3049,87 @@
           "rgb6",
           "rgb7",
           "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
+    "red_wave": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
+    },
+    "rightround": {
+      "fixtures": [
+        "laser",
+        "lasers",
+        "pinspot",
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
         ],
         "laser": [
           "laser",
           "lasers"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
         ],
         "pinspot": [
           "pinspot"
@@ -2343,6 +3151,25 @@
       "has_rockville": true,
       "rockville_count": 1,
       "total_fixtures": 1
+    },
+    "sequence_blue": {
+      "fixtures": [
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 4
     },
     "sequence_cosmic": {
       "fixtures": [
@@ -2401,7 +3228,83 @@
       "rockville_count": 4,
       "total_fixtures": 4
     },
+    "sequence_green": {
+      "fixtures": [
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 4
+    },
     "sequence_ice": {
+      "fixtures": [
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 4
+    },
+    "sequence_pink": {
+      "fixtures": [
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 4
+    },
+    "sequence_rainbow": {
+      "fixtures": [
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 4
+    },
+    "sequence_red": {
       "fixtures": [
         "rockville1",
         "rockville2",
@@ -2444,6 +3347,10 @@
           "rockville3",
           "rockville4"
         ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -2453,10 +3360,6 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ]
       },
       "has_rockville": true,
@@ -2486,6 +3389,9 @@
           "rockville3",
           "rockville4"
         ],
+        "laser": [
+          "laser"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -2495,14 +3401,48 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "laser": [
-          "laser"
         ]
       },
       "has_rockville": true,
       "rockville_count": 4,
       "total_fixtures": 13
+    },
+    "smut": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
     },
     "snap": {
       "fixtures": [
@@ -2512,15 +3452,15 @@
         "strobe"
       ],
       "types": {
+        "pinspot": [
+          "pinspot"
+        ],
         "strobe": [
           "strobe"
         ],
         "laser": [
           "laser",
           "lasers"
-        ],
-        "pinspot": [
-          "pinspot"
         ],
         "rockville": []
       },
@@ -2571,6 +3511,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -2583,9 +3526,6 @@
         ],
         "pinspot": [
           "pinspot"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
@@ -2632,6 +3572,10 @@
           "rockville3",
           "rockville4"
         ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -2644,10 +3588,6 @@
         ],
         "ropes": [
           "ropes"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ]
       },
       "has_rockville": true,
@@ -2909,6 +3849,10 @@
           "rockville3",
           "rockville4"
         ],
+        "orb": [
+          "orb1",
+          "orb2"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -2921,10 +3865,6 @@
         ],
         "ropes": [
           "ropes"
-        ],
-        "orb": [
-          "orb1",
-          "orb2"
         ]
       },
       "has_rockville": true,
@@ -2991,6 +3931,9 @@
           "rockville3",
           "rockville4"
         ],
+        "strobe": [
+          "strobe"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -3000,14 +3943,48 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "strobe": [
-          "strobe"
         ]
       },
       "has_rockville": true,
       "rockville_count": 4,
       "total_fixtures": 13
+    },
+    "white_bass_racer": {
+      "fixtures": [
+        "rgb1",
+        "rgb2",
+        "rgb3",
+        "rgb4",
+        "rgb5",
+        "rgb6",
+        "rgb7",
+        "rgb8",
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
+      ],
+      "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
+        "rgb": [
+          "rgb1",
+          "rgb2",
+          "rgb3",
+          "rgb4",
+          "rgb5",
+          "rgb6",
+          "rgb7",
+          "rgb8"
+        ]
+      },
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 12
     },
     "white_echo": {
       "fixtures": [
@@ -3199,26 +4176,29 @@
         "rgb3",
         "rgb4",
         "rgb5",
-        "rgb6",
-        "rgb7",
-        "rgb8"
+        "rockville1",
+        "rockville2",
+        "rockville3",
+        "rockville4"
       ],
       "types": {
+        "rockville": [
+          "rockville1",
+          "rockville2",
+          "rockville3",
+          "rockville4"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
           "rgb3",
           "rgb4",
-          "rgb5",
-          "rgb6",
-          "rgb7",
-          "rgb8"
-        ],
-        "rockville": []
+          "rgb5"
+        ]
       },
-      "has_rockville": false,
-      "rockville_count": 0,
-      "total_fixtures": 8
+      "has_rockville": true,
+      "rockville_count": 4,
+      "total_fixtures": 9
     },
     "wobble": {
       "fixtures": [
@@ -3243,6 +4223,9 @@
           "rockville3",
           "rockville4"
         ],
+        "laser": [
+          "laser"
+        ],
         "rgb": [
           "rgb1",
           "rgb2",
@@ -3252,9 +4235,6 @@
           "rgb6",
           "rgb7",
           "rgb8"
-        ],
-        "laser": [
-          "laser"
         ]
       },
       "has_rockville": true,
@@ -3263,19 +4243,21 @@
     }
   },
   "no_rockville": [
+    "announcement",
     "bass_hopper",
     "bass_hopper_blue",
     "bass_hopper_green",
     "bass_hopper_orange",
     "bass_hopper_pink",
     "bass_hopper_rainbow",
+    "bass_hopper_red",
     "bass_hopper_white",
-    "blue_speedracer",
     "build1",
     "bulb_flicker",
+    "cherries",
     "discobrain",
     "discolaser",
-    "green_speedracer",
+    "gloss",
     "lamp",
     "laser_strobe",
     "lasers",
@@ -3283,29 +4265,34 @@
     "orb_cycle",
     "orb_racer",
     "orb_sine",
-    "pink_speedracer",
     "prance",
     "ps",
-    "red_speedracer",
+    "purple_pulse",
     "snap",
-    "vintage",
-    "white_speedracer"
+    "vintage"
   ],
   "only_rockville": [
     "fade",
+    "hot",
+    "red_black_fade",
     "rockville_example",
+    "sequence_blue",
     "sequence_cosmic",
     "sequence_fire",
     "sequence_forest",
+    "sequence_green",
     "sequence_ice",
+    "sequence_pink",
+    "sequence_rainbow",
+    "sequence_red",
     "splatter",
     "sustain",
     "time_pulse"
   ],
   "summary": {
-    "mixed": 60,
+    "mixed": 84,
     "no_rockville": 27,
-    "only_rockville": 9,
-    "total": 96
+    "only_rockville": 16,
+    "total": 127
   }
 }

@@ -190,7 +190,7 @@ class AudioOculizerController:
                  speech_config=None, master_config=None, frequency_config=None,
                  prediction_window_seconds=2.0, audio_file=None, osc_log_filters=(),
                  dmx_dry_run=False, filter_dmx=False, graph_enabled=True,
-                 scene_rate_limit=None, scene_throttle=None, presets=None,
+                 scene_rate_limit=None, scene_throttle=None, scene_max_duration=30.0, presets=None,
                  control_socket_path=None):
         self.stdscr = stdscr
         curses.curs_set(0)
@@ -241,6 +241,7 @@ class AudioOculizerController:
             speech_config=speech_config,
             scene_rate_limit=scene_rate_limit,
             scene_throttle=scene_throttle,
+            scene_max_duration=scene_max_duration,
         )
         self.master_modulator = MasterModulator(self.oculizer, config=master_config)
         self.frequency_modulator = FrequencyBandModulator(self.oculizer, config=frequency_config)
@@ -1023,6 +1024,8 @@ Scene Cache Size:
                       metavar='MAX/SECONDS', help='Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)')
     parser.add_argument('--scene-throttle', type=parse_scene_rate_limit, default=None,
                       metavar='BURST/RECOVERY_SECONDS', help='Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)')
+    parser.add_argument('--scene-max-duration', type=float, default=30.0, metavar='SECONDS',
+                      help='Maximum automatic music-scene duration (default: 30 seconds)')
     parser.add_argument('--control-socket', default=default_control_socket_path(), help='Unix runtime control socket path')
     parser.add_argument('--no-control-socket', action='store_true', help='Disable the local runtime control socket')
     parser.add_argument('--prediction-channels', type=str, default=default_prediction_channels,
@@ -1072,6 +1075,8 @@ Scene Cache Size:
         parser.error('--filter-dmx requires --dmx-dry-run')
     if not 1 <= args.scene_cache_size <= 100:
         parser.error('--scene-cache-size must be between 1 and 100')
+    if not 0.5 <= args.scene_max_duration <= 3600:
+        parser.error('--scene-max-duration must be between 0.5 and 3600 seconds')
     return args
 
 def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
@@ -1080,7 +1085,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
          silence_config, speech_config, master_config, frequency_config,
          prediction_window_seconds, audio_file, osc_log_filters, dmx_dry_run,
          filter_dmx, graph_enabled, scene_rate_limit, scene_throttle,
-         scene_presets, control_socket_path):
+         scene_max_duration, scene_presets, control_socket_path):
     setup_colors()
     initialize_screen(stdscr)
     lighting_detail = "Lighting: QLC+ OSC" if output == 'qlc-osc' else (
@@ -1129,6 +1134,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
                 graph_enabled=graph_enabled,
                 scene_rate_limit=scene_rate_limit,
                 scene_throttle=scene_throttle,
+                scene_max_duration=scene_max_duration,
                 presets=scene_presets,
                 control_socket_path=control_socket_path,
             )
@@ -1249,6 +1255,7 @@ if __name__ == "__main__":
             not args.no_graph,
             args.scene_rate_limit,
             args.scene_throttle,
+            args.scene_max_duration,
             args.scene_presets,
             None if args.no_control_socket else args.control_socket,
         ))

@@ -1,5 +1,6 @@
 {
     "name": "white_speedracer",
+    "max_duration_seconds": 15,
     "description": "Racing white",
     "key_command": "i",
     "midi": 56,

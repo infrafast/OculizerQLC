@@ -1458,6 +1458,97 @@ Do not mark a roadmap checkbox complete without recording the executed test and 
 - when a decision changes, update the architecture and log instead of retaining contradictory versions;
 - all documentation must remain in English, even when requirements are provided in French or another language.
 
+### 2026-08-05 — Bounded automatic scene duration
+
+Implemented:
+
+- added `--scene-max-duration SECONDS` to interactive and headless runtimes with a 30-second default and range validation from 0.5 to 3600 seconds;
+- added optional per-scene `max_duration_seconds` overrides in `scenes/<name>.json`, with an absent field inheriting the global runtime value;
+- limited only ordinary automatic music scenes, leaving manual override, silence, and announcement safety routes exempt;
+- selected the most recent distinct mapped prediction when a scene expires, falling back deterministically to `ambient1` rather than choosing an unrelated random scene;
+- blocked the expired resolved output target for ten seconds to prevent immediate ping-pong, including when several predictions share one fallback target;
+- reused the existing bounded prediction cache and monotonic routing clock, adding no FFT, model, worker, or unbounded history.
+
+Embedded-system impact:
+
+- negligible CPU and memory cost: one short reverse scan of the existing prediction cache only when routing evaluates an expired or temporarily blocked target, plus a small bounded timestamp dictionary;
+- no additional audio processing or network traffic is produced until an actual replacement scene is activated.
+
+Validation:
+
+- focused automatic-routing tests cover recent mapped replacement, deterministic `ambient1` fallback, re-entry blocking, and per-scene duration override;
+- interactive and headless entry points compile and advertise the new option.
+- the complete test suite passes: 146 tests, including local UDP OSC coverage.
+
+### 2026-08-05 — Complete v4 QLC+ routing catalog
+
+Implemented:
+
+- expanded `config/qlc_config.json` to every unique logical scene name emitted by the v4 mapping, now 48 after canonical-name normalization;
+- derived every toggle address consistently as `/oculizer/scenes/<scene-name>` while preserving the special `off` and `announcement` routes;
+- marked the 17 names shared by v4 and the approved v6 mapping with the temporary metadata field `"implemented": false` for manual QLC+ widget tracking;
+- intentionally left `implemented` outside runtime behavior: the scene-map parser ignores unknown metadata and routing remains determined only by `action` and `path`;
+- normalized the historical `disodream` and `full` identifiers in the subsequent scene-consistency audit.
+
+Validation:
+
+- JSON syntax validation passes;
+- set comparison confirms zero missing or extra v4 routing names, all 17 v4/v6 intersections marked, and no v4-only scene marked as v6-shared.
+- 20 focused QLC configuration, mapping, backend, and CLI tests pass.
+
+### 2026-08-05 — Cross-version scene-name consistency audit
+
+Implemented:
+
+- normalized `disodream` to `discodream` and `full` to `fullstrobe` in v4, v5, and the archived vday mapping;
+- normalized `laserstrobe` to `laser_strobe` in the archived v3 mapping;
+- corrected internal scene names so `scenes/smut.json` declares `smut` and `scenes/rockville_example.json` declares `rockville_example`;
+- added the missing `bass_hopper_red` artistic definition required by the archived v3 mapping, deriving its established hopper behavior from `bass_hopper_blue` with a red/orange palette;
+- synchronized the complete v4 QLC+ routing catalog by removing the obsolete `disodream` entry and replacing `full` with `fullstrobe` and its canonical OSC path;
+- regenerated `scene_analysis.json` from all 127 scene definitions.
+
+Validation:
+
+- every predictor mapping JSON, including archived mappings, now resolves exclusively to an existing `scenes/*.json` file;
+- every scene file's stem now matches its internal `name` field;
+- the QLC+ catalog exactly matches all 48 unique canonical v4 names and retains all 17 v4/v6 tracking markers.
+- the complete suite passes: 146 tests, including local UDP OSC coverage.
+
+### 2026-08-05 — Complete v6 QLC+ routing catalog
+
+Implemented:
+
+- added the 13 v6-only scene names missing from the v4-based QLC+ catalog;
+- derived their OSC paths consistently as `/oculizer/scenes/<scene-name>`;
+- applied the temporary boolean metadata field `"implemented": false` to all 30 scenes emitted by v6, including the 17 names shared with v4;
+- retained `implemented` as operator-only tracking metadata ignored by runtime parsing and routing.
+
+Validation:
+
+- the QLC+ catalog now covers the complete 61-scene union of v4 and v6;
+- set checks confirm zero missing v4 or v6 names, canonical paths for every entry, all 30 v6 flags present, and a corresponding artistic scene file for every mapped name.
+- 20 focused QLC configuration, scene-map, backend, and CLI tests pass.
+
+### 2026-08-05 — v6 scene-duration safety policy
+
+Implemented:
+
+- assigned `max_duration_seconds: 8` to all 17 v6 scenes whose recursive artistic definition contains an active `strobe`, `panel_strobe`, or `bar_strobe` value;
+- assigned `max_duration_seconds: 15` to the non-strobing alternating racers `green_speedracer`, `orb_racer`, `red_speedracer`, and `white_speedracer`, plus the high-energy `discolaser` and `discodream` scenes;
+- left the remaining seven calmer v6 scenes without an override so they inherit the global 30-second default;
+- corrected the misleading `wave` description from “RGB strobes” to “RGB lights” because every strobe value in that slow scene is explicitly zero;
+- added a static policy test that discovers active strobe keys recursively, including fixture-specific nested fields, and guards both the 8-second and reviewed 15-second sets.
+
+Embedded-system impact:
+
+- none beyond the already implemented duration router; these are load-time JSON values and add no continuous computation.
+
+Validation:
+
+- all scene JSON files parse successfully;
+- the two focused v6 duration-policy tests pass.
+- the complete suite passes: 148 tests, including local socket and UDP OSC coverage.
+
 ### Expected completion report
 
 At the end of a work slice, record or report:

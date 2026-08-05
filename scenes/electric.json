@@ -1,5 +1,6 @@
 {
     "name": "electric",
+    "max_duration_seconds": 8,
     "description": "Stochastic white strobe on rgbs. All else off.",
     "type": "effect",
     "midi": 65,

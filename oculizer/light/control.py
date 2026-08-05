@@ -1343,6 +1343,13 @@ class Oculizer(threading.Thread):
             apply_fallback=self.output == OUTPUT_ENTTEC,
         )
 
+    def get_scene_max_duration(self, scene_name):
+        """Return a scene-specific automatic duration override, if declared."""
+        scene = self.scene_manager.scenes.get(scene_name)
+        if not isinstance(scene, dict):
+            return None
+        return scene.get("max_duration_seconds")
+
     def set_parameter(self, name, value):
         """Send one normalized continuous parameter through the active backend."""
         return self.backend.set_parameter(name, value)
