@@ -12,7 +12,10 @@ class RuntimeConfigTests(unittest.TestCase):
     def test_loads_default_and_custom_scene_control_presets(self):
         defaults = configured_scene_presets({})
         self.assertEqual(defaults["normal"], {
-            "cache": 7, "rate": (6, 10.0), "throttle": (3, 2.0),
+            "cache": 15, "rate": (4, 15.0), "throttle": (2, 4.0),
+        })
+        self.assertEqual(defaults["calm"], {
+            "cache": 35, "rate": (2, 20.0), "throttle": (1, 10.0),
         })
         custom = configured_scene_presets({
             "control": {"presets": {"show": {

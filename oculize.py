@@ -190,7 +190,7 @@ class AudioOculizerController:
                  speech_config=None, master_config=None, frequency_config=None,
                  prediction_window_seconds=2.0, audio_file=None, osc_log_filters=(),
                  dmx_dry_run=False, filter_dmx=False, graph_enabled=True,
-                 scene_rate_limit=None, scene_throttle=None, scene_max_duration=30.0, presets=None,
+                 scene_rate_limit=None, scene_throttle=None, scene_max_duration=40.0, presets=None,
                  control_socket_path=None):
         self.stdscr = stdscr
         curses.curs_set(0)
@@ -1024,8 +1024,8 @@ Scene Cache Size:
                       metavar='MAX/SECONDS', help='Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)')
     parser.add_argument('--scene-throttle', type=parse_scene_rate_limit, default=None,
                       metavar='BURST/RECOVERY_SECONDS', help='Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)')
-    parser.add_argument('--scene-max-duration', type=float, default=30.0, metavar='SECONDS',
-                      help='Maximum automatic music-scene duration (default: 30 seconds)')
+    parser.add_argument('--scene-max-duration', type=float, default=40.0, metavar='SECONDS',
+                      help='Maximum automatic music-scene duration (default: 40 seconds)')
     parser.add_argument('--control-socket', default=default_control_socket_path(), help='Unix runtime control socket path')
     parser.add_argument('--no-control-socket', action='store_true', help='Disable the local runtime control socket')
     parser.add_argument('--prediction-channels', type=str, default=default_prediction_channels,

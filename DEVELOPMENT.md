@@ -1462,7 +1462,7 @@ Do not mark a roadmap checkbox complete without recording the executed test and 
 
 Implemented:
 
-- added `--scene-max-duration SECONDS` to interactive and headless runtimes with a 30-second default and range validation from 0.5 to 3600 seconds;
+- added `--scene-max-duration SECONDS` to interactive and headless runtimes, initially with a 30-second default later raised to 40 seconds, and range validation from 0.5 to 3600 seconds;
 - added optional per-scene `max_duration_seconds` overrides in `scenes/<name>.json`, with an absent field inheriting the global runtime value;
 - limited only ordinary automatic music scenes, leaving manual override, silence, and announcement safety routes exempt;
 - selected the most recent distinct mapped prediction when a scene expires, falling back deterministically to `ambient1` rather than choosing an unrelated random scene;
@@ -1535,7 +1535,7 @@ Implemented:
 
 - assigned `max_duration_seconds: 8` to all 17 v6 scenes whose recursive artistic definition contains an active `strobe`, `panel_strobe`, or `bar_strobe` value;
 - assigned `max_duration_seconds: 15` to the non-strobing alternating racers `green_speedracer`, `orb_racer`, `red_speedracer`, and `white_speedracer`, plus the high-energy `discolaser` and `discodream` scenes;
-- left the remaining seven calmer v6 scenes without an override so they inherit the global 30-second default;
+- left the remaining seven calmer v6 scenes without an override so they inherit the global duration, now 40 seconds;
 - corrected the misleading `wave` description from “RGB strobes” to “RGB lights” because every strobe value in that slow scene is explicitly zero;
 - added a static policy test that discovers active strobe keys recursively, including fixture-specific nested fields, and guards both the 8-second and reviewed 15-second sets.
 
@@ -1547,6 +1547,27 @@ Validation:
 
 - all scene JSON files parse successfully;
 - the two focused v6 duration-policy tests pass.
+- the complete suite passes: 148 tests, including local socket and UDP OSC coverage.
+
+### 2026-08-05 — Calmer transition presets and longer default scenes
+
+Implemented:
+
+- changed `normal` from cache `10`, rate `6/10`, throttle `3/2` to cache `15`, rate `4/15`, throttle `2/4` in the shipped configuration;
+- changed `calm` from cache `25`, rate `4/15`, throttle `2/3` to cache `35`, rate `2/20`, throttle `1/10`, eliminating its initial multi-change burst and allowing only one recovered transition credit every ten seconds;
+- aligned the built-in fallback preset definitions with the shipped configuration so missing configuration and normal operation retain the same policy hierarchy;
+- raised the global automatic scene maximum from 30 to 40 seconds in the core router plus interactive and headless CLI defaults;
+- retained all explicit 8-second strobe and 15-second energetic-scene safety overrides.
+
+Rationale and embedded impact:
+
+- the concert log showed effective scene activations roughly every three seconds under the previous policies, with many average scene stays below three seconds;
+- the new values reduce churn through existing bounded counters and a slightly larger deque of scene-name references; they add no inference, FFT, thread, timer, or network work and have negligible Raspberry Pi 5 memory impact.
+
+Validation:
+
+- 51 focused runtime-configuration, runtime-control, transition-limit, CLI, and automatic-routing tests pass;
+- both interactive and headless help output report the new 40-second default;
 - the complete suite passes: 148 tests, including local socket and UDP OSC coverage.
 
 ### Expected completion report

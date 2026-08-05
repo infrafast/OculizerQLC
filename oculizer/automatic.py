@@ -29,7 +29,7 @@ class AutomaticSceneRouter:
     """Apply stable predictions or a manual override through one scene API."""
 
     def __init__(self, oculizer, silence_config=None, speech_config=None, clock=None,
-                 scene_rate_limit=None, scene_throttle=None, scene_max_duration=30.0,
+                 scene_rate_limit=None, scene_throttle=None, scene_max_duration=40.0,
                  scene_reentry_seconds=10.0):
         self.oculizer = oculizer
         self.silence_config = silence_config or SilenceConfig(enabled=False)

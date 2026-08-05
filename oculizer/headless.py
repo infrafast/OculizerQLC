@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class HeadlessOculizerService:
     def __init__(self, oculizer, poll_seconds=0.02, silence_config=None, speech_config=None,
                  master_config=None, frequency_config=None, scene_rate_limit=None,
-                 scene_throttle=None, scene_max_duration=30.0, presets=None,
+                 scene_throttle=None, scene_max_duration=40.0, presets=None,
                  control_socket_path=None):
         self.oculizer = oculizer
         self.router = AutomaticSceneRouter(

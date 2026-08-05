@@ -268,8 +268,8 @@ def configured_scene_presets(config: dict[str, Any], reset_cache_size=None) -> d
     """Return validated named cache/rate/throttle control presets."""
     defaults = {
         "responsive": {"cache": 3, "rate": (10, 10.0), "throttle": (4, 1.0)},
-        "normal": {"cache": 7, "rate": (6, 10.0), "throttle": (3, 2.0)},
-        "calm": {"cache": 15, "rate": (4, 15.0), "throttle": (2, 3.0)},
+        "normal": {"cache": 15, "rate": (4, 15.0), "throttle": (2, 4.0)},
+        "calm": {"cache": 35, "rate": (2, 20.0), "throttle": (1, 10.0)},
         "reset": {"cache": 10, "rate": None, "throttle": None},
     }
     configured = config.get("control", {}).get("presets", defaults)

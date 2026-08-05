@@ -123,7 +123,7 @@ Useful options:
 | `--scene-cache-size N` | Set prediction smoothing (default: `10`) |
 | `--scene-rate-limit N/SECONDS` | Limit automatic scene changes in a rolling window |
 | `--scene-throttle N/SECONDS` | Allow a burst, then progressively recover transition credits |
-| `--scene-max-duration SECONDS` | Force automatic music scenes to rotate after a maximum duration (default: `30`) |
+| `--scene-max-duration SECONDS` | Force automatic music scenes to rotate after a maximum duration (default: `40`) |
 | `--output enttec|qlc-osc` | Select the lighting output |
 | `--no-graph` | Hide the interactive RMS graph |
 | `--list-devices` | List available audio inputs |
@@ -173,7 +173,7 @@ python oculize.py --no-graph [other options]
 
 The current cache, rate limit, and throttle are shown in the status area. An omitted rate limit or throttle is displayed as `Off`. In the `l` editor, use the arrow keys or `+`/`-` to change values, `0` to disable the selected optional policy, Enter to apply, and Escape to cancel.
 
-Automatic music scenes are limited to 30 seconds by default. Override the global value at startup with, for example, `--scene-max-duration 20`. When a scene expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. The expired target cannot immediately re-enter, preventing rapid ping-pong. Silence, announcement, and manual overrides are exempt.
+Automatic music scenes are limited to 40 seconds by default. Override the global value at startup with, for example, `--scene-max-duration 20`. When a scene expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. The expired target cannot immediately re-enter, preventing rapid ping-pong. Silence, announcement, and manual overrides are exempt.
 
 A scene can override the global duration by declaring a positive duration in its artistic definition under `scenes/`:
 
@@ -187,7 +187,7 @@ A scene can override the global duration by declaring a positive duration in its
 
 When `max_duration_seconds` is absent, the global value is used. The example only illustrates the field; retain the scene's real `lights` definition.
 
-The supplied v6 scene set applies an eight-second maximum to every scene with an active strobe declaration. Non-strobing racer/alternating effects and selected high-energy scenes use 15 seconds. Calmer v6 scenes inherit the global 30-second default. These limits are safety-oriented starting points and can be tuned in the corresponding `scenes/<name>.json` file.
+The supplied v6 scene set applies an eight-second maximum to every scene with an active strobe declaration. Non-strobing racer/alternating effects and selected high-energy scenes use 15 seconds. Calmer v6 scenes inherit the global 40-second default. These limits are safety-oriented starting points and can be tuned in the corresponding `scenes/<name>.json` file.
 
 ## QLC+ OSC operation
 
@@ -319,8 +319,8 @@ The supplied presets are starting points that can be adjusted under `control.pre
 | Preset | Cache | Throttle | Rate limit | Behavior |
 | --- | ---: | ---: | ---: | --- |
 | `responsive` | `3` | `4/1` | `10/10` | Fast response and generous bursts |
-| `normal` | `7` | `3/2` | `6/10` | Balanced smoothing and transitions |
-| `calm` | `15` | `2/3` | `4/15` | Strong smoothing and fewer transitions |
+| `normal` | `15` | `2/4` | `4/15` | Stable general-purpose behavior with restrained transitions |
+| `calm` | `35` | `1/10` | `2/20` | Very strong smoothing and long, relaxed scene holds |
 | `reset` | startup value | `Off` | `Off` | Restore startup smoothing and disable both limits |
 
 QLC+ 5 Virtual Console buttons can call the installed client through script functions such as:

@@ -1,0 +1,557 @@
+OCULIZER - ANALYSE DES SCÈNES DU CONCERT
+==========================================
+
+Source : oculizer.log
+Période du journal : 2026-08-05 09:36:23 à 2026-08-05 10:54:04
+Chronologie effective : 1:17:37.4
+Activations effectives : 1418
+Morceaux identifiés : 25 (1:10:07.7 de musique)
+Annonce/off : 6:29.2
+Fragments courts exclus : 8 (1:00.5)
+
+MÉTHODE
+-------
+Les durées sont reconstruites depuis chaque ligne « Automatic scene request
+... activated » jusqu'à l'activation effective suivante. Les cibles identiques
+consécutives sont fusionnées. Les scènes announcement et off délimitent les
+morceaux. Huit fragments musicaux de moins de 60 secondes, encadrés par des
+séparateurs, sont considérés comme des reprises temporaires de détection
+pendant les annonces. Ils restent inclus dans les statistiques globales du
+journal, mais sont exclus de la numérotation des morceaux.
+
+GLOBAL — JOURNAL COMPLET
+-------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  discolaser               7:39.9   9.88%    93   4.95s  15.11s
+  red_speedracer           7:28.0   9.62%   108   4.15s  15.03s
+  fairies                  7:06.6   9.16%   145   2.94s   8.02s
+  chill_blue               6:04.5   7.83%   103   3.54s  24.32s
+  sustain                  5:11.4   6.69%   111   2.81s   8.37s
+  announcement             5:02.9   6.50%    26  11.65s  23.43s
+  vintage                  4:47.0   6.16%    96   2.99s  21.79s
+  red_bass_pulse           4:40.2   6.02%    90   3.11s   8.99s
+  ambient2                 2:53.9   3.73%    22   7.90s  30.00s
+  blue_bass_racer          2:32.1   3.27%    70   2.17s   8.02s
+  green_speedracer         1:56.4   2.50%    37   3.15s  15.03s
+  electric                 1:55.9   2.49%    58   2.00s   8.01s
+  ambient1                 1:53.3   2.43%    40   2.83s  10.02s
+  discodance               1:45.7   2.27%    34   3.11s   8.05s
+  wave                     1:44.1   2.23%     9  11.56s  30.02s
+  rainbow_pulse            1:43.2   2.21%    52   1.98s   8.02s
+  white_speedracer         1:42.6   2.20%    43   2.39s  15.01s
+  temple                   1:36.8   2.08%    36   2.69s   8.12s
+  disco                    1:34.0   2.02%    29   3.24s  11.00s
+  discodream               1:27.3   1.88%    45   1.94s  11.26s
+  off                      1:26.3   1.85%     8  10.78s  17.88s
+  sexy                     1:13.1   1.57%    17   4.30s  30.02s
+  hypno                    1:01.8   1.33%    47   1.31s   4.70s
+  white_riser              0:43.5   0.93%    25   1.74s   8.02s
+  chill_red                0:42.9   0.92%    25   1.71s   6.11s
+  swamp                    0:29.7   0.64%    18   1.65s   7.96s
+  goosebumps               0:28.9   0.62%    11   2.63s   8.00s
+  sequence_cosmic          0:19.4   0.42%     5   3.88s   8.02s
+  sequence_fire            0:18.2   0.39%     7   2.60s   4.07s
+  splatter                 0:03.8   0.08%     2   1.88s   2.80s
+  discobrain               0:02.2   0.05%     3   0.73s   1.58s
+  orb_racer                0:01.9   0.04%     3   0.64s   0.98s
+
+MUSIQUE — 25 MORCEAUX IDENTIFIÉS
+--------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  discolaser               7:39.9  10.93%    93   4.95s  15.11s
+  red_speedracer           7:28.0  10.65%   108   4.15s  15.03s
+  fairies                  7:06.6  10.14%   145   2.94s   8.02s
+  chill_blue               5:35.7   7.98%    96   3.50s  24.32s
+  sustain                  5:11.4   7.40%   111   2.81s   8.37s
+  vintage                  4:47.0   6.82%    96   2.99s  21.79s
+  red_bass_pulse           4:40.2   6.66%    90   3.11s   8.99s
+  blue_bass_racer          2:32.1   3.62%    70   2.17s   8.02s
+  ambient2                 2:27.4   3.50%    21   7.02s  30.00s
+  green_speedracer         1:56.4   2.77%    37   3.15s  15.03s
+  electric                 1:55.9   2.75%    58   2.00s   8.01s
+  ambient1                 1:53.3   2.69%    40   2.83s  10.02s
+  discodance               1:45.7   2.51%    34   3.11s   8.05s
+  wave                     1:44.1   2.47%     9  11.56s  30.02s
+  rainbow_pulse            1:43.2   2.45%    52   1.98s   8.02s
+  white_speedracer         1:42.6   2.44%    43   2.39s  15.01s
+  temple                   1:36.8   2.30%    36   2.69s   8.12s
+  disco                    1:34.0   2.23%    29   3.24s  11.00s
+  discodream               1:27.3   2.08%    45   1.94s  11.26s
+  sexy                     1:10.1   1.67%    16   4.38s  30.02s
+  hypno                    1:01.8   1.47%    47   1.31s   4.70s
+  white_riser              0:43.5   1.03%    25   1.74s   8.02s
+  chill_red                0:42.9   1.02%    25   1.71s   6.11s
+  swamp                    0:29.7   0.70%    18   1.65s   7.96s
+  goosebumps               0:26.6   0.63%    10   2.66s   8.00s
+  sequence_cosmic          0:19.4   0.46%     5   3.88s   8.02s
+  sequence_fire            0:18.2   0.43%     7   2.60s   4.07s
+  splatter                 0:03.8   0.09%     2   1.88s   2.80s
+  discobrain               0:02.2   0.05%     3   0.73s   1.58s
+  orb_racer                0:01.9   0.05%     3   0.64s   0.98s
+
+COUVERTURE
+----------
+Scènes v6 non utilisées : bass_hopper_blue
+Scènes utilisées hors v6 : ambient1
+
+DÉTAIL PAR MORCEAU
+-------------------
+
+MORCEAU 01 — 09:36:34 à 09:39:29 — 2:54.5
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  white_speedracer         0:39.5  22.65%    16   2.47s   7.79s
+  discolaser               0:34.8  19.93%     6   5.79s   7.95s
+  red_speedracer           0:34.7  19.89%    11   3.15s   8.55s
+  green_speedracer         0:28.9  16.55%     7   4.13s   6.44s
+  blue_bass_racer          0:13.4   7.67%     6   2.23s   8.02s
+  chill_blue               0:04.7   2.69%     2   2.34s   3.02s
+  discodance               0:04.2   2.40%     1   4.18s   4.18s
+  goosebumps               0:04.0   2.27%     1   3.95s   3.95s
+  fairies                  0:03.3   1.92%     3   1.12s   1.90s
+  red_bass_pulse           0:02.9   1.64%     1   2.86s   2.86s
+  white_riser              0:02.5   1.43%     1   2.49s   2.49s
+  rainbow_pulse            0:01.2   0.67%     2   0.58s   0.87s
+  chill_red                0:00.5   0.31%     1   0.54s   0.54s
+
+MORCEAU 02 — 09:39:49 à 09:41:38 — 1:48.9
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  rainbow_pulse            0:24.5  22.44%    10   2.45s   8.02s
+  swamp                    0:17.4  15.94%     8   2.17s   7.96s
+  vintage                  0:17.2  15.77%    10   1.72s   4.20s
+  disco                    0:14.0  12.84%     7   2.00s   3.32s
+  discodance               0:12.1  11.10%     3   4.03s   8.01s
+  discodream               0:08.2   7.57%     2   4.12s   5.26s
+  fairies                  0:07.3   6.70%     5   1.46s   3.58s
+  chill_blue               0:05.9   5.37%     3   1.95s   2.84s
+  chill_red                0:02.2   2.00%     3   0.73s   1.54s
+  ambient1                 0:00.3   0.28%     1   0.30s   0.30s
+
+MORCEAU 03 — 09:41:44 à 09:44:45 — 3:01.6
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  red_speedracer           0:26.2  14.42%     5   5.24s   8.52s
+  red_bass_pulse           0:25.3  13.95%     7   3.62s   8.00s
+  vintage                  0:19.6  10.78%     3   6.53s   9.84s
+  chill_blue               0:15.3   8.42%     3   5.10s   9.79s
+  rainbow_pulse            0:15.1   8.30%     3   5.03s   8.02s
+  discodance               0:14.4   7.92%     3   4.80s   7.41s
+  fairies                  0:13.5   7.44%     3   4.50s   8.02s
+  discolaser               0:11.6   6.38%     3   3.86s   6.01s
+  wave                     0:07.3   4.03%     1   7.32s   7.32s
+  blue_bass_racer          0:06.7   3.67%     5   1.33s   2.53s
+  disco                    0:05.9   3.24%     3   1.96s   4.04s
+  sexy                     0:05.8   3.17%     2   2.88s   4.41s
+  electric                 0:05.0   2.75%     3   1.66s   3.81s
+  ambient2                 0:04.4   2.42%     1   4.39s   4.39s
+  hypno                    0:04.1   2.28%     3   1.38s   2.87s
+  ambient1                 0:01.2   0.66%     1   1.20s   1.20s
+  green_speedracer         0:00.3   0.17%     1   0.31s   0.31s
+
+MORCEAU 04 — 09:44:54 à 09:50:18 — 5:24.8
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  discolaser               1:23.8  25.81%    10   8.38s  15.02s
+  fairies                  0:53.4  16.44%     8   6.67s   8.02s
+  vintage                  0:49.5  15.24%     7   7.07s  21.79s
+  sexy                     0:32.1   9.89%     2  16.06s  30.02s
+  blue_bass_racer          0:30.1   9.27%     8   3.76s   8.01s
+  chill_blue               0:23.5   7.23%     7   3.36s   9.41s
+  red_bass_pulse           0:14.0   4.30%     4   3.49s   8.98s
+  wave                     0:07.8   2.40%     1   7.79s   7.79s
+  discodance               0:05.8   1.77%     1   5.76s   5.76s
+  sustain                  0:05.7   1.76%     4   1.43s   2.35s
+  chill_red                0:05.2   1.60%     1   5.21s   5.21s
+  discodream               0:04.4   1.36%     6   0.73s   1.31s
+  rainbow_pulse            0:04.2   1.30%     3   1.41s   3.23s
+  swamp                    0:01.7   0.54%     2   0.87s   1.37s
+  sequence_fire            0:01.4   0.44%     1   1.41s   1.41s
+  ambient1                 0:01.2   0.37%     1   1.19s   1.19s
+  ambient2                 0:00.9   0.28%     2   0.45s   0.64s
+
+MORCEAU 05 — 09:50:52 à 09:54:26 — 3:33.9
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  fairies                  1:08.9  32.22%    20   3.45s   8.01s
+  sustain                  0:37.2  17.39%    15   2.48s   5.52s
+  ambient1                 0:21.4  10.02%     6   3.57s   8.77s
+  chill_blue               0:16.2   7.56%     4   4.04s  10.58s
+  disco                    0:11.4   5.35%     4   2.86s   5.97s
+  ambient2                 0:09.2   4.31%     3   3.08s   5.80s
+  sequence_cosmic          0:08.9   4.14%     2   4.43s   8.01s
+  rainbow_pulse            0:07.7   3.58%     3   2.55s   2.79s
+  chill_red                0:07.6   3.56%     5   1.52s   2.51s
+  discodance               0:07.1   3.31%     3   2.36s   3.50s
+  swamp                    0:05.8   2.72%     3   1.94s   2.61s
+  temple                   0:05.0   2.32%     4   1.24s   3.42s
+  vintage                  0:04.3   2.02%     3   1.44s   3.22s
+  green_speedracer         0:01.7   0.80%     1   1.71s   1.71s
+  blue_bass_racer          0:00.9   0.43%     1   0.91s   0.91s
+  discolaser               0:00.6   0.27%     1   0.57s   0.57s
+
+MORCEAU 06 — 09:54:44 à 09:58:03 — 3:18.4
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  red_bass_pulse           0:41.6  20.95%    16   2.60s   8.01s
+  red_speedracer           0:40.0  20.14%    14   2.85s   7.38s
+  discolaser               0:35.6  17.96%    13   2.74s   6.01s
+  chill_blue               0:16.0   8.04%     7   2.28s   5.61s
+  sustain                  0:14.0   7.04%     7   2.00s   8.02s
+  white_riser              0:10.6   5.32%    10   1.06s   2.97s
+  vintage                  0:10.4   5.24%     7   1.49s   3.50s
+  electric                 0:07.9   3.98%     6   1.31s   3.48s
+  fairies                  0:04.8   2.41%     4   1.19s   1.97s
+  hypno                    0:04.7   2.38%     2   2.36s   3.48s
+  blue_bass_racer          0:04.6   2.29%     2   2.28s   3.40s
+  sequence_cosmic          0:02.2   1.11%     1   2.20s   2.20s
+  goosebumps               0:01.5   0.78%     2   0.77s   1.24s
+  sequence_fire            0:01.4   0.70%     1   1.38s   1.38s
+  temple                   0:01.1   0.54%     1   1.07s   1.07s
+  ambient1                 0:00.9   0.47%     2   0.47s   0.70s
+  orb_racer                0:00.7   0.34%     1   0.67s   0.67s
+  chill_red                0:00.6   0.32%     1   0.64s   0.64s
+
+MORCEAU 07 — 09:58:15 à 10:00:04 — 1:49.3
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  fairies                  0:24.0  21.98%     3   8.01s   8.02s
+  discodream               0:21.5  19.64%     5   4.29s  11.26s
+  vintage                  0:20.7  18.93%     5   4.14s   7.77s
+  ambient2                 0:13.8  12.59%     1  13.76s  13.76s
+  sequence_cosmic          0:08.0   7.34%     1   8.02s   8.02s
+  chill_blue               0:07.9   7.25%     1   7.93s   7.93s
+  red_bass_pulse           0:04.2   3.86%     1   4.22s   4.22s
+  ambient1                 0:03.8   3.51%     1   3.84s   3.84s
+  discolaser               0:03.8   3.50%     1   3.82s   3.82s
+  temple                   0:01.5   1.40%     1   1.53s   1.53s
+
+MORCEAU 08 — 10:00:20 à 10:03:05 — 2:44.9
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  fairies                  0:41.7  25.28%     9   4.63s   8.01s
+  chill_blue               0:36.2  21.93%     8   4.52s  11.71s
+  sustain                  0:23.6  14.31%     8   2.95s   8.02s
+  discolaser               0:19.9  12.04%     2   9.93s  12.37s
+  discodream               0:08.0   4.87%     4   2.01s   4.42s
+  chill_red                0:07.4   4.49%     3   2.47s   3.94s
+  temple                   0:07.1   4.33%     4   1.79s   4.36s
+  ambient1                 0:05.0   3.03%     4   1.25s   3.46s
+  red_bass_pulse           0:04.7   2.87%     1   4.73s   4.73s
+  vintage                  0:03.4   2.08%     2   1.71s   2.85s
+  blue_bass_racer          0:03.1   1.85%     2   1.53s   2.77s
+  discodance               0:02.4   1.46%     2   1.20s   1.44s
+  goosebumps               0:01.5   0.88%     1   1.46s   1.46s
+  white_riser              0:01.0   0.59%     1   0.97s   0.97s
+
+MORCEAU 09 — 10:03:44 à 10:07:08 — 3:23.6
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  chill_blue               0:42.1  20.66%    17   2.47s  10.96s
+  red_bass_pulse           0:36.1  17.75%    10   3.61s   8.02s
+  sustain                  0:28.9  14.21%     9   3.21s   8.01s
+  red_speedracer           0:19.4   9.55%     6   3.24s   7.55s
+  discolaser               0:19.0   9.32%     7   2.71s   7.90s
+  blue_bass_racer          0:18.5   9.07%    12   1.54s   2.78s
+  fairies                  0:10.6   5.20%     8   1.32s   2.56s
+  ambient1                 0:08.0   3.94%     5   1.60s   2.24s
+  goosebumps               0:06.4   3.15%     2   3.20s   5.18s
+  hypno                    0:03.0   1.47%     3   1.00s   1.56s
+  disco                    0:02.6   1.28%     1   2.61s   2.61s
+  sexy                     0:02.2   1.10%     3   0.75s   0.99s
+  electric                 0:02.2   1.09%     3   0.74s   1.58s
+  temple                   0:01.3   0.65%     1   1.32s   1.32s
+  white_riser              0:00.9   0.46%     1   0.94s   0.94s
+  rainbow_pulse            0:00.9   0.45%     1   0.92s   0.92s
+  discodance               0:00.6   0.29%     2   0.29s   0.30s
+  white_speedracer         0:00.3   0.14%     1   0.28s   0.28s
+  swamp                    0:00.2   0.11%     1   0.23s   0.23s
+  wave                     0:00.2   0.11%     1   0.23s   0.23s
+
+MORCEAU 10 — 10:07:32 à 10:09:37 — 2:05.4
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  vintage                  0:47.1  37.58%     9   5.24s  15.68s
+  fairies                  0:34.9  27.82%     9   3.88s   8.01s
+  sustain                  0:08.8   7.02%     2   4.40s   6.19s
+  chill_blue               0:08.6   6.90%     3   2.88s   5.05s
+  white_riser              0:07.2   5.75%     3   2.40s   4.92s
+  chill_red                0:04.7   3.72%     2   2.33s   3.08s
+  ambient1                 0:04.1   3.24%     1   4.06s   4.06s
+  ambient2                 0:04.0   3.20%     2   2.01s   3.00s
+  sexy                     0:03.6   2.86%     1   3.59s   3.59s
+  hypno                    0:01.2   1.00%     1   1.25s   1.25s
+  rainbow_pulse            0:01.1   0.91%     2   0.57s   0.76s
+
+MORCEAU 11 — 10:09:51 à 10:12:21 — 2:29.5
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  discolaser               0:38.8  25.96%     5   7.76s  14.55s
+  red_speedracer           0:33.1  22.13%     8   4.13s  15.03s
+  chill_blue               0:17.8  11.90%     6   2.96s   6.86s
+  sustain                  0:13.8   9.25%     6   2.30s   4.04s
+  white_speedracer         0:11.4   7.60%     7   1.62s   3.24s
+  ambient1                 0:09.7   6.52%     1   9.74s   9.74s
+  fairies                  0:04.3   2.90%     3   1.44s   2.34s
+  hypno                    0:04.2   2.84%     4   1.06s   1.90s
+  green_speedracer         0:03.4   2.27%     3   1.13s   2.52s
+  disco                    0:02.4   1.58%     3   0.79s   1.08s
+  electric                 0:01.9   1.28%     2   0.96s   1.00s
+  blue_bass_racer          0:01.9   1.25%     4   0.47s   0.99s
+  red_bass_pulse           0:01.8   1.17%     1   1.76s   1.76s
+  rainbow_pulse            0:01.7   1.16%     3   0.58s   1.02s
+  swamp                    0:01.4   0.91%     2   0.68s   1.02s
+  discodance               0:00.9   0.63%     1   0.94s   0.94s
+  temple                   0:00.4   0.24%     1   0.35s   0.35s
+  discobrain               0:00.3   0.22%     1   0.33s   0.33s
+  discodream               0:00.3   0.20%     1   0.30s   0.30s
+
+MORCEAU 12 — 10:12:47 à 10:15:29 — 2:42.5
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  red_speedracer           0:45.2  27.79%     4  11.29s  15.02s
+  sustain                  0:34.5  21.25%     9   3.84s   7.47s
+  fairies                  0:21.9  13.48%     8   2.74s   6.24s
+  chill_blue               0:21.6  13.29%     3   7.20s  14.34s
+  ambient1                 0:08.9   5.45%     2   4.43s   7.27s
+  sequence_fire            0:07.7   4.72%     2   3.84s   4.07s
+  sexy                     0:06.9   4.26%     1   6.93s   6.93s
+  discolaser               0:05.3   3.28%     1   5.33s   5.33s
+  temple                   0:04.5   2.79%     2   2.27s   4.26s
+  green_speedracer         0:02.7   1.69%     1   2.74s   2.74s
+  vintage                  0:01.6   1.01%     1   1.65s   1.65s
+  goosebumps               0:01.3   0.82%     1   1.33s   1.33s
+  electric                 0:00.3   0.16%     1   0.27s   0.27s
+
+MORCEAU 13 — 10:15:41 à 10:17:56 — 2:15.1
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  discolaser               0:49.0  36.24%     6   8.16s  12.88s
+  red_speedracer           0:23.0  17.01%     4   5.75s   8.35s
+  electric                 0:22.7  16.83%     6   3.79s   7.12s
+  blue_bass_racer          0:08.0   5.94%     1   8.02s   8.02s
+  chill_blue               0:06.9   5.10%     1   6.89s   6.89s
+  green_speedracer         0:06.4   4.77%     3   2.15s   2.70s
+  red_bass_pulse           0:03.9   2.92%     2   1.97s   2.64s
+  sustain                  0:03.8   2.81%     1   3.79s   3.79s
+  white_riser              0:03.5   2.58%     1   3.48s   3.48s
+  splatter                 0:02.8   2.07%     1   2.80s   2.80s
+  vintage                  0:02.0   1.46%     1   1.97s   1.97s
+  goosebumps               0:01.5   1.14%     1   1.54s   1.54s
+  hypno                    0:01.2   0.91%     1   1.23s   1.23s
+  fairies                  0:00.3   0.24%     1   0.33s   0.33s
+
+MORCEAU 14 — 10:18:06 à 10:21:52 — 3:46.6
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  red_speedracer           1:09.3  30.60%    15   4.62s  15.02s
+  white_speedracer         0:46.4  20.47%    15   3.09s  15.01s
+  chill_blue               0:35.5  15.65%     7   5.07s  24.32s
+  hypno                    0:18.4   8.11%    12   1.53s   4.50s
+  green_speedracer         0:11.2   4.93%    11   1.02s   3.16s
+  ambient1                 0:10.8   4.78%     3   3.61s   7.96s
+  electric                 0:09.2   4.06%    11   0.84s   1.71s
+  discolaser               0:07.3   3.23%     4   1.83s   3.67s
+  red_bass_pulse           0:06.4   2.81%     6   1.06s   3.54s
+  blue_bass_racer          0:05.9   2.61%     4   1.48s   3.25s
+  discodream               0:02.2   0.97%     1   2.20s   2.20s
+  fairies                  0:01.5   0.65%     2   0.74s   0.86s
+  white_riser              0:01.3   0.57%     2   0.65s   1.01s
+  splatter                 0:01.0   0.43%     1   0.97s   0.97s
+  orb_racer                0:00.3   0.12%     1   0.28s   0.28s
+
+MORCEAU 15 — 10:22:10 à 10:25:28 — 3:18.2
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  discolaser               0:41.2  20.79%     9   4.58s  15.11s
+  red_bass_pulse           0:31.8  16.04%     7   4.54s   8.01s
+  red_speedracer           0:26.8  13.50%     5   5.35s  15.01s
+  sustain                  0:21.5  10.86%     4   5.38s   8.37s
+  chill_blue               0:19.9  10.04%     2   9.95s  11.21s
+  vintage                  0:14.0   7.06%     3   4.66s   9.02s
+  rainbow_pulse            0:13.0   6.56%     5   2.60s   8.01s
+  discodream               0:08.1   4.07%     3   2.69s   3.88s
+  discodance               0:08.0   4.04%     1   8.01s   8.01s
+  fairies                  0:04.7   2.38%     2   2.36s   3.63s
+  sequence_fire            0:02.6   1.33%     1   2.63s   2.63s
+  ambient1                 0:02.4   1.19%     2   1.18s   1.67s
+  hypno                    0:02.3   1.15%     3   0.76s   1.68s
+  blue_bass_racer          0:02.0   1.01%     3   0.66s   1.34s
+
+MORCEAU 16 — 10:25:44 à 10:28:46 — 3:01.8
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  red_speedracer           0:53.1  29.23%     6   8.86s  15.01s
+  green_speedracer         0:52.5  28.89%     5  10.51s  15.03s
+  discolaser               0:21.9  12.04%     5   4.38s   9.03s
+  blue_bass_racer          0:16.0   8.82%     2   8.02s   8.02s
+  red_bass_pulse           0:15.7   8.66%     4   3.94s   8.99s
+  chill_blue               0:09.3   5.13%     1   9.32s   9.32s
+  hypno                    0:08.3   4.58%     4   2.08s   4.70s
+  goosebumps               0:02.4   1.33%     1   2.42s   2.42s
+  fairies                  0:02.4   1.32%     1   2.40s   2.40s
+
+MORCEAU 17 — 10:29:10 à 10:32:44 — 3:34.8
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  fairies                  0:27.7  12.89%    20   1.38s   8.02s
+  electric                 0:27.4  12.74%    12   2.28s   5.20s
+  red_bass_pulse           0:25.4  11.81%    10   2.54s   8.01s
+  sustain                  0:21.4   9.98%    18   1.19s   4.80s
+  vintage                  0:16.2   7.54%    13   1.24s   4.35s
+  discodream               0:12.5   5.84%    13   0.96s   2.16s
+  discolaser               0:12.3   5.73%     5   2.46s   3.56s
+  red_speedracer           0:10.9   5.06%     7   1.55s   3.54s
+  chill_blue               0:09.2   4.29%     3   3.07s   7.59s
+  rainbow_pulse            0:08.2   3.82%     8   1.03s   1.56s
+  ambient1                 0:08.0   3.75%     2   4.02s   4.42s
+  hypno                    0:06.6   3.10%     8   0.83s   1.29s
+  green_speedracer         0:06.5   3.04%     3   2.18s   2.72s
+  blue_bass_racer          0:05.5   2.56%     7   0.78s   1.29s
+  sexy                     0:03.5   1.65%     1   3.54s   3.54s
+  sequence_fire            0:03.3   1.54%     1   3.30s   3.30s
+  white_riser              0:03.2   1.49%     3   1.06s   1.80s
+  white_speedracer         0:01.8   0.83%     2   0.90s   1.05s
+  discobrain               0:01.6   0.74%     1   1.58s   1.58s
+  temple                   0:01.3   0.59%     1   1.26s   1.26s
+  discodance               0:01.2   0.55%     2   0.59s   0.64s
+  swamp                    0:00.7   0.32%     1   0.69s   0.69s
+  sequence_cosmic          0:00.3   0.15%     1   0.33s   0.33s
+
+MORCEAU 18 — 10:32:55 à 10:35:33 — 2:37.7
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  red_bass_pulse           0:29.9  18.96%     8   3.74s   8.01s
+  red_speedracer           0:28.3  17.96%    11   2.57s   9.11s
+  vintage                  0:16.0  10.12%    11   1.45s   3.04s
+  fairies                  0:13.6   8.60%    11   1.23s   7.43s
+  rainbow_pulse            0:11.3   7.17%     5   2.26s   7.50s
+  temple                   0:10.6   6.74%     6   1.77s   4.49s
+  chill_blue               0:10.0   6.36%     4   2.51s   4.20s
+  discodance               0:07.7   4.89%     5   1.54s   2.49s
+  discodream               0:06.5   4.11%     5   1.30s   3.14s
+  hypno                    0:05.0   3.19%     4   1.26s   1.79s
+  discolaser               0:03.2   2.03%     2   1.60s   2.86s
+  blue_bass_racer          0:03.2   2.00%     5   0.63s   0.94s
+  green_speedracer         0:02.7   1.69%     2   1.33s   2.18s
+  disco                    0:02.1   1.36%     2   1.07s   1.89s
+  white_speedracer         0:01.9   1.23%     1   1.94s   1.94s
+  sustain                  0:01.9   1.22%     2   0.96s   0.96s
+  ambient1                 0:01.5   0.96%     1   1.52s   1.52s
+  orb_racer                0:01.0   0.62%     1   0.98s   0.98s
+  electric                 0:00.7   0.42%     1   0.66s   0.66s
+  chill_red                0:00.3   0.20%     1   0.32s   0.32s
+  discobrain               0:00.3   0.18%     1   0.28s   0.28s
+
+MORCEAU 19 — 10:35:43 à 10:37:32 — 1:48.4
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  fairies                  0:32.8  30.28%     5   6.57s   8.01s
+  sustain                  0:15.0  13.87%     3   5.01s   6.85s
+  discodream               0:11.6  10.73%     2   5.81s   7.00s
+  red_bass_pulse           0:10.7   9.91%     2   5.37s   5.88s
+  vintage                  0:10.6   9.77%     3   3.53s   8.19s
+  chill_red                0:08.8   8.10%     3   2.93s   6.11s
+  ambient2                 0:06.3   5.79%     1   6.28s   6.28s
+  chill_blue               0:05.5   5.10%     1   5.53s   5.53s
+  sexy                     0:02.9   2.71%     2   1.47s   1.86s
+  ambient1                 0:02.1   1.90%     1   2.06s   2.06s
+  blue_bass_racer          0:02.0   1.85%     1   2.01s   2.01s
+
+MORCEAU 20 — 10:37:44 à 10:40:59 — 3:15.9
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  sustain                  0:26.3  13.40%    14   1.88s   4.40s
+  discolaser               0:26.2  13.40%     9   2.92s   8.23s
+  electric                 0:20.3  10.34%    10   2.03s   5.61s
+  red_speedracer           0:19.8  10.10%     8   2.47s   6.97s
+  fairies                  0:16.0   8.18%    12   1.33s   4.31s
+  chill_blue               0:13.4   6.86%     9   1.49s   4.20s
+  vintage                  0:10.7   5.48%    10   1.07s   2.84s
+  rainbow_pulse            0:09.1   4.63%     4   2.27s   6.14s
+  discodance               0:08.5   4.31%     4   2.11s   5.31s
+  goosebumps               0:08.0   4.08%     1   8.00s   8.00s
+  blue_bass_racer          0:06.9   3.50%     3   2.29s   3.37s
+  chill_red                0:05.3   2.69%     4   1.32s   2.29s
+  red_bass_pulse           0:05.1   2.62%     3   1.71s   2.84s
+  discodream               0:04.0   2.03%     3   1.33s   3.34s
+  ambient1                 0:03.2   1.64%     1   3.22s   3.22s
+  temple                   0:03.0   1.53%     3   1.00s   1.33s
+  hypno                    0:02.5   1.29%     2   1.26s   2.21s
+  swamp                    0:02.4   1.25%     1   2.44s   2.44s
+  sequence_fire            0:01.8   0.91%     1   1.78s   1.78s
+  white_speedracer         0:01.3   0.66%     1   1.29s   1.29s
+  wave                     0:01.1   0.58%     2   0.57s   0.86s
+  ambient2                 0:01.0   0.52%     1   1.02s   1.02s
+
+MORCEAU 21 — 10:41:16 à 10:44:04 — 2:47.9
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  sustain                  0:31.2  18.57%     4   7.79s   8.01s
+  discolaser               0:30.6  18.25%     3  10.21s  12.39s
+  fairies                  0:22.6  13.46%     4   5.65s   8.00s
+  electric                 0:18.4  10.96%     3   6.13s   8.01s
+  red_speedracer           0:18.2  10.85%     4   4.56s  11.63s
+  white_riser              0:13.4   7.97%     3   4.46s   8.02s
+  chill_blue               0:10.2   6.07%     4   2.55s   6.27s
+  red_bass_pulse           0:07.6   4.53%     4   1.90s   3.88s
+  blue_bass_racer          0:05.9   3.54%     1   5.94s   5.94s
+  rainbow_pulse            0:05.2   3.10%     3   1.74s   4.00s
+  sexy                     0:04.6   2.72%     3   1.52s   3.30s
+
+MORCEAU 22 — 10:44:38 à 10:47:34 — 2:56.8
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  wave                     1:27.6  49.55%     4  21.90s  30.02s
+  ambient2                 1:02.4  35.29%     5  12.48s  30.00s
+  ambient1                 0:18.5  10.48%     3   6.18s  10.02s
+  discodance               0:08.1   4.55%     1   8.05s   8.05s
+  chill_red                0:00.2   0.13%     1   0.23s   0.23s
+
+MORCEAU 23 — 10:47:46 à 10:50:17 — 2:31.0
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  disco                    0:31.8  21.07%     5   6.36s  11.00s
+  vintage                  0:31.6  20.95%     4   7.91s  17.10s
+  temple                   0:28.9  19.13%     8   3.61s   6.57s
+  ambient2                 0:23.4  15.49%     3   7.80s  15.78s
+  fairies                  0:16.3  10.82%     4   4.08s   8.00s
+  sustain                  0:14.6   9.69%     3   4.88s   6.96s
+  discodance               0:04.3   2.85%     1   4.30s   4.30s
+
+MORCEAU 24 — 10:50:57 à 10:52:32 — 1:34.7
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  blue_bass_racer          0:17.7  18.73%     3   5.91s   8.02s
+  discolaser               0:15.0  15.86%     1  15.02s  15.02s
+  discodance               0:14.8  15.63%     3   4.94s   8.04s
+  red_bass_pulse           0:13.1  13.82%     3   4.36s   8.01s
+  ambient2                 0:08.9   9.42%     1   8.93s   8.93s
+  sexy                     0:08.5   8.94%     1   8.46s   8.46s
+  temple                   0:08.1   8.57%     1   8.12s   8.12s
+  vintage                  0:06.4   6.78%     1   6.42s   6.42s
+  ambient1                 0:02.1   2.25%     2   1.07s   1.91s
+
+MORCEAU 25 — 10:52:42 à 10:54:04 — 1:21.3
+----------------------------------------------------------------------
+  Scène                     Durée    Part  Act.    Moy.     Max
+  temple                   0:24.0  29.53%     3   8.00s   8.01s
+  disco                    0:23.8  29.24%     4   5.94s  10.02s
+  ambient2                 0:13.1  16.08%     1  13.08s  13.08s
+  sustain                  0:09.0  11.10%     2   4.51s   8.00s
+  discodance               0:05.8   7.12%     1   5.79s   5.79s
+  vintage                  0:05.6   6.94%     3   1.88s   4.04s
+
+CONCLUSIONS
+-----------
+- 1418 activations en 1:17:37.4 : une toutes les 3.28 s.
+- Pendant les morceaux : une activation toutes les 3.06 s.
+- Première scène en durée : discolaser (7:39.9, 10.93 %).
+- Première scène en fréquence : fairies (145 activations).
+- Les sept premières scènes occupent 60.6 % de la musique.
+- Scène v6 inutilisée : bass_hopper_blue.
+- Les passages moyens très courts indiquent une forte rotation visuelle.
+- Les légers dépassements des limites de 8 ou 15 s sont compatibles avec la
+  cadence du routeur et la durée des impulsions OSC.
+
+Rapport généré automatiquement ; les durées sont des estimations reconstruites.
