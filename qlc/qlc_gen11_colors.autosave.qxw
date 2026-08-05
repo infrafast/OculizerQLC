@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Workspace>
-<Workspace xmlns="http://www.qlcplus.org/Workspace" CurrentWindow="IOMGR">
+<Workspace xmlns="http://www.qlcplus.org/Workspace" CurrentWindow="FIXANDFUNC">
  <Creator>
   <Name>Q Light Controller Plus</Name>
   <Version>5.2.2</Version>
@@ -401,48 +401,168 @@
   </Function>
   <Function ID="23" Type="Scene" Name="COLOR_00_NEUTRAL" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,255,9,255</FixtureVal>
+   <FixtureVal ID="1">7,255,8,255,9,255</FixtureVal>
+   <FixtureVal ID="2">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,255,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,255,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,255,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,255</FixtureVal>
+   <FixtureVal ID="3">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,255,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,255,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,255,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,255</FixtureVal>
+   <FixtureVal ID="7">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,255,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,255,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,255,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,255</FixtureVal>
+   <FixtureVal ID="8">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,255,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,255,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,255,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,255</FixtureVal>
+   <FixtureVal ID="9">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,255,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,255</FixtureVal>
+   <FixtureVal ID="10">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,255,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,255</FixtureVal>
   </Function>
   <Function ID="24" Type="Scene" Name="COLOR_BLUE" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,0,8,0,9,255</FixtureVal>
+   <FixtureVal ID="1">7,0,8,0,9,255</FixtureVal>
+   <FixtureVal ID="2">6,0,7,0,8,255,9,0,10,0,11,0,12,255,13,0,14,0,15,0,16,255,17,0,18,0,19,0,20,255,21,0,22,0,23,0,24,255,25,0,26,0,27,0,28,255,29,0,30,0,31,0,32,255,33,0,34,0,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="3">6,0,7,0,8,255,9,0,10,0,11,0,12,255,13,0,14,0,15,0,16,255,17,0,18,0,19,0,20,255,21,0,22,0,23,0,24,255,25,0,26,0,27,0,28,255,29,0,30,0,31,0,32,255,33,0,34,0,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="7">6,0,7,0,8,255,9,0,10,0,11,0,12,255,13,0,14,0,15,0,16,255,17,0,18,0,19,0,20,255,21,0,22,0,23,0,24,255,25,0,26,0,27,0,28,255,29,0,30,0,31,0,32,255,33,0,34,0,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="8">6,0,7,0,8,255,9,0,10,0,11,0,12,255,13,0,14,0,15,0,16,255,17,0,18,0,19,0,20,255,21,0,22,0,23,0,24,255,25,0,26,0,27,0,28,255,29,0,30,0,31,0,32,255,33,0,34,0,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="9">0,0,1,0,2,255,3,0,6,0,7,0,8,255,9,0,12,0,13,0,14,255,15,0,18,0,19,0,20,255,21,0</FixtureVal>
+   <FixtureVal ID="10">0,0,1,0,2,255,3,0,6,0,7,0,8,255,9,0,12,0,13,0,14,255,15,0,18,0,19,0,20,255,21,0</FixtureVal>
   </Function>
   <Function ID="25" Type="Scene" Name="COLOR_PINK" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,0,9,128</FixtureVal>
+   <FixtureVal ID="1">7,255,8,0,9,128</FixtureVal>
+   <FixtureVal ID="2">6,255,7,0,8,128,9,0,10,255,11,0,12,128,13,0,14,255,15,0,16,128,17,0,18,255,19,0,20,128,21,0,22,255,23,0,24,128,25,0,26,255,27,0,28,128,29,0,30,255,31,0,32,128,33,0,34,255,35,0,36,128,37,0</FixtureVal>
+   <FixtureVal ID="3">6,255,7,0,8,128,9,0,10,255,11,0,12,128,13,0,14,255,15,0,16,128,17,0,18,255,19,0,20,128,21,0,22,255,23,0,24,128,25,0,26,255,27,0,28,128,29,0,30,255,31,0,32,128,33,0,34,255,35,0,36,128,37,0</FixtureVal>
+   <FixtureVal ID="7">6,255,7,0,8,128,9,0,10,255,11,0,12,128,13,0,14,255,15,0,16,128,17,0,18,255,19,0,20,128,21,0,22,255,23,0,24,128,25,0,26,255,27,0,28,128,29,0,30,255,31,0,32,128,33,0,34,255,35,0,36,128,37,0</FixtureVal>
+   <FixtureVal ID="8">6,255,7,0,8,128,9,0,10,255,11,0,12,128,13,0,14,255,15,0,16,128,17,0,18,255,19,0,20,128,21,0,22,255,23,0,24,128,25,0,26,255,27,0,28,128,29,0,30,255,31,0,32,128,33,0,34,255,35,0,36,128,37,0</FixtureVal>
+   <FixtureVal ID="9">0,255,1,0,2,128,3,0,6,255,7,0,8,128,9,0,12,255,13,0,14,128,15,0,18,255,19,0,20,128,21,0</FixtureVal>
+   <FixtureVal ID="10">0,255,1,0,2,128,3,0,6,255,7,0,8,128,9,0,12,255,13,0,14,128,15,0,18,255,19,0,20,128,21,0</FixtureVal>
   </Function>
   <Function ID="26" Type="Scene" Name="COLOR_PURPLE" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,128,8,0,9,255</FixtureVal>
+   <FixtureVal ID="1">7,128,8,0,9,255</FixtureVal>
+   <FixtureVal ID="2">6,128,7,0,8,255,9,0,10,128,11,0,12,255,13,0,14,128,15,0,16,255,17,0,18,128,19,0,20,255,21,0,22,128,23,0,24,255,25,0,26,128,27,0,28,255,29,0,30,128,31,0,32,255,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="3">6,128,7,0,8,255,9,0,10,128,11,0,12,255,13,0,14,128,15,0,16,255,17,0,18,128,19,0,20,255,21,0,22,128,23,0,24,255,25,0,26,128,27,0,28,255,29,0,30,128,31,0,32,255,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="7">6,128,7,0,8,255,9,0,10,128,11,0,12,255,13,0,14,128,15,0,16,255,17,0,18,128,19,0,20,255,21,0,22,128,23,0,24,255,25,0,26,128,27,0,28,255,29,0,30,128,31,0,32,255,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="8">6,128,7,0,8,255,9,0,10,128,11,0,12,255,13,0,14,128,15,0,16,255,17,0,18,128,19,0,20,255,21,0,22,128,23,0,24,255,25,0,26,128,27,0,28,255,29,0,30,128,31,0,32,255,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="9">0,128,1,0,2,255,3,0,6,128,7,0,8,255,9,0,12,128,13,0,14,255,15,0,18,128,19,0,20,255,21,0</FixtureVal>
+   <FixtureVal ID="10">0,128,1,0,2,255,3,0,6,128,7,0,8,255,9,0,12,128,13,0,14,255,15,0,18,128,19,0,20,255,21,0</FixtureVal>
   </Function>
   <Function ID="27" Type="Scene" Name="COLOR_RED" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,0,9,0</FixtureVal>
+   <FixtureVal ID="1">7,255,8,0,9,0</FixtureVal>
+   <FixtureVal ID="2">6,255,7,0,8,0,9,0,10,255,11,0,12,0,13,0,14,255,15,0,16,0,17,0,18,255,19,0,20,0,21,0,22,255,23,0,24,0,25,0,26,255,27,0,28,0,29,0,30,255,31,0,32,0,33,0,34,255,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="3">6,255,7,0,8,0,9,0,10,255,11,0,12,0,13,0,14,255,15,0,16,0,17,0,18,255,19,0,20,0,21,0,22,255,23,0,24,0,25,0,26,255,27,0,28,0,29,0,30,255,31,0,32,0,33,0,34,255,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="7">6,255,7,0,8,0,9,0,10,255,11,0,12,0,13,0,14,255,15,0,16,0,17,0,18,255,19,0,20,0,21,0,22,255,23,0,24,0,25,0,26,255,27,0,28,0,29,0,30,255,31,0,32,0,33,0,34,255,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="8">6,255,7,0,8,0,9,0,10,255,11,0,12,0,13,0,14,255,15,0,16,0,17,0,18,255,19,0,20,0,21,0,22,255,23,0,24,0,25,0,26,255,27,0,28,0,29,0,30,255,31,0,32,0,33,0,34,255,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="9">0,255,1,0,2,0,3,0,6,255,7,0,8,0,9,0,12,255,13,0,14,0,15,0,18,255,19,0,20,0,21,0</FixtureVal>
+   <FixtureVal ID="10">0,255,1,0,2,0,3,0,6,255,7,0,8,0,9,0,12,255,13,0,14,0,15,0,18,255,19,0,20,0,21,0</FixtureVal>
   </Function>
   <Function ID="28" Type="Scene" Name="COLOR_GREEN" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,0,8,255,9,0</FixtureVal>
+   <FixtureVal ID="1">7,0,8,255,9,0</FixtureVal>
+   <FixtureVal ID="2">6,0,7,255,8,0,9,0,10,0,11,255,12,0,13,0,14,0,15,255,16,0,17,0,18,0,19,255,20,0,21,0,22,0,23,255,24,0,25,0,26,0,27,255,28,0,29,0,30,0,31,255,32,0,33,0,34,0,35,255,36,0,37,0</FixtureVal>
+   <FixtureVal ID="3">6,0,7,255,8,0,9,0,10,0,11,255,12,0,13,0,14,0,15,255,16,0,17,0,18,0,19,255,20,0,21,0,22,0,23,255,24,0,25,0,26,0,27,255,28,0,29,0,30,0,31,255,32,0,33,0,34,0,35,255,36,0,37,0</FixtureVal>
+   <FixtureVal ID="7">6,0,7,255,8,0,9,0,10,0,11,255,12,0,13,0,14,0,15,255,16,0,17,0,18,0,19,255,20,0,21,0,22,0,23,255,24,0,25,0,26,0,27,255,28,0,29,0,30,0,31,255,32,0,33,0,34,0,35,255,36,0,37,0</FixtureVal>
+   <FixtureVal ID="8">6,0,7,255,8,0,9,0,10,0,11,255,12,0,13,0,14,0,15,255,16,0,17,0,18,0,19,255,20,0,21,0,22,0,23,255,24,0,25,0,26,0,27,255,28,0,29,0,30,0,31,255,32,0,33,0,34,0,35,255,36,0,37,0</FixtureVal>
+   <FixtureVal ID="9">0,0,1,255,2,0,3,0,6,0,7,255,8,0,9,0,12,0,13,255,14,0,15,0,18,0,19,255,20,0,21,0</FixtureVal>
+   <FixtureVal ID="10">0,0,1,255,2,0,3,0,6,0,7,255,8,0,9,0,12,0,13,255,14,0,15,0,18,0,19,255,20,0,21,0</FixtureVal>
   </Function>
   <Function ID="29" Type="Scene" Name="COLOR_WHITE" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,255,9,255</FixtureVal>
+   <FixtureVal ID="1">7,255,8,255,9,255</FixtureVal>
+   <FixtureVal ID="2">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,255,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,255,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,255,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,255</FixtureVal>
+   <FixtureVal ID="3">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,255,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,255,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,255,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,255</FixtureVal>
+   <FixtureVal ID="7">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,255,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,255,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,255,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,255</FixtureVal>
+   <FixtureVal ID="8">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,255,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,255,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,255,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,255</FixtureVal>
+   <FixtureVal ID="9">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,255,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,255</FixtureVal>
+   <FixtureVal ID="10">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,255,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,255</FixtureVal>
   </Function>
   <Function ID="30" Type="Scene" Name="COLOR_RAINBOW" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,0,9,0</FixtureVal>
+   <FixtureVal ID="1">7,255,8,60,9,0</FixtureVal>
+   <FixtureVal ID="2">6,255,7,0,8,0,9,0,10,255,11,60,12,0,13,0,14,255,15,255,16,0,17,0,18,0,19,255,20,0,21,0,22,0,23,255,24,255,25,0,26,0,27,0,28,255,29,0,30,128,31,0,32,255,33,0,34,255,35,0,36,128,37,0</FixtureVal>
+   <FixtureVal ID="3">6,255,7,0,8,0,9,0,10,255,11,60,12,0,13,0,14,255,15,255,16,0,17,0,18,0,19,255,20,0,21,0,22,0,23,255,24,255,25,0,26,0,27,0,28,255,29,0,30,128,31,0,32,230,33,0,34,255,35,0,36,128,37,0</FixtureVal>
+   <FixtureVal ID="7">6,255,7,0,8,0,9,0,10,255,11,60,12,0,13,0,14,255,15,255,16,0,17,0,18,0,19,255,20,0,21,0,22,0,23,255,24,255,25,0,26,0,27,0,28,255,29,0,30,128,31,0,32,255,33,0,34,255,35,0,36,128,37,0</FixtureVal>
+   <FixtureVal ID="8">6,255,7,0,8,0,9,0,10,255,11,60,12,0,13,0,14,255,15,255,16,0,17,0,18,0,19,255,20,0,21,0,22,0,23,255,24,255,25,0,26,0,27,0,28,255,29,0,30,128,31,0,32,255,33,0,34,255,35,0,36,128,37,0</FixtureVal>
+   <FixtureVal ID="9">0,255,1,0,2,0,3,0,6,255,7,60,8,0,9,0,12,255,13,255,14,0,15,0,18,0,19,255,20,0,21,0</FixtureVal>
+   <FixtureVal ID="10">0,255,1,0,2,0,3,0,6,255,7,60,8,0,9,0,12,255,13,255,14,0,15,0,18,0,19,255,20,0,21,0</FixtureVal>
   </Function>
   <Function ID="31" Type="Scene" Name="COLOR_AMBER" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,120,9,0</FixtureVal>
+   <FixtureVal ID="1">7,255,8,120,9,0</FixtureVal>
+   <FixtureVal ID="2">6,255,7,120,8,0,9,0,10,255,11,120,12,0,13,0,14,255,15,120,16,0,17,0,18,255,19,120,20,0,21,0,22,255,23,120,24,0,25,0,26,255,27,120,28,0,29,0,30,255,31,120,32,0,33,0,34,255,35,120,36,0,37,0</FixtureVal>
+   <FixtureVal ID="3">6,255,7,120,8,0,9,0,10,255,11,120,12,0,13,0,14,255,15,120,16,0,17,0,18,255,19,120,20,0,21,0,22,255,23,120,24,0,25,0,26,255,27,120,28,0,29,0,30,255,31,120,32,0,33,0,34,255,35,120,36,0,37,0</FixtureVal>
+   <FixtureVal ID="7">6,255,7,120,8,0,9,0,10,255,11,120,12,0,13,0,14,255,15,120,16,0,17,0,18,255,19,120,20,0,21,0,22,255,23,120,24,0,25,0,26,255,27,120,28,0,29,0,30,255,31,120,32,0,33,0,34,255,35,120,36,0,37,0</FixtureVal>
+   <FixtureVal ID="8">6,255,7,120,8,0,9,0,10,255,11,120,12,0,13,0,14,255,15,120,16,0,17,0,18,255,19,120,20,0,21,0,22,255,23,120,24,0,25,0,26,255,27,120,28,0,29,0,30,255,31,120,32,0,33,0,34,255,35,120,36,0,37,0</FixtureVal>
+   <FixtureVal ID="9">0,255,1,120,2,0,3,0,6,255,7,120,8,0,9,0,12,255,13,120,14,0,15,0,18,255,19,120,20,0,21,0</FixtureVal>
+   <FixtureVal ID="10">0,255,1,120,2,0,3,0,6,255,7,120,8,0,9,0,12,255,13,120,14,0,15,0,18,255,19,120,20,0,21,0</FixtureVal>
   </Function>
   <Function ID="32" Type="Scene" Name="COLOR_BLUE_PURPLE" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,0,8,0,9,255</FixtureVal>
+   <FixtureVal ID="1">7,128,8,0,9,255</FixtureVal>
+   <FixtureVal ID="2">6,0,7,0,8,255,9,0,10,128,11,0,12,255,13,0,14,0,15,0,16,255,17,0,18,128,19,0,20,255,21,0,22,0,23,0,24,255,25,0,26,128,27,0,28,255,29,0,30,0,31,0,32,255,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="3">6,0,7,0,8,255,9,0,10,128,11,0,12,255,13,0,14,0,15,0,16,255,17,0,18,128,19,0,20,255,21,0,22,0,23,0,24,255,25,0,26,128,27,0,28,255,29,0,30,0,31,0,32,255,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="7">6,0,7,0,8,255,9,0,10,128,11,0,12,255,13,0,14,0,15,0,16,255,17,0,18,128,19,0,20,255,21,0,22,0,23,0,24,255,25,0,26,128,27,0,28,255,29,0,30,0,31,0,32,255,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="8">6,0,7,0,8,255,9,0,10,128,11,0,12,255,13,0,14,0,15,0,16,255,17,0,18,128,19,0,20,255,21,0,22,0,23,0,24,255,25,0,26,128,27,0,28,255,29,0,30,0,31,0,32,255,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="9">0,0,1,0,2,255,3,0,6,128,7,0,8,255,9,0,12,0,13,0,14,255,15,0,18,128,19,0,20,255,21,0</FixtureVal>
+   <FixtureVal ID="10">0,0,1,0,2,255,3,0,6,128,7,0,8,255,9,0,12,0,13,0,14,255,15,0,18,128,19,0,20,255,21,0</FixtureVal>
   </Function>
   <Function ID="33" Type="Scene" Name="COLOR_PINK_PURPLE" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,0,9,128</FixtureVal>
+   <FixtureVal ID="1">7,128,8,0,9,255</FixtureVal>
+   <FixtureVal ID="2">6,255,7,0,8,128,9,0,10,128,11,0,12,255,13,0,14,255,15,0,16,128,17,0,18,128,19,0,20,255,21,0,22,255,23,0,24,128,25,0,26,128,27,0,28,255,29,0,30,255,31,0,32,128,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="3">6,255,7,0,8,128,9,0,10,128,11,0,12,255,13,0,14,255,15,0,16,128,17,0,18,128,19,0,20,255,21,0,22,255,23,0,24,128,25,0,26,128,27,0,28,255,29,0,30,255,31,0,32,128,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="7">6,255,7,0,8,128,9,0,10,128,11,0,12,255,13,0,14,255,15,0,16,128,17,0,18,128,19,0,20,255,21,0,22,255,23,0,24,128,25,0,26,128,27,0,28,255,29,0,30,255,31,0,32,128,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="8">6,255,7,0,8,128,9,0,10,128,11,0,12,255,13,0,14,255,15,0,16,128,17,0,18,128,19,0,20,255,21,0,22,255,23,0,24,128,25,0,26,128,27,0,28,255,29,0,30,255,31,0,32,128,33,0,34,128,35,0,36,255,37,0</FixtureVal>
+   <FixtureVal ID="9">0,255,1,0,2,128,3,0,6,128,7,0,8,255,9,0,12,255,13,0,14,128,15,0,18,128,19,0,20,255,21,0</FixtureVal>
+   <FixtureVal ID="10">0,255,1,0,2,128,3,0,6,128,7,0,8,255,9,0,12,255,13,0,14,128,15,0,18,128,19,0,20,255,21,0</FixtureVal>
   </Function>
   <Function ID="34" Type="Scene" Name="COLOR_RED_ORANGE" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,0,9,0</FixtureVal>
+   <FixtureVal ID="1">7,255,8,60,9,0</FixtureVal>
+   <FixtureVal ID="2">6,255,7,0,8,0,9,0,10,255,11,60,12,0,13,0,14,255,15,0,16,0,17,0,18,255,19,60,20,0,21,0,22,255,23,0,24,0,25,0,26,255,27,60,28,0,29,0,30,255,31,0,32,0,33,0,34,255,35,60,36,0,37,0</FixtureVal>
+   <FixtureVal ID="3">6,255,7,0,8,0,9,0,10,255,11,60,12,0,13,0,14,255,15,0,16,0,17,0,18,255,19,60,20,0,21,0,22,255,23,0,24,0,25,0,26,255,27,60,28,0,29,0,30,255,31,0,32,0,33,0,34,255,35,60,36,0,37,0</FixtureVal>
+   <FixtureVal ID="7">6,255,7,0,8,0,9,0,10,255,11,60,12,0,13,0,14,255,15,0,16,0,17,0,18,255,19,60,20,0,21,0,22,255,23,0,24,0,25,0,26,255,27,60,28,0,29,0,30,255,31,0,32,0,33,0,34,255,35,60,36,0,37,0</FixtureVal>
+   <FixtureVal ID="8">6,255,7,0,8,0,9,0,10,255,11,60,12,0,13,0,14,255,15,0,16,0,17,0,18,255,19,60,20,0,21,0,22,255,23,0,24,0,25,0,26,255,27,60,28,0,29,0,30,255,31,0,32,0,33,0,34,255,35,60,36,0,37,0</FixtureVal>
+   <FixtureVal ID="9">0,255,1,0,2,0,3,0,6,255,7,60,8,0,9,0,12,255,13,0,14,0,15,0,18,255,19,60,20,0,21,0</FixtureVal>
+   <FixtureVal ID="10">0,255,1,0,2,0,3,0,6,255,7,60,8,0,9,0,12,255,13,0,14,0,15,0,18,255,19,60,20,0,21,0</FixtureVal>
   </Function>
   <Function ID="35" Type="Scene" Name="COLOR_WHITE_BLACK" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,255,9,255</FixtureVal>
+   <FixtureVal ID="1">7,0,8,0,9,0</FixtureVal>
+   <FixtureVal ID="2">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="3">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="7">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="8">6,0,7,0,8,0,9,255,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,255,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,255,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,255,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="9">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,0,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,0</FixtureVal>
+   <FixtureVal ID="10">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,0,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,0</FixtureVal>
   </Function>
   <Function ID="36" Type="Scene" Name="COLOR_BLUE_BLACK" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,0,8,0,9,255</FixtureVal>
+   <FixtureVal ID="1">7,0,8,0,9,0</FixtureVal>
+   <FixtureVal ID="2">6,0,7,0,8,255,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,255,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,255,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,255,33,0,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="3">6,0,7,0,8,255,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,255,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,255,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,255,33,0,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="7">6,0,7,0,8,255,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,255,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,255,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,255,33,0,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="8">6,0,7,0,8,255,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,255,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,255,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,255,33,0,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="9">0,0,1,0,2,255,3,0,6,0,7,0,8,0,9,0,12,0,13,0,14,255,15,0,18,0,19,0,20,0,21,0</FixtureVal>
+   <FixtureVal ID="10">0,0,1,0,2,255,3,0,6,0,7,0,8,0,9,0,12,0,13,0,14,255,15,0,18,0,19,0,20,0,21,0</FixtureVal>
   </Function>
   <Function ID="37" Type="Scene" Name="COLOR_RGB" Path="Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">7,255,8,0,9,0</FixtureVal>
+   <FixtureVal ID="1">7,0,8,255,9,0</FixtureVal>
+   <FixtureVal ID="2">6,255,7,0,8,0,9,0,10,0,11,255,12,0,13,0,14,0,15,0,16,255,17,0,18,255,19,0,20,0,21,0,22,0,23,255,24,0,25,0,26,0,27,0,28,255,29,0,30,255,31,0,32,0,33,0,34,0,35,255,36,0,37,0</FixtureVal>
+   <FixtureVal ID="3">6,255,7,0,8,0,9,0,10,0,11,255,12,0,13,0,14,0,15,0,16,255,17,0,18,255,19,0,20,0,21,0,22,0,23,255,24,0,25,0,26,0,27,0,28,255,29,0,30,255,31,0,32,0,33,0,34,0,35,255,36,0,37,0</FixtureVal>
+   <FixtureVal ID="7">6,255,7,0,8,0,9,0,10,0,11,255,12,0,13,0,14,0,15,0,16,255,17,0,18,255,19,0,20,0,21,0,22,0,23,255,24,0,25,0,26,0,27,0,28,255,29,0,30,255,31,0,32,0,33,0,34,0,35,255,36,0,37,0</FixtureVal>
+   <FixtureVal ID="8">6,255,7,0,8,0,9,0,10,0,11,255,12,0,13,0,14,0,15,0,16,255,17,0,18,255,19,0,20,0,21,0,22,0,23,255,24,0,25,0,26,0,27,0,28,255,29,0,30,255,31,0,32,0,33,0,34,0,35,255,36,0,37,0</FixtureVal>
+   <FixtureVal ID="9">0,255,1,0,2,0,3,0,6,0,7,255,8,0,9,0,12,0,13,0,14,255,15,0,18,255,19,0,20,0,21,0</FixtureVal>
+   <FixtureVal ID="10">0,255,1,0,2,0,3,0,6,0,7,255,8,0,9,0,12,0,13,0,14,255,15,0,18,255,19,0,20,0,21,0</FixtureVal>
   </Function>
   <Function ID="38" Type="Chaser" Name="FX_PULSE" Path="FX">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
@@ -1075,7 +1195,7 @@
     <StartOffset>0</StartOffset>
    </Fixture>
    <PropagationMode>Parallel</PropagationMode>
-   <Speed FadeIn="0" FadeOut="0" Duration="8496"/>
+   <Speed FadeIn="0" FadeOut="0" Duration="16992"/>
    <Direction>Forward</Direction>
    <RunOrder>PingPong</RunOrder>
    <Algorithm>Line</Algorithm>
@@ -1097,7 +1217,7 @@
   </Function>
   <Function ID="141" Type="EFX" Name="EFX_BEAT_FAST_SWEEP" Path="Beat/Fast">
    <PropagationMode>Parallel</PropagationMode>
-   <Speed FadeIn="0" FadeOut="0" Duration="8496"/>
+   <Speed FadeIn="0" FadeOut="0" Duration="16992"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <Algorithm>Line</Algorithm>
@@ -1119,7 +1239,7 @@
   </Function>
   <Function ID="142" Type="EFX" Name="EFX_BEAT_FAST_ZIGZAG" Path="Beat/Fast">
    <PropagationMode>Parallel</PropagationMode>
-   <Speed FadeIn="0" FadeOut="0" Duration="8496"/>
+   <Speed FadeIn="0" FadeOut="0" Duration="16992"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <Algorithm>SquareChoppy</Algorithm>
@@ -1141,7 +1261,7 @@
   </Function>
   <Function ID="143" Type="EFX" Name="EFX_BEAT_FAST_DIMMER" Path="Beat/Fast">
    <PropagationMode>Parallel</PropagationMode>
-   <Speed FadeIn="0" FadeOut="0" Duration="8496"/>
+   <Speed FadeIn="0" FadeOut="0" Duration="16992"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <Algorithm>Square</Algorithm>
@@ -1392,15 +1512,6 @@
     <SliderMode ValueDisplayStyle="Exact">Adjust</SliderMode>
     <Level LowLimit="0" HighLimit="255" Value="0"/>
    </Slider>
-   <Slider Caption="high" ID="6" WidgetStyle="Slider" InvertedAppearance="false">
-    <WindowState Visible="True" X="0" Y="446" Width="91" Height="134"/>
-    <Appearance>
-     <BackgroundColor>4282664004</BackgroundColor>
-    </Appearance>
-    <Input ID="0" Universe="0" Channel="50695"/>
-    <SliderMode ValueDisplayStyle="Exact">Adjust</SliderMode>
-    <Level LowLimit="0" HighLimit="255" Value="143"/>
-   </Slider>
    <SoloFrame Caption="Scenes Oculizer" ID="68">
     <WindowState Visible="True" X="103" Y="0" Width="1168" Height="515"/>
     <AllowResize>True</AllowResize>
@@ -1415,101 +1526,54 @@
      <ShowEnableButton>True</ShowEnableButton>
      <Collapsed>False</Collapsed>
      <Disabled>False</Disabled>
-     <Button Caption="SEQUENCE FIRE" ID="52">
-      <WindowState Visible="True" X="237" Y="439" Width="112" Height="54"/>
+     <Button Caption="ELECTRIC" ID="28">
+      <WindowState Visible="True" X="5" Y="380" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4292225064</BackgroundColor>
       </Appearance>
-      <Function ID="123"/>
+      <Function ID="99"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="BASS HOPPER BLUE" ID="9">
-      <WindowState Visible="True" X="5" Y="321" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
-      </Appearance>
-      <Function ID="80"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BASS HOPPER PINK" ID="10">
-      <WindowState Visible="True" X="121" Y="321" Width="112" Height="54"/>
+     <Button Caption="PRANCE" ID="41">
+      <WindowState Visible="True" X="5" Y="254" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="81"/>
+      <Function ID="112"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="WHITE RISER" ID="65">
-      <WindowState Visible="True" X="933" Y="254" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4280393404</BackgroundColor>
-      </Appearance>
-      <Function ID="136"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BLUE BASS RACER" ID="14">
-      <WindowState Visible="True" X="469" Y="321" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
-      </Appearance>
-      <Function ID="85"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BLUE FLICKER" ID="15">
-      <WindowState Visible="True" X="237" Y="195" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="86"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="GREEN BASS PULSE" ID="33">
-      <WindowState Visible="True" X="237" Y="380" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="104"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BLUE PULSE" ID="16">
-      <WindowState Visible="True" X="353" Y="195" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="87"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="GOOSEBUMPS" ID="32">
-      <WindowState Visible="True" X="701" Y="69" Width="112" Height="54"/>
+     <Button Caption="SUSTAIN" ID="54">
+      <WindowState Visible="True" X="933" Y="69" Width="112" Height="54"/>
       <Appearance>
        <ForegroundColor>4278190080</ForegroundColor>
        <BackgroundColor>4287548134</BackgroundColor>
       </Appearance>
-      <Function ID="103"/>
+      <Function ID="125"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="HELL" ID="35">
-      <WindowState Visible="True" X="469" Y="380" Width="112" Height="54"/>
+     <Button Caption="LASER STROBE" ID="37">
+      <WindowState Visible="True" X="585" Y="380" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="106"/>
+      <Function ID="108"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="GREEN SPEEDRACER" ID="34">
-      <WindowState Visible="True" X="353" Y="380" Width="112" Height="54"/>
+     <Button Caption="RGB" ID="2">
+      <WindowState Visible="True" X="5" Y="195" Width="112" Height="54"/>
       <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
+       <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="105"/>
+      <Function ID="77"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="SPLATTER" ID="53">
-      <WindowState Visible="True" X="353" Y="439" Width="112" Height="54"/>
+     <Button Caption="AMBIENT1" ID="7">
+      <WindowState Visible="True" X="5" Y="69" Width="112" Height="54"/>
       <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
+       <ForegroundColor>4278190080</ForegroundColor>
+       <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="124"/>
+      <Function ID="78"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="BLOOP" ID="12">
@@ -1528,86 +1592,61 @@
       <Function ID="84"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="SUSTAIN" ID="54">
-      <WindowState Visible="True" X="933" Y="69" Width="112" Height="54"/>
+     <Button Caption="BLUE BASS RACER" ID="14">
+      <WindowState Visible="True" X="469" Y="321" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="85"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="BLUE FLICKER" ID="15">
+      <WindowState Visible="True" X="237" Y="195" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="86"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="DISCOLASER" ID="27">
+      <WindowState Visible="True" X="1049" Y="321" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="98"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="HELL" ID="35">
+      <WindowState Visible="True" X="469" Y="380" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="106"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="BLUE PULSE" ID="16">
+      <WindowState Visible="True" X="353" Y="195" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="87"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="SEQUENCE FIRE" ID="52">
+      <WindowState Visible="True" X="237" Y="439" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="123"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="CHILL BLUE" ID="20">
+      <WindowState Visible="True" X="237" Y="69" Width="112" Height="54"/>
       <Appearance>
        <ForegroundColor>4278190080</ForegroundColor>
        <BackgroundColor>4287548134</BackgroundColor>
       </Appearance>
-      <Function ID="125"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="PINK SPEEDRACER" ID="40">
-      <WindowState Visible="True" X="817" Y="380" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="111"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="DISCOBRAIN" ID="24">
-      <WindowState Visible="True" X="817" Y="321" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
-      </Appearance>
-      <Function ID="95"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="QUASAR" ID="42">
-      <WindowState Visible="True" X="933" Y="380" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="113"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="RED PULSE" ID="47">
-      <WindowState Visible="True" X="353" Y="254" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="118"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="PRANCE" ID="41">
-      <WindowState Visible="True" X="5" Y="254" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="112"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="RED SPEEDRACER" ID="48">
-      <WindowState Visible="True" X="121" Y="439" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
-      </Appearance>
-      <Function ID="119"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="RAINBOW PULSE" ID="43">
-      <WindowState Visible="True" X="1049" Y="380" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
-      </Appearance>
-      <Function ID="114"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="WAVE" ID="60">
-      <WindowState Visible="True" X="237" Y="128" Width="112" Height="54"/>
-      <Appearance>
-       <ForegroundColor>4278190080</ForegroundColor>
-       <BackgroundColor>4287548134</BackgroundColor>
-      </Appearance>
-      <Function ID="131"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BRAINBLASTER" ID="19">
-      <WindowState Visible="True" X="701" Y="321" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="90"/>
+      <Function ID="91"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="TEMPLE" ID="57">
@@ -1617,6 +1656,23 @@
        <BackgroundColor>4287548134</BackgroundColor>
       </Appearance>
       <Function ID="128"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="CHILL RED" ID="22">
+      <WindowState Visible="True" X="469" Y="69" Width="112" Height="54"/>
+      <Appearance>
+       <ForegroundColor>4278190080</ForegroundColor>
+       <BackgroundColor>4287548134</BackgroundColor>
+      </Appearance>
+      <Function ID="93"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="SPLATTER" ID="53">
+      <WindowState Visible="True" X="353" Y="439" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="124"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="SWAMP" ID="56">
@@ -1636,12 +1692,84 @@
       <Function ID="126"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="TRANCE" ID="58">
-      <WindowState Visible="True" X="585" Y="439" Width="112" Height="54"/>
+     <Button Caption="HYPNO" ID="36">
+      <WindowState Visible="True" X="933" Y="195" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4280393404</BackgroundColor>
+      </Appearance>
+      <Function ID="107"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="SEQUENCE COSMIC" ID="51">
+      <WindowState Visible="True" X="585" Y="254" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4280393404</BackgroundColor>
+      </Appearance>
+      <Function ID="122"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="RIGHTROUND" ID="49">
+      <WindowState Visible="True" X="469" Y="254" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="129"/>
+      <Function ID="120"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="PARTY" ID="39">
+      <WindowState Visible="True" X="701" Y="380" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="110"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="RED FLICKER" ID="46">
+      <WindowState Visible="True" X="237" Y="254" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="117"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="BASS HOPPER BLUE" ID="9">
+      <WindowState Visible="True" X="5" Y="321" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="80"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="BASS HOPPER PINK" ID="10">
+      <WindowState Visible="True" X="121" Y="321" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="81"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="BLUE SPEEDRACER" ID="18">
+      <WindowState Visible="True" X="585" Y="321" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="89"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="BASS HOPPER RAINBOW" ID="11">
+      <WindowState Visible="True" X="237" Y="321" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="82"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="DISCODANCE" ID="25">
+      <WindowState Visible="True" X="933" Y="321" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="96"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="VINTAGE" ID="59">
@@ -1653,47 +1781,6 @@
       <Function ID="130"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="CHILL RED" ID="22">
-      <WindowState Visible="True" X="469" Y="69" Width="112" Height="54"/>
-      <Appearance>
-       <ForegroundColor>4278190080</ForegroundColor>
-       <BackgroundColor>4287548134</BackgroundColor>
-      </Appearance>
-      <Function ID="93"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BASS HOPPER RAINBOW" ID="11">
-      <WindowState Visible="True" X="237" Y="321" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="82"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="SEQUENCE COSMIC" ID="51">
-      <WindowState Visible="True" X="585" Y="254" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4280393404</BackgroundColor>
-      </Appearance>
-      <Function ID="122"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="HYPNO" ID="36">
-      <WindowState Visible="True" X="933" Y="195" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4280393404</BackgroundColor>
-      </Appearance>
-      <Function ID="107"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BLUE SPEEDRACER" ID="18">
-      <WindowState Visible="True" X="585" Y="321" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="89"/>
-      <Action>Toggle</Action>
-     </Button>
      <Button Caption="SEXY" ID="50">
       <WindowState Visible="True" X="817" Y="69" Width="112" Height="54"/>
       <Appearance>
@@ -1701,6 +1788,14 @@
        <BackgroundColor>4287548134</BackgroundColor>
       </Appearance>
       <Function ID="121"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="DISCODREAM" ID="26">
+      <WindowState Visible="True" X="701" Y="195" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4280393404</BackgroundColor>
+      </Appearance>
+      <Function ID="97"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="BLUE RISER" ID="17">
@@ -1711,29 +1806,77 @@
       <Function ID="88"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="RED BASS PULSE" ID="44">
-      <WindowState Visible="True" X="5" Y="439" Width="112" Height="54"/>
+     <Button Caption="BRAINBLASTER" ID="19">
+      <WindowState Visible="True" X="701" Y="321" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="90"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="TRANCE" ID="58">
+      <WindowState Visible="True" X="585" Y="439" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="129"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="RED ECHO" ID="45">
+      <WindowState Visible="True" X="121" Y="254" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="116"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="DISCOBRAIN" ID="24">
+      <WindowState Visible="True" X="817" Y="321" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4292225064</BackgroundColor>
       </Appearance>
-      <Function ID="115"/>
+      <Function ID="95"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="ORB RACER" ID="38">
-      <WindowState Visible="True" X="1049" Y="195" Width="112" Height="54"/>
+     <Button Caption="WAVE" ID="60">
+      <WindowState Visible="True" X="237" Y="128" Width="112" Height="54"/>
+      <Appearance>
+       <ForegroundColor>4278190080</ForegroundColor>
+       <BackgroundColor>4287548134</BackgroundColor>
+      </Appearance>
+      <Function ID="131"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="GREEN SPEEDRACER" ID="34">
+      <WindowState Visible="True" X="353" Y="380" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="105"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="RED PULSE" ID="47">
+      <WindowState Visible="True" X="353" Y="254" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="118"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="DISCO" ID="23">
+      <WindowState Visible="True" X="585" Y="195" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4280393404</BackgroundColor>
       </Appearance>
-      <Function ID="109"/>
+      <Function ID="94"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="CHILL PINK" ID="21">
-      <WindowState Visible="True" X="353" Y="69" Width="112" Height="54"/>
+     <Button Caption="WHITE ECHO" ID="62">
+      <WindowState Visible="True" X="701" Y="254" Width="112" Height="54"/>
       <Appearance>
-       <ForegroundColor>4278190080</ForegroundColor>
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="92"/>
+      <Function ID="133"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="WHITE FAIRIES" ID="63">
@@ -1745,14 +1888,6 @@
       <Function ID="134"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="WHITE ECHO" ID="62">
-      <WindowState Visible="True" X="701" Y="254" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="133"/>
-      <Action>Toggle</Action>
-     </Button>
      <Button Caption="WHISPERS" ID="61">
       <WindowState Visible="True" X="353" Y="128" Width="112" Height="54"/>
       <Appearance>
@@ -1762,20 +1897,80 @@
       <Function ID="132"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="ELECTRIC" ID="28">
-      <WindowState Visible="True" X="5" Y="380" Width="112" Height="54"/>
+     <Button Caption="QUASAR" ID="42">
+      <WindowState Visible="True" X="933" Y="380" Width="112" Height="54"/>
       <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
+       <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="99"/>
+      <Function ID="113"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="DISCOLASER" ID="27">
-      <WindowState Visible="True" X="1049" Y="321" Width="112" Height="54"/>
+     <Button Caption="BLACKOUT" ID="0">
+      <WindowState Visible="True" X="5" Y="5" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4282664004</BackgroundColor>
+      </Appearance>
+      <Function ID="4294967295"/>
+      <Action>StopAll</Action>
+      <Input ID="0" Universe="0" Channel="36806"/>
+     </Button>
+     <Button Caption="RAINBOW PULSE" ID="43">
+      <WindowState Visible="True" X="1049" Y="380" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4292225064</BackgroundColor>
       </Appearance>
-      <Function ID="98"/>
+      <Function ID="114"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="ANNOUNCEMENT" ID="1">
+      <WindowState Visible="True" X="121" Y="5" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4282664004</BackgroundColor>
+      </Appearance>
+      <Function ID="1"/>
+      <Action>Toggle</Action>
+      <Input ID="0" Universe="0" Channel="21172"/>
+     </Button>
+     <Button Caption="RED BASS PULSE" ID="44">
+      <WindowState Visible="True" X="5" Y="439" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="115"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="AMBIENT2" ID="8">
+      <WindowState Visible="True" X="121" Y="69" Width="112" Height="54"/>
+      <Appearance>
+       <ForegroundColor>4278190080</ForegroundColor>
+       <BackgroundColor>4287548134</BackgroundColor>
+      </Appearance>
+      <Function ID="79"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="PINK SPEEDRACER" ID="40">
+      <WindowState Visible="True" X="817" Y="380" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="111"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="GOOSEBUMPS" ID="32">
+      <WindowState Visible="True" X="701" Y="69" Width="112" Height="54"/>
+      <Appearance>
+       <ForegroundColor>4278190080</ForegroundColor>
+       <BackgroundColor>4287548134</BackgroundColor>
+      </Appearance>
+      <Function ID="103"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="WHITE FLICKER" ID="64">
+      <WindowState Visible="True" X="817" Y="254" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="135"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="FULLSTROBE" ID="31">
@@ -1784,22 +1979,6 @@
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
       <Function ID="102"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="DISCODREAM" ID="26">
-      <WindowState Visible="True" X="701" Y="195" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4280393404</BackgroundColor>
-      </Appearance>
-      <Function ID="97"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="DISCODANCE" ID="25">
-      <WindowState Visible="True" X="933" Y="321" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
-      </Appearance>
-      <Function ID="96"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="WHITE SPEEDRACER" ID="66">
@@ -1818,22 +1997,6 @@
       <Function ID="101"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="PARTY" ID="39">
-      <WindowState Visible="True" X="701" Y="380" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="110"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="DISCO" ID="23">
-      <WindowState Visible="True" X="585" Y="195" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4280393404</BackgroundColor>
-      </Appearance>
-      <Function ID="94"/>
-      <Action>Toggle</Action>
-     </Button>
      <Button Caption="FAIRIES" ID="29">
       <WindowState Visible="True" X="585" Y="69" Width="112" Height="54"/>
       <Appearance>
@@ -1843,101 +2006,58 @@
       <Function ID="100"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="RED ECHO" ID="45">
-      <WindowState Visible="True" X="121" Y="254" Width="112" Height="54"/>
+     <Button Caption="ORB RACER" ID="38">
+      <WindowState Visible="True" X="1049" Y="195" Width="112" Height="54"/>
       <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
+       <BackgroundColor>4280393404</BackgroundColor>
       </Appearance>
-      <Function ID="116"/>
+      <Function ID="109"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="RED FLICKER" ID="46">
-      <WindowState Visible="True" X="237" Y="254" Width="112" Height="54"/>
+     <Button Caption="WHITE RISER" ID="65">
+      <WindowState Visible="True" X="933" Y="254" Width="112" Height="54"/>
       <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
+       <BackgroundColor>4280393404</BackgroundColor>
       </Appearance>
-      <Function ID="117"/>
+      <Function ID="136"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="ANNOUNCEMENT" ID="1">
-      <WindowState Visible="True" X="121" Y="5" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4282664004</BackgroundColor>
-      </Appearance>
-      <Function ID="1"/>
-      <Action>Toggle</Action>
-      <Input ID="0" Universe="0" Channel="21172"/>
-     </Button>
-     <Button Caption="RIGHTROUND" ID="49">
-      <WindowState Visible="True" X="469" Y="254" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="120"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BLACKOUT" ID="0">
-      <WindowState Visible="True" X="5" Y="5" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4282664004</BackgroundColor>
-      </Appearance>
-      <Function ID="4294967295"/>
-      <Action>StopAll</Action>
-      <Input ID="0" Universe="0" Channel="36806"/>
-     </Button>
-     <Button Caption="RGB" ID="2">
-      <WindowState Visible="True" X="5" Y="195" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="77"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="AMBIENT1" ID="7">
-      <WindowState Visible="True" X="5" Y="69" Width="112" Height="54"/>
+     <Button Caption="CHILL PINK" ID="21">
+      <WindowState Visible="True" X="353" Y="69" Width="112" Height="54"/>
       <Appearance>
        <ForegroundColor>4278190080</ForegroundColor>
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="78"/>
+      <Function ID="92"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="AMBIENT2" ID="8">
-      <WindowState Visible="True" X="121" Y="69" Width="112" Height="54"/>
+     <Button Caption="RED SPEEDRACER" ID="48">
+      <WindowState Visible="True" X="121" Y="439" Width="112" Height="54"/>
       <Appearance>
-       <ForegroundColor>4278190080</ForegroundColor>
-       <BackgroundColor>4287548134</BackgroundColor>
+       <BackgroundColor>4292225064</BackgroundColor>
       </Appearance>
-      <Function ID="79"/>
+      <Function ID="119"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="WHITE FLICKER" ID="64">
-      <WindowState Visible="True" X="817" Y="254" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="135"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="CHILL BLUE" ID="20">
-      <WindowState Visible="True" X="237" Y="69" Width="112" Height="54"/>
-      <Appearance>
-       <ForegroundColor>4278190080</ForegroundColor>
-       <BackgroundColor>4287548134</BackgroundColor>
-      </Appearance>
-      <Function ID="91"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="LASER STROBE" ID="37">
-      <WindowState Visible="True" X="585" Y="380" Width="112" Height="54"/>
+     <Button Caption="GREEN BASS PULSE" ID="33">
+      <WindowState Visible="True" X="237" Y="380" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="108"/>
+      <Function ID="104"/>
       <Action>Toggle</Action>
      </Button>
     </Frame>
    </SoloFrame>
+   <Slider Caption="high" ID="6" WidgetStyle="Slider" InvertedAppearance="false">
+    <WindowState Visible="True" X="0" Y="446" Width="91" Height="134"/>
+    <Appearance>
+     <BackgroundColor>4282664004</BackgroundColor>
+    </Appearance>
+    <Input ID="0" Universe="0" Channel="50695"/>
+    <SliderMode ValueDisplayStyle="Exact">Adjust</SliderMode>
+    <Level LowLimit="0" HighLimit="255" Value="143"/>
+   </Slider>
    <Slider Caption="bass" ID="4" WidgetStyle="Slider" InvertedAppearance="false">
     <WindowState Visible="True" X="0" Y="171" Width="90" Height="128"/>
     <Appearance>
