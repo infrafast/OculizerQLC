@@ -183,7 +183,7 @@ def get_index_from_position(row, col, num_columns, total_scenes):
 
 class AudioOculizerController:
     def __init__(self, stdscr, profile='garage', input_device='scarlett', 
-                 dual_stream=True, prediction_device=None, predictor_version='v4',
+                 dual_stream=True, prediction_device=None, predictor_version='v6',
                  average_dual_channels=False, scene_cache_size=10, prediction_channels=None,
                  test_mode=False, output='enttec', qlc_config=None, osc_host=None,
                  osc_port=None, osc_dry_run=None, silence_config=None,
@@ -1013,9 +1013,9 @@ Scene Cache Size:
     parser.add_argument('--single-stream', action='store_true', default=default_single_stream,
                       help=f'Use single audio stream for both FFT and prediction (default: {not default_single_stream})')
     from oculizer.scene_predictors import list_available_versions
-    parser.add_argument('--predictor-version', '--predictor', type=str, default='v4',
+    parser.add_argument('--predictor-version', '--predictor', type=str, default='v6',
                         choices=list_available_versions(),
-                      help='Scene predictor version to use (default: v4)')
+                      help='Scene predictor version to use (default: v6)')
     parser.add_argument('--average-dual-channels', action='store_true',
                       help='Average first two input channels together for FFT (useful for Scarlett 18i20)')
     parser.add_argument('--scene-cache-size', type=int, default=10,

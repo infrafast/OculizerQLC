@@ -84,8 +84,7 @@ On a host without an audio capture device, use an uncompressed PCM WAV file. It 
 python oculize.py \
   --audio-file tests/fascination.wav \
   --output qlc-osc \
-  --osc-dry-run \
-  --predictor-version v4
+  --osc-dry-run
 ```
 
 `--audio-file` cannot be combined with `--prediction-device`. MP3 and online streams are not currently supported.
@@ -128,7 +127,7 @@ Useful options:
 | `--no-graph` | Hide the interactive RMS graph |
 | `--list-devices` | List available audio inputs |
 
-`v4` is the validated default predictor. `v5` also supports speech-aware announcement routing and currently uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
+`v6` is the default predictor and is selected when `--predictor-version` is omitted. Use `--predictor-version v4` or `--predictor-version v5` only for explicit comparison or compatibility tests. `v5` uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
 
 ### Train a concert-specific v6 predictor
 
@@ -236,8 +235,7 @@ python oculize.py \
   --profile garage2025 \
   --audio-file tests/fascination.wav \
   --output enttec \
-  --dmx-dry-run \
-  --predictor-version v4
+  --dmx-dry-run
 ```
 
 The dry run prints a maximum of three changed-channel summaries per second. Hide all DMX frame summaries with `--filter-dmx`:
@@ -283,7 +281,6 @@ Run automatic prediction and QLC+ routing without curses:
 python oculizer_service.py \
   --output qlc-osc \
   --input-device blackhole \
-  --predictor-version v4 \
   --qlc-config config/qlc_config.json
 ```
 
@@ -339,7 +336,7 @@ The `/usr/local/bin/oculizerctl` installation path will be provided by the Raspb
 Run prediction without FFT or DMX output:
 
 ```bash
-python oculize.py --test --profile mobile --predictor-version v4
+python oculize.py --test --profile mobile
 ```
 
 ## Troubleshooting

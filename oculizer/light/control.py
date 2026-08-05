@@ -64,7 +64,7 @@ n_channels = {
 
 class Oculizer(threading.Thread):
     def __init__(self, profile_name, scene_manager, input_device='cable', 
-                 scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v4',
+                 scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v6',
                  average_dual_channels=False, scene_cache_size=10, prediction_channels=None,
                  test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
                  qlc_config_path=None, osc_host=None,
@@ -1395,8 +1395,13 @@ class Oculizer(threading.Thread):
         
         self.running.clear()
 
+        # Only request termination here. Live PortAudio streams are closed by
+        # this Oculizer thread's context manager/finally blocks. Closing them
+        # from the caller as well creates a native double-close race (observed
+        # as free_tiny_botch/SIGABRT with CoreAudio on macOS). File sources use
+        # the same lifecycle boundary to wake their pacing wait immediately.
         if self.audio_source is not None:
-            self.audio_source.stop()
+            self.audio_source.request_stop()
         
         # Stop prediction thread if running
         if self.prediction_thread and self.prediction_thread.is_alive():
@@ -1405,14 +1410,8 @@ class Oculizer(threading.Thread):
             if self.prediction_thread.is_alive():
                 logger.warning("Prediction thread did not stop within timeout")
         
-        # Stop and close prediction stream
-        if self.prediction_stream:
-            try:
-                self.prediction_stream.stop()
-                self.prediction_stream.close()
-                self.prediction_stream = None
-            except Exception as e:
-                logger.error(f"Error stopping prediction stream: {e}")
+        # The Oculizer runtime thread owns prediction_stream and closes it in
+        # its finally block after observing the cleared running event.
         
         if hasattr(self, 'backend'):
             self.backend.close()

@@ -41,7 +41,12 @@ def parse_args():
     parser.add_argument("--prediction-device", default=None, help="Optional separate prediction input")
     parser.add_argument("--prediction-channels", default=None)
     from oculizer.scene_predictors import list_available_versions
-    parser.add_argument("--predictor-version", choices=list_available_versions(), default="v4")
+    parser.add_argument(
+        "--predictor-version",
+        choices=list_available_versions(),
+        default="v6",
+        help="Scene predictor version to use (default: v6)",
+    )
     parser.add_argument("--scene-cache-size", type=int, default=10,
                         help="Number of recent predictions used for smoothing (default: 10)")
     parser.add_argument("--scene-rate-limit", type=parse_scene_rate_limit, default=None, metavar="MAX/SECONDS",

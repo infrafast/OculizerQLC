@@ -136,6 +136,42 @@ class SoundDeviceAudioSourceTests(unittest.TestCase):
         stream.stop.assert_called_once_with()
         stream.close.assert_called_once_with()
 
+    def test_stop_request_does_not_close_stream_from_calling_thread(self):
+        stream = Mock()
+        stream.active = True
+        source = SoundDeviceAudioSource(
+            device=3,
+            channels=2,
+            sample_rate=48000,
+            block_size=1024,
+            callback=Mock(),
+        )
+        source.stream = stream
+
+        source.request_stop()
+
+        stream.stop.assert_not_called()
+        stream.close.assert_not_called()
+        self.assertIs(source.stream, stream)
+
+
+class OculizerShutdownTests(unittest.TestCase):
+    def test_stop_requests_source_shutdown_without_closing_prediction_stream(self):
+        engine = object.__new__(Oculizer)
+        engine.running = Mock()
+        engine.audio_source = Mock()
+        engine.prediction_thread = None
+        engine.prediction_stream = Mock()
+        engine.backend = Mock()
+
+        engine.stop()
+
+        engine.running.clear.assert_called_once_with()
+        engine.audio_source.request_stop.assert_called_once_with()
+        engine.prediction_stream.stop.assert_not_called()
+        engine.prediction_stream.close.assert_not_called()
+        engine.backend.close.assert_called_once_with()
+
 
 if __name__ == "__main__":
     unittest.main()

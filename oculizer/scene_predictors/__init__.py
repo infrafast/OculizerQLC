@@ -24,12 +24,12 @@ def list_available_versions():
 # Kept for callers that display the currently installed choices.
 AVAILABLE_VERSIONS = list_available_versions()
 
-def get_predictor(version='v4'):
+def get_predictor(version='v6'):
     """
     Get a ScenePredictor class for the specified version.
     
     Args:
-        version: Version string (currently 'v4' or 'v5')
+        version: Version string (currently 'v4', 'v5', or installed 'v6')
         
     Returns:
         ScenePredictor: Class of the specified predictor version
@@ -60,5 +60,5 @@ def get_predictor(version='v4'):
         logger.error(f"ScenePredictor class not found in {version}: {e}")
         raise ImportError(f"ScenePredictor class not found in version '{version}': {e}")
 
-# Backward-compatible direct import now follows the validated default.
-from .v4.predictor import ScenePredictor
+# Backward-compatible direct import follows the application default.
+from .v6.predictor import ScenePredictor

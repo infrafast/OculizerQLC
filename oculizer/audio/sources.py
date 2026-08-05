@@ -19,6 +19,7 @@ class AudioSource(Protocol):
     channels: int
 
     def start(self) -> None: ...
+    def request_stop(self) -> None: ...
     def stop(self) -> None: ...
     def join(self, timeout: float | None = None) -> None: ...
     def is_alive(self) -> bool: ...
@@ -52,6 +53,10 @@ class SoundDeviceAudioSource:
             self.stream.stop()
             self.stream.close()
             self.stream = None
+
+    def request_stop(self) -> None:
+        """Let the owning runtime thread close the native PortAudio stream."""
+        return None
 
     def join(self, timeout: float | None = None) -> None:
         return None
@@ -153,4 +158,7 @@ class WavFileAudioSource(threading.Thread):
             self.error = exc
 
     def stop(self) -> None:
+        self._stop_event.set()
+
+    def request_stop(self) -> None:
         self._stop_event.set()

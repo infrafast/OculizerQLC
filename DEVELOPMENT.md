@@ -1570,6 +1570,44 @@ Validation:
 - both interactive and headless help output report the new 40-second default;
 - the complete suite passes: 148 tests, including local socket and UDP OSC coverage.
 
+### 2026-08-05 — Cross-platform native audio shutdown ownership
+
+Implemented:
+
+- separated an audio source stop request from native stream destruction;
+- made the Oculizer runtime thread the sole owner responsible for stopping and closing live PortAudio streams;
+- removed caller-thread closure of the prediction stream during `SIGINT` shutdown;
+- retained immediate cooperative cancellation for WAV sources;
+- added regression coverage proving that a stop request cannot close either live capture stream from the calling thread.
+
+Rationale and platform impact:
+
+- macOS crash diagnostics showed a `free_tiny_botch` abort inside PortAudio `CloseStream` while `Ctrl+C` shutdown allowed the controller thread and runtime thread to close the same stream concurrently;
+- the ownership rule is backend-neutral and applies equally to CoreAudio on macOS and PortAudio-hosted ALSA or PulseAudio on Raspberry Pi OS;
+- the change adds no processing thread, polling loop, or steady-state CPU/memory cost.
+
+Validation:
+
+- the complete suite passes: 150 tests, including the native-stream ownership regressions.
+
+### 2026-08-05 — v6 default predictor
+
+Implemented:
+
+- made v6 the default predictor for the interactive application, headless service, controller constructor, predictor registry, and compatibility import;
+- retained `--predictor-version v4` and `--predictor-version v5` as explicit comparison and compatibility choices;
+- updated user-facing examples to omit the predictor option where the v6 default is intended;
+- added regression coverage for both CLI defaults and the predictor registry default.
+
+Deployment note:
+
+- the approved v6 artefact set and `.ready` marker must remain installed on both macOS and Raspberry Pi deployments; startup fails explicitly rather than silently falling back to a different model if the selected artefacts are unavailable.
+
+Validation:
+
+- both CLI help screens report v6 as the default;
+- the complete suite passes: 151 tests.
+
 ### Expected completion report
 
 At the end of a work slice, record or report:

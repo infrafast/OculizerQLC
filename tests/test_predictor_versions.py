@@ -3,14 +3,14 @@ import unittest
 from pathlib import Path
 
 from oculizer.scene_predictors import AVAILABLE_VERSIONS, get_predictor, list_available_versions
-from oculizer.scene_predictors.v4.predictor import ScenePredictor as V4ScenePredictor
+from oculizer.scene_predictors.v6.predictor import ScenePredictor as V6ScenePredictor
 
 
 class PredictorVersionTests(unittest.TestCase):
     def test_only_complete_predictors_are_available(self):
         self.assertEqual(AVAILABLE_VERSIONS, list_available_versions())
         self.assertEqual(list_available_versions()[:2], ["v4", "v5"])
-        self.assertIs(get_predictor(), V4ScenePredictor)
+        self.assertIs(get_predictor(), V6ScenePredictor)
         with self.assertRaisesRegex(ValueError, "not available"):
             get_predictor("v1")
 
