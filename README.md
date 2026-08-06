@@ -126,11 +126,11 @@ Useful options:
 | `--no-graph` | Hide the interactive RMS graph |
 | `--list-devices` | List available audio inputs |
 
-`v6` is the default predictor and is selected when `--predictor-version` is omitted. Use `--predictor-version v4` or `--predictor-version v5` only for explicit comparison or compatibility tests. `v5` uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
+System can be used different trained predictors. `v6` is the default predictor and is selected when `--predictor-version` is omitted. Use `--predictor-version v4` or `--predictor-version v5` only for explicit comparison or compatibility tests. `v5` uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
 
-### Train a concert-specific v6 predictor
+### Train a concert-specific predictor
 
-v6 uses the faster v4 feature pipeline (1,920 EfficientAT dimensions plus 128 mean-MFCC dimensions) while training new clusters on the operator's own recordings. Put representative MP3, WAV, FLAC, M4A, AAC, or OGG recordings in one directory, then run:
+You can train your own predictor based on the the v4 feature pipeline (1,920 EfficientAT dimensions plus 128 mean-MFCC dimensions) using your own recordings. Put representative MP3, WAV, FLAC, M4A, AAC, or OGG recordings in one directory. Example below to generate the v6 :
 
 ```bash
 python3 scripts/train_predictor_v6.py \
@@ -168,6 +168,11 @@ The main screen displays a scrolling RMS graph and scene-transition markers. Dis
 ```bash
 python oculize.py --no-graph [other options]
 ```
+
+Otherwise the main screen looks like:
+<img width="2481" height="1428" alt="image" src="https://github.com/user-attachments/assets/f26856ab-65e4-43f4-94d6-788b151dddf4" />
+
+The milestones correspondent to scenes changes and colors and icons resemble those of the scenes available in the scene control screen (CTRL+T).
 
 Automatic music scene duration uses 40 seconds as its default base. Override the global base at startup with, for example, `--scene-max-duration 20`. On every automatic activation, Oculizer draws one effective duration uniformly within ±30% of the scene-specific or global base and keeps that value stable for the complete activation. A base of 8 seconds therefore produces 5.6–10.4 seconds, while the default base produces 28–52 seconds. When that duration expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. This safety replacement bypasses the active profile's transition admission but is recorded in its internal budgets; the expired prediction holds that one replacement until a genuinely different prediction arrives, and the expired target cannot immediately re-enter. Silence, announcement, and manual overrides are exempt.
 
@@ -269,6 +274,9 @@ Selector controls:
 - `Ctrl+R`: reload scenes and QLC+ mappings;
 - `Ctrl+T`: return to the automatic screen when using the integrated selector;
 - `Ctrl+Q`: quit.
+
+<img width="2409" height="480" alt="image" src="https://github.com/user-attachments/assets/9d2d9bd2-8fa4-41ba-85d0-bef644d62b63" />
+
 
 ## Headless operation
 
