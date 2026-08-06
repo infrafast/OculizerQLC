@@ -1,13 +1,13 @@
 # Oculizer
 
-Oculizer is a music-reactive lighting controller. It analyzes audio in real time, automatically selects lighting scenes, and lets an operator take manual control when needed.
+OculizerQLC is a music-reactive lighting controller based on the original Oculizer project available here: https://github.com/LandryBulls/Oculizer. It analyzes audio in real time, automatically selects lighting scenes, and lets an operator take manual control when needed.
 
-This fork supports two lighting outputs:
+This fork enrich and supports two lighting outputs:
 
 - direct DMX through an Enttec/DMXKing-compatible interface;
 - QLC+ 5 through OSC, with QLC+ responsible for scenes, chasers, and DMX output.
 
-It can use a live audio device or continuously loop an uncompressed PCM WAV file. Interactive and headless operation share the same live control commands.
+It can use a live audio device or continuously loop an uncompressed PCM WAV file for simulation and testing before live show. Interactive and headless operation share the same live control commands.
 
 Development architecture, implementation details, decisions, validation history, and the roadmap are maintained in [DEVELOPMENT.md](DEVELOPMENT.md).
 
