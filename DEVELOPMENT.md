@@ -379,7 +379,7 @@ Exit criterion: while the interactive application or headless runtime is running
 
 Status: **planned before Phase 8b — protocol research and implementation pending**
 
-Objective: add a second QLC+ 5 transport selected with `--output qlc-websocket`, while retaining `--output qlc-osc` unchanged. Both transports must implement the same `LightingBackend` behavior for Virtual Console buttons and share scene resolution, fallback, active-scene tracking, blackout/off policy, announcement routing, configuration reload, and shutdown logic. This milestone does not replace OSC and must not affect prediction, audio analysis, Enttec output, or the Phase 8a local Unix control socket used by `oculizerctl.py`.
+Objective: add a second QLC+ 5 transport selected with `--output qlc-websocket`, while retaining `--output qlc-osc` as a fully supported backend. Both transports must implement the same activation-only `LightingBackend` behavior for Virtual Console scene buttons and share scene resolution, fallback, last-command tracking, blackout/off policy, announcement routing, configuration reload, and shutdown logic. Oculizer requests only the target button activation; the QLC+ workspace owner chooses whether functions overlap by using ordinary Frames or remain mutually exclusive by using Solo Frames. This milestone does not replace OSC and must not affect prediction, audio analysis, Enttec output, or the Phase 8a local Unix control socket used by `oculizerctl.py`.
 
 Protocol research gate — complete before writing transport code:
 
@@ -399,8 +399,11 @@ First implementation slice — buttons only:
 - [ ] resolve a button strictly by its complete caption and reject duplicate captions with an explicit diagnostic that identifies the ambiguity;
 - [ ] fail explicitly when a configured caption is absent rather than silently targeting another widget;
 - [ ] actuate the resolved button using only the exact verified QLC+ 5 message sequence, including release only if documentation/source and manual validation require it;
+- [ ] treat any transport-specific press/release sequence as one activation gesture, never as a business-level request to deactivate the previously commanded scene;
+- [ ] stop explicitly toggling the previous scene during ordinary scene changes in both QLC+ transports; allow ordinary Frames to layer functions and Solo Frames to stop the previous function automatically;
 - [ ] preserve configurable special routing for `off` and `announcement`; do not hard-code `off` to QLC+ blackout because a deployment may intentionally map it to a scene button;
-- [ ] preserve active-scene state and toggle/deactivation behavior consistently with the OSC backend, based on verified button semantics;
+- [ ] redefine `active_scene` for QLC+ transports as the last scene command successfully issued by Oculizer, not an authoritative statement that no other QLC+ function is running;
+- [ ] avoid sending an implicit scene-deactivation command during shutdown; only explicit safe-state policy such as configured `off` or blackout may stop output;
 - [ ] provide a WebSocket dry-run that performs configuration and logical-resolution validation, logs intended caption/widget actions, opens no network connection, and remains usable without QLC+;
 - [ ] support configuration reload by rebuilding transport routing and rediscovering widgets safely, without retaining stale IDs;
 - [ ] contain protocol parsing, connection state, and transport errors outside audio callbacks and keep queues, retries, and logs bounded;
@@ -416,24 +419,26 @@ Explicitly out of scope for this milestone:
 Automated validation gate — no live QLC+ dependency:
 
 - [ ] test widget inventory parsing, caption lookup, unique-caption enforcement, missing captions, malformed messages, and unsupported widget types;
-- [ ] test the verified button command sequence and active-scene transitions with a deterministic fake WebSocket peer;
+- [ ] test the verified button command sequence and last-command transitions with a deterministic fake WebSocket peer;
+- [ ] prove ordinary scene changes emit one target activation and no previous-scene deactivation in both OSC and WebSocket intent tests;
 - [ ] test `off`, `announcement`, fallback, blackout policy, configuration reload, clean close, connection failure, and any implemented reconnect behavior;
 - [ ] prove dry-run opens no socket and emits the intended logical/caption actions;
-- [ ] run regression coverage showing `qlc-osc`, Enttec, automatic routing, and `oculizerctl.py` behavior remain unchanged;
+- [ ] run regression coverage showing OSC transport, Enttec, automatic routing, and `oculizerctl.py` remain operational after the intentional QLC+ activation-only routing change;
 - [ ] compile and exercise both interactive and headless entry points with the new output choice.
 
 Manual QLC+ 5 validation gate:
 
 - [ ] connect to a real QLC+ 5 instance and confirm widget discovery after opening the current workspace;
 - [ ] confirm every configured scene caption resolves to exactly one button and duplicate-caption failures are actionable;
-- [ ] confirm button activation, visible pressed state, scene replacement/deactivation, `off`, `announcement`, fallback, reload, and shutdown behavior;
+- [ ] confirm in an ordinary Frame that successive Oculizer commands can leave functions layered, and in a Solo Frame that activating a new button stops the previous function and updates visible button state;
+- [ ] confirm explicit `off`, `announcement`, fallback, reload, and shutdown behavior without relying on implicit previous-scene deactivation;
 - [ ] restart QLC+ or reload the workspace and prove that rediscovery replaces stale widget IDs;
 - [ ] run the same representative scene sequence through OSC and WebSocket and compare functional lighting behavior;
 - [ ] document the validated QLC+ build, known limitations, files changed, tests added/executed, and recommendations for future advanced-widget support.
 
 Embedded-system impact gate: measure idle connection cost, message latency, memory, reconnect behavior, and log volume. The backend must add no audio-analysis work and must remain suitable for the Phase 8b Raspberry Pi 5 service design.
 
-Exit criterion: `--output qlc-websocket` discovers Virtual Console buttons by unique caption and delivers the same validated logical scene, special-route, fallback, reload, dry-run, and shutdown behavior as `qlc-osc`, while OSC and Enttec regressions pass and no widget ID is persisted in configuration.
+Exit criterion: `--output qlc-websocket` discovers Virtual Console buttons by unique caption and both QLC+ transports issue activation-only scene intentions, allowing ordinary Frames to layer functions and Solo Frames to enforce exclusivity, while special routes, fallback, reload, dry-run, shutdown, OSC/Enttec regressions, and non-persistence of widget IDs are validated.
 
 ### Phase 8b — Raspberry Pi 5 production target
 
@@ -508,10 +513,11 @@ Roadmap decision:
 
 - added Phase 8a.1 before the Raspberry Pi production phase, preserving Phase 8b numbering and its deployment scope;
 - retained OSC as a fully supported QLC+ transport and limited the first WebSocket slice to Virtual Console button discovery and actuation behind `LightingBackend`;
+- adopted activation-only scene intent for both QLC+ transports: Oculizer must not deactivate the prior scene during an ordinary change, leaving overlap to ordinary Frames and exclusivity to Solo Frames; any required wire-level release remains part of one activation gesture rather than a second routing intention;
 - made official QLC+ 5 documentation and matching source inspection a mandatory pre-implementation gate, including verification of exact messages, button press/release semantics, widget discovery, and connection lifecycle;
 - prohibited persisted widget IDs and required per-connection unique-caption discovery, explicit duplicate/missing-caption errors, configurable `off` and `announcement` routes, bounded transport behavior, and a network-free dry-run;
 - separated automated fake-peer coverage from live QLC+ 5 validation and deferred advanced widgets until the button backend is proven;
-- preserved Enttec, audio/prediction behavior, OSC behavior, and the Phase 8a `oculizerctl.py` Unix socket unchanged.
+- preserved Enttec, audio/prediction behavior, OSC availability, and the Phase 8a `oculizerctl.py` Unix socket; the current OSC previous-scene pulse is now explicitly scheduled for replacement and parity validation in Phase 8a.1.
 
 Validation:
 
