@@ -89,6 +89,40 @@ python oculize.py \
 
 `--audio-file` cannot be combined with `--prediction-device`. MP3 and online streams are not currently supported.
 
+### Silence and speech scenes
+
+Oculizer can recognize sustained silence and dominant spoken voice independently of the normal music-scene prediction. Each event can activate a dedicated logical scene: for example, silence can select `off`, while speech can select `announcement` so that lighting remains suitable when someone speaks between songs.
+
+Configure the two routes under `audio` in `config/oculizer.json`:
+
+```json
+{
+  "audio": {
+    "silence": {
+      "enabled": true,
+      "threshold": 0.001,
+      "resume_threshold": 0.002,
+      "duration_seconds": 2.0,
+      "scene": "off"
+    },
+    "speech": {
+      "enabled": true,
+      "threshold": 0.55,
+      "music_margin": 0.15,
+      "minimum_duration_seconds": 0.5,
+      "release_duration_seconds": 0.75,
+      "scene": "announcement"
+    }
+  }
+}
+```
+
+Change each `scene` value to any logical scene available to the selected output backend. Silence must remain below its threshold for the configured duration before its scene is activated. Speech routing uses confidence and timing margins to avoid switching on brief or ambiguous sounds, then returns automatically to music prediction when music becomes dominant again. Set the corresponding `enabled` value to `false` to disable either detector.
+
+The following example processes `mixvoicemusic.wav`, which contains silence, spoken voice, and music. The scene markers include `off` during detected silence and `announcement` when speech becomes dominant, alongside the scenes selected for musical passages. The four panels also show how the same detections behave with each dynamic-control profile; silence and speech remain priority events rather than ordinary music transitions.
+
+![Silence, speech, and music scene detection on mixvoicemusic.wav](docs/mixvoicemusic.svg)
+
 ## Interactive automatic operation
 
 Example with one live audio stream:

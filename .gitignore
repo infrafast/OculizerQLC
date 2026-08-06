@@ -26,6 +26,7 @@ notebooks/
 *.bmp
 *.svg
 !docs/dynamic_control_comparison.svg
+!docs/mixvoicemusic.svg
 *.ico
 *.tiff
 *.webp
