@@ -120,7 +120,7 @@ Useful options:
 | `--audio-file PATH` | Loop a PCM WAV file instead of capturing audio |
 | `--predictor-version VERSION` | Select the prediction model |
 | `--scene-cache-size N` | Set prediction smoothing (default: `10`) |
-| `--dynamic-control PROFILE` | Apply a configured dynamics profile (default: `off`) |
+| `--dynamic-control PROFILE` | Apply a configured dynamics profile; see [Dynamic control](#dynamic-control) (default: `off`) |
 | `--scene-max-duration SECONDS` | Set the automatic scene-duration base before ±30% per-activation variation (default: `40`) |
 | `--output enttec|qlc-osc` | Select the lighting output |
 | `--no-graph` | Hide the interactive RMS graph |
@@ -168,8 +168,6 @@ The main screen displays a scrolling RMS graph and scene-transition markers. Dis
 ```bash
 python oculize.py --no-graph [other options]
 ```
-
-The active dynamic-control profile is shown in the status area. In the `l` selector, use the arrow keys or `+`/`-` to choose a configured profile, Enter to apply it, and Escape to cancel. Starting without `--dynamic-control` selects `off`: transition limiting is disabled and the normal startup cache remains in use.
 
 Automatic music scene duration uses 40 seconds as its default base. Override the global base at startup with, for example, `--scene-max-duration 20`. On every automatic activation, Oculizer draws one effective duration uniformly within ±30% of the scene-specific or global base and keeps that value stable for the complete activation. A base of 8 seconds therefore produces 5.6–10.4 seconds, while the default base produces 28–52 seconds. When that duration expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. This safety replacement bypasses the active profile's transition admission but is recorded in its internal budgets; the expired prediction holds that one replacement until a genuinely different prediction arrives, and the expired target cannot immediately re-enter. Silence, announcement, and manual overrides are exempt.
 
@@ -305,9 +303,11 @@ The default socket is `/tmp/oculizer-<uid>.sock`. Start the application with `--
 
 `pause` suspends automatic processing and activates blackout. `auto` clears pause or manual override and resumes automatic operation. `scene NAME` forces a configured logical scene. Live changes last until the application restarts and do not rewrite configuration files.
 
-### Dynamic-control profiles
+## Dynamic control
 
-The supplied profiles are starting points that can be adjusted or extended under `control.dynamic_controls` in `config/oculizer.json`. Selecting a named profile applies its complete tuple, including its cache value, so it takes precedence over `--scene-cache-size` while active. The reserved `off` profile is always available and cannot be redefined; it restores the startup `--scene-cache-size` value and disables transition filtering:
+Use `--dynamic-control PROFILE` at startup, press `l` in the interactive interface, or run `oculizerctl dynamic-control PROFILE` from another terminal. The active profile is shown in the status area and changes received through the control socket appear there automatically.
+
+The supplied profiles can be adjusted or extended under `control.dynamic_controls` in `config/oculizer.json`. Selecting a named profile applies its complete tuple, including its cache value, so it takes precedence over `--scene-cache-size` while active. Starting without `--dynamic-control` selects the reserved `off` state: it restores the startup cache value and disables transition filtering.
 
 | Profile | Cache | Throttle | Rate limit | Behavior |
 | --- | ---: | ---: | ---: | --- |
@@ -315,6 +315,29 @@ The supplied profiles are starting points that can be adjusted or extended under
 | `normal` | `15` | `2/4` | `4/15` | Stable general-purpose behavior with restrained transitions |
 | `calm` | `35` | `Off` | `2/20` | Very strong smoothing with at most two changes per rolling 20-second window, without a fixed recovery cadence |
 | `off` | startup value | `Off` | `Off` | Restore startup smoothing and leave predictions unrestricted |
+
+`off` is the least restricted profile, but it is not always the fastest. It keeps the normal startup cache (`10` by default), whereas `responsive` uses a shorter cache (`3`) and can therefore react sooner. In exchange, `responsive` retains generous safeguards against unusually rapid or sustained changes. If the predictions are already stable enough to remain below those safeguards, `off` and `responsive` can select the same scenes and produce the same number of changes.
+
+The comparison below demonstrates that case: both produce 72 changes. Its raw predictions are sampled every two seconds, so they do not arrive quickly enough to reach the generous `responsive` limit of ten changes per ten seconds. The shorter cache can still move a transition by a fraction of a second, but that small difference is difficult to see when the complete five-minute track is compressed into one graph. A more unstable track or a shorter inference hop will make the protection provided by `responsive` more visible.
+
+### Visual comparison
+
+The following image replays the same RMS curve and raw v6 predictions through the neutral `off` state and every dynamic-control profile currently declared in `config/oculizer.json`. A colored dot or gray symbol marks the active scene at startup and each subsequent transition. The comparison is illustrative rather than a live-performance benchmark: model inference is sampled every two seconds for practical documentation generation, while routing, cache smoothing, silence, speech, scene-duration, rate, and throttle behavior are simulated every 0.1 seconds.
+
+![Dynamic-control profiles compared on fascination.wav](docs/dynamic_control_comparison.svg)
+
+Regenerate the image after changing a predictor, scene rules, or dynamic-control profiles:
+
+```bash
+python3 scripts/render_dynamic_control_comparison.py \
+  tests/fascination.wav \
+  --output docs/dynamic_control_comparison.svg \
+  --prediction-hop-seconds 2
+```
+
+The script accepts any PCM WAV and automatically creates one panel for `off` plus one panel for every configured profile. Use `--config`, `--predictor-version`, `--prediction-hop-seconds`, `--simulation-step-seconds`, `--off-cache-size`, `--seed`, or `--width` when a different comparison is required. Smaller prediction hops are closer to the intended live inference cadence but take proportionally longer to compute.
+
+### QLC+ buttons
 
 QLC+ 5 Virtual Console buttons can call the installed client through script functions such as:
 

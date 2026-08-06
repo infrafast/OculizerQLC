@@ -510,12 +510,14 @@ Delivered behavior:
 - replaced socket/client `limits`, `preset`, and `presets` commands with `dynamic-control NAME` and `dynamic-controls`;
 - replaced the interactive field editor with a configured-profile selector and synchronized its active name with external socket changes;
 - updated supplied QLC+ scripts to invoke the unified command.
+- added a reusable WAV comparison renderer that performs one predictor pass, replays identical RMS/prediction data through `off` and every configured profile, reuses the terminal scene-identity algorithm, and writes a dependency-free vector SVG for the user documentation;
+- generated the checked-in README comparison from `tests/fascination.wav` with v6 and a two-second offline inference hop, while retaining 0.1-second routing and RMS simulation.
 
 Compatibility decision: the removed CLI and socket commands intentionally have no aliases. Custom behavior is expressed by adding or editing a named profile in `config/oculizer.json` and selecting it as one atomic policy.
 
 Validation:
 
-- `python3 -m unittest discover -s tests`: 143 tests passed;
+- `python3 -m unittest discover -s tests`: 146 tests passed, including visual-identity, dynamic-profile simulation, and SVG-content coverage;
 - strict compilation and `--help` checks passed for interactive, headless, and control-client entry points;
 - a real headless WAV/QLC-OSC dry run started with `calm`, reported cache `35` and rate `2/20`, accepted a live switch to `normal`, then switched to `off` with cache `10` and both policies disabled before clean shutdown.
 

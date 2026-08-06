@@ -25,6 +25,7 @@ notebooks/
 *.gif
 *.bmp
 *.svg
+!docs/dynamic_control_comparison.svg
 *.ico
 *.tiff
 *.webp
