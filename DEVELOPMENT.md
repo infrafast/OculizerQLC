@@ -375,9 +375,69 @@ Status: **complete — implementation and live QLC+ operator validation accepted
 
 Exit criterion: while the interactive application or headless runtime is running, a second terminal and QLC+-originated actions can select modes, scenes, and named transition presets; every active interactive display reflects external changes without restart or split state.
 
+### Phase 8a.1 — QLC+ 5 WebSocket button backend
+
+Status: **planned before Phase 8b — protocol research and implementation pending**
+
+Objective: add a second QLC+ 5 transport selected with `--output qlc-websocket`, while retaining `--output qlc-osc` unchanged. Both transports must implement the same `LightingBackend` behavior for Virtual Console buttons and share scene resolution, fallback, active-scene tracking, blackout/off policy, announcement routing, configuration reload, and shutdown logic. This milestone does not replace OSC and must not affect prediction, audio analysis, Enttec output, or the Phase 8a local Unix control socket used by `oculizerctl.py`.
+
+Protocol research gate — complete before writing transport code:
+
+- [ ] read the official QLC+ 5 WebSocket API documentation applicable to the deployed QLC+ version;
+- [ ] inspect the matching QLC+ source in `mcallegari/qlcplus` to verify message names, payload formats, widget enumeration, button actuation, error behavior, and connection lifecycle;
+- [ ] record direct documentation/source references and the verified QLC+ version in the implementation log;
+- [ ] determine from verified behavior whether a button action is a press-only command or requires a release, and test how the chosen sequence affects the visible Virtual Console state;
+- [ ] verify initial discovery and reconnect behavior without assuming that widget IDs, message ordering, or cached state remain stable across QLC+ sessions.
+
+First implementation slice — buttons only:
+
+- [ ] add `qlc-websocket` to interactive and headless output selection without changing the existing `qlc-osc` or `enttec` contracts;
+- [ ] place OSC and WebSocket behind the existing `LightingBackend` boundary, extracting shared QLC+ logical routing only where doing so reduces transport duplication without moving QLC+-specific behavior into the generic scene mapper;
+- [ ] open one bounded WebSocket connection to the configured QLC+ endpoint and close it deterministically during normal shutdown, startup failure, and cancellation;
+- [ ] retrieve the current Virtual Console widget inventory after every connection and construct an in-memory `caption -> widget ID` index;
+- [ ] store captions or logical routing intentions in configuration, never WebSocket widget IDs; rediscover IDs after every new connection;
+- [ ] resolve a button strictly by its complete caption and reject duplicate captions with an explicit diagnostic that identifies the ambiguity;
+- [ ] fail explicitly when a configured caption is absent rather than silently targeting another widget;
+- [ ] actuate the resolved button using only the exact verified QLC+ 5 message sequence, including release only if documentation/source and manual validation require it;
+- [ ] preserve configurable special routing for `off` and `announcement`; do not hard-code `off` to QLC+ blackout because a deployment may intentionally map it to a scene button;
+- [ ] preserve active-scene state and toggle/deactivation behavior consistently with the OSC backend, based on verified button semantics;
+- [ ] provide a WebSocket dry-run that performs configuration and logical-resolution validation, logs intended caption/widget actions, opens no network connection, and remains usable without QLC+;
+- [ ] support configuration reload by rebuilding transport routing and rediscovering widgets safely, without retaining stale IDs;
+- [ ] contain protocol parsing, connection state, and transport errors outside audio callbacks and keep queues, retries, and logs bounded;
+- [ ] if reconnect is included in this slice, use bounded backoff and rediscovery before resuming output; otherwise fail clearly and leave automatic reconnect as an explicitly documented limitation.
+
+Explicitly out of scope for this milestone:
+
+- sliders, XY pads, Cue Lists, direct function control, fixture/channel editing, and other advanced QLC+ WebSocket capabilities;
+- replacement or removal of OSC;
+- changes to Enttec, audio sources, FFT, prediction models, scene-selection algorithms, or the Phase 8a Unix-domain control protocol;
+- persistent widget IDs or speculative protocol messages not verified against QLC+ 5 documentation or source.
+
+Automated validation gate — no live QLC+ dependency:
+
+- [ ] test widget inventory parsing, caption lookup, unique-caption enforcement, missing captions, malformed messages, and unsupported widget types;
+- [ ] test the verified button command sequence and active-scene transitions with a deterministic fake WebSocket peer;
+- [ ] test `off`, `announcement`, fallback, blackout policy, configuration reload, clean close, connection failure, and any implemented reconnect behavior;
+- [ ] prove dry-run opens no socket and emits the intended logical/caption actions;
+- [ ] run regression coverage showing `qlc-osc`, Enttec, automatic routing, and `oculizerctl.py` behavior remain unchanged;
+- [ ] compile and exercise both interactive and headless entry points with the new output choice.
+
+Manual QLC+ 5 validation gate:
+
+- [ ] connect to a real QLC+ 5 instance and confirm widget discovery after opening the current workspace;
+- [ ] confirm every configured scene caption resolves to exactly one button and duplicate-caption failures are actionable;
+- [ ] confirm button activation, visible pressed state, scene replacement/deactivation, `off`, `announcement`, fallback, reload, and shutdown behavior;
+- [ ] restart QLC+ or reload the workspace and prove that rediscovery replaces stale widget IDs;
+- [ ] run the same representative scene sequence through OSC and WebSocket and compare functional lighting behavior;
+- [ ] document the validated QLC+ build, known limitations, files changed, tests added/executed, and recommendations for future advanced-widget support.
+
+Embedded-system impact gate: measure idle connection cost, message latency, memory, reconnect behavior, and log volume. The backend must add no audio-analysis work and must remain suitable for the Phase 8b Raspberry Pi 5 service design.
+
+Exit criterion: `--output qlc-websocket` discovers Virtual Console buttons by unique caption and delivers the same validated logical scene, special-route, fallback, reload, dry-run, and shutdown behavior as `qlc-osc`, while OSC and Enttec regressions pass and no widget ID is persisted in configuration.
+
 ### Phase 8b — Raspberry Pi 5 production target
 
-Status: **pending after Phase 8a — deployment design and Linux ARM64 validation pending**
+Status: **pending after Phase 8a.1 — deployment design and Linux ARM64 validation pending**
 
 - [ ] validate every dependency on Linux ARM64;
 - [ ] remove assumptions about macOS paths or devices;
@@ -441,6 +501,25 @@ Control state is initially process-local and is not restored after a crash or re
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-06 — QLC+ WebSocket backend specification integrated
+
+Roadmap decision:
+
+- added Phase 8a.1 before the Raspberry Pi production phase, preserving Phase 8b numbering and its deployment scope;
+- retained OSC as a fully supported QLC+ transport and limited the first WebSocket slice to Virtual Console button discovery and actuation behind `LightingBackend`;
+- made official QLC+ 5 documentation and matching source inspection a mandatory pre-implementation gate, including verification of exact messages, button press/release semantics, widget discovery, and connection lifecycle;
+- prohibited persisted widget IDs and required per-connection unique-caption discovery, explicit duplicate/missing-caption errors, configurable `off` and `announcement` routes, bounded transport behavior, and a network-free dry-run;
+- separated automated fake-peer coverage from live QLC+ 5 validation and deferred advanced widgets until the button backend is proven;
+- preserved Enttec, audio/prediction behavior, OSC behavior, and the Phase 8a `oculizerctl.py` Unix socket unchanged.
+
+Validation:
+
+- reconciled the supplied specification with the existing `LightingBackend`, OSC special-routing behavior, shared runtime-control contract, and Phase 8b embedded constraints;
+- recorded every uncertain protocol detail as a documentation/source-backed validation gate rather than assuming a wire format;
+- checked Markdown formatting and roadmap ordering after integration.
+
+Remaining work: execute Phase 8a.1 research, implementation, automated validation, and manual QLC+ 5 parity testing before starting Phase 8b.
 
 ### 2026-08-04 — Concert-specific v6 training pipeline
 
