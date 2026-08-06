@@ -122,7 +122,7 @@ Useful options:
 | `--scene-cache-size N` | Set prediction smoothing (default: `10`) |
 | `--scene-rate-limit N/SECONDS` | Limit automatic scene changes in a rolling window |
 | `--scene-throttle N/SECONDS` | Allow a burst, then progressively recover transition credits |
-| `--scene-max-duration SECONDS` | Force automatic music scenes to rotate after a maximum duration (default: `40`) |
+| `--scene-max-duration SECONDS` | Set the automatic scene-duration base before ±30% per-activation variation (default: `40`) |
 | `--output enttec|qlc-osc` | Select the lighting output |
 | `--no-graph` | Hide the interactive RMS graph |
 | `--list-devices` | List available audio inputs |
@@ -172,7 +172,7 @@ python oculize.py --no-graph [other options]
 
 The current cache, rate limit, and throttle are shown in the status area. An omitted rate limit or throttle is displayed as `Off`. In the `l` editor, use the arrow keys or `+`/`-` to change values, `0` to disable the selected optional policy, Enter to apply, and Escape to cancel.
 
-Automatic music scenes are limited to 40 seconds by default. Override the global value at startup with, for example, `--scene-max-duration 20`. When a scene expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. The expired target cannot immediately re-enter, preventing rapid ping-pong. Silence, announcement, and manual overrides are exempt.
+Automatic music scene duration uses 40 seconds as its default base. Override the global base at startup with, for example, `--scene-max-duration 20`. On every automatic activation, Oculizer draws one effective duration uniformly within ±30% of the scene-specific or global base and keeps that value stable for the complete activation. A base of 8 seconds therefore produces 5.6–10.4 seconds, while the default base produces 28–52 seconds. When that duration expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. This safety replacement bypasses scene rate and throttle admission but is recorded in their budgets; the expired prediction holds that one replacement until a genuinely different prediction arrives, and the expired target cannot immediately re-enter. Silence, announcement, and manual overrides are exempt.
 
 A scene can override the global duration by declaring a positive duration in its artistic definition under `scenes/`:
 
@@ -186,7 +186,7 @@ A scene can override the global duration by declaring a positive duration in its
 
 When `max_duration_seconds` is absent, the global value is used. The example only illustrates the field; retain the scene's real `lights` definition.
 
-The supplied v6 scene set applies an eight-second maximum to every scene with an active strobe declaration. Non-strobing racer/alternating effects and selected high-energy scenes use 15 seconds. Calmer v6 scenes inherit the global 40-second default. These limits are safety-oriented starting points and can be tuned in the corresponding `scenes/<name>.json` file.
+The supplied v6 scene set applies an eight-second duration base to every scene with an active strobe declaration. Non-strobing racer/alternating effects and selected high-energy scenes use a 15-second base. Calmer v6 scenes inherit the global 40-second base. The ±30% variation makes these safety-oriented rotations less mechanical; tune the bases in the corresponding `scenes/<name>.json` file.
 
 ## QLC+ OSC operation
 
@@ -317,7 +317,7 @@ The supplied presets are starting points that can be adjusted under `control.pre
 | --- | ---: | ---: | ---: | --- |
 | `responsive` | `3` | `4/1` | `10/10` | Fast response and generous bursts |
 | `normal` | `15` | `2/4` | `4/15` | Stable general-purpose behavior with restrained transitions |
-| `calm` | `35` | `1/10` | `2/20` | Very strong smoothing and long, relaxed scene holds |
+| `calm` | `35` | `Off` | `2/20` | Very strong smoothing with at most two changes per rolling 20-second window, without a fixed recovery cadence |
 | `reset` | startup value | `Off` | `Off` | Restore startup smoothing and disable both limits |
 
 QLC+ 5 Virtual Console buttons can call the installed client through script functions such as:

@@ -507,6 +507,33 @@ Control state is initially process-local and is not restored after a crash or re
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
 
+### 2026-08-06 — Non-mechanical calm routing and strict scene expiry
+
+Delivered behavior:
+
+- removed the `1/10` token throttle from the `calm` preset while retaining cache `35` and the rolling rate limit `2/20`;
+- preserved the calm preset's low average transition rate but allowed its two permitted changes to occur according to musical predictions instead of releasing exactly one credit every ten seconds;
+- made replacements selected after `max_duration_seconds` bypass both scene throttle and rolling rate admission, then record the forced transition in both budgets so the safety action is immediate without enabling a subsequent unbounded burst;
+- retained one selected replacement while the expired target remains the dominant blocked prediction, allowing only a genuinely different unblocked prediction to re-enter the ordinary preset policy;
+- interpreted every scene-specific or global duration as a base and drew one stable effective duration per automatic activation from a uniform ±30% range: 8 becomes 5.6–10.4 seconds, 15 becomes 10.5–19.5 seconds, and the default 40 becomes 28–52 seconds;
+- retained the expired-target re-entry block and left silence, announcement, manual override, and the ordinary `normal`/`responsive` transition parameters unchanged.
+
+Rationale and embedded impact:
+
+- the live calm log showed a sustained sequence of accepted changes almost exactly ten seconds apart because `throttle=1/10` had no burst capacity and predictions consumed every credit immediately;
+- the same log showed an 8-second-base scene remaining active for roughly 24 seconds when its replacement was held by the throttle;
+- the first strict-expiry revision then exposed repeated cache-alternative bypasses, producing five scene changes in roughly 1.1 seconds; holding one replacement and charging forced changes to the budgets closes that path;
+- the change removes token-bucket work in calm mode and stores one duration float plus existing target state, with no additional audio, thread, or network cost.
+
+Validation:
+
+- added a regression with a fully exhausted `1/60` throttle and `1/60` rate window proving a five-second expiry still switches immediately, is charged to both budgets, and holds its one replacement while the expired prediction persists;
+- added deterministic tests for the 8-second override and 40-second global jitter bounds plus one-draw-per-activation stability;
+- updated shipped and built-in preset tests and passed 51 focused automatic-routing, runtime-configuration, runtime-control, and scene-limit tests;
+- compiled the modified router and configuration modules and checked the patch for whitespace errors.
+
+Remaining work: validate the revised `calm` preset against a live concert-length input and confirm that strict expiry plus rolling-window bursts feel natural in QLC+.
+
 ### 2026-08-06 — QLC+ WebSocket backend specification integrated
 
 Roadmap decision:

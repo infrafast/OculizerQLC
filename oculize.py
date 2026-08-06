@@ -1025,7 +1025,7 @@ Scene Cache Size:
     parser.add_argument('--scene-throttle', type=parse_scene_rate_limit, default=None,
                       metavar='BURST/RECOVERY_SECONDS', help='Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)')
     parser.add_argument('--scene-max-duration', type=float, default=40.0, metavar='SECONDS',
-                      help='Maximum automatic music-scene duration (default: 40 seconds)')
+                      help='Base automatic music-scene duration before ±30% variation (default: 40 seconds)')
     parser.add_argument('--control-socket', default=default_control_socket_path(), help='Unix runtime control socket path')
     parser.add_argument('--no-control-socket', action='store_true', help='Disable the local runtime control socket')
     parser.add_argument('--prediction-channels', type=str, default=default_prediction_channels,

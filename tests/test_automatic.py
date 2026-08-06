@@ -66,7 +66,9 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         engine.scene_cache.extend(["blue", "strobe"])
         engine.current_predicted_scene = "strobe"
         now = [0.0]
-        router = AutomaticSceneRouter(engine, scene_max_duration=5, clock=lambda: now[0])
+        router = AutomaticSceneRouter(
+            engine, scene_max_duration=5, clock=lambda: now[0], random_source=lambda: 0.5
+        )
 
         self.assertTrue(router.step())
         now[0] = 5.0
@@ -84,6 +86,7 @@ class AutomaticSceneRouterTests(unittest.TestCase):
             scene_max_duration=5,
             scene_reentry_seconds=10,
             clock=lambda: now[0],
+            random_source=lambda: 0.5,
         )
 
         self.assertTrue(router.step())
@@ -102,7 +105,9 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         engine.scene_durations["strobe"] = 2.0
         engine.current_predicted_scene = "strobe"
         now = [0.0]
-        router = AutomaticSceneRouter(engine, scene_max_duration=30, clock=lambda: now[0])
+        router = AutomaticSceneRouter(
+            engine, scene_max_duration=30, clock=lambda: now[0], random_source=lambda: 0.5
+        )
 
         self.assertTrue(router.step())
         now[0] = 1.9
@@ -111,6 +116,79 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         self.assertTrue(router.step())
 
         self.assertEqual(engine.changes, ["strobe", "ambient1"])
+
+    def test_expired_scene_bypasses_depleted_transition_limits(self):
+        engine = FakeOculizer()
+        engine.targets.update({
+            "strobe": "strobe", "blue": "blue", "green": "green", "ambient1": "ambient1",
+        })
+        engine.scene_cache.extend(["blue", "strobe"])
+        engine.current_predicted_scene = "strobe"
+        now = [0.0]
+        router = AutomaticSceneRouter(
+            engine,
+            scene_max_duration=5,
+            scene_rate_limit=(1, 60.0),
+            scene_throttle=(1, 60.0),
+            clock=lambda: now[0],
+            random_source=lambda: 0.5,
+        )
+
+        self.assertTrue(router.step())
+        self.assertEqual(router.throttle_tokens, 0.0)
+        now[0] = 5.0
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["strobe", "blue"])
+        self.assertEqual(list(router.automatic_change_times), [0.0, 5.0])
+        self.assertEqual(router.throttle_tokens, 0.0)
+
+        # The expired target is still predicted: retain the one selected
+        # replacement instead of cycling through cached alternatives.
+        now[0] = 5.1
+        self.assertFalse(router.step())
+        self.assertEqual(engine.changes, ["strobe", "blue"])
+
+        # A genuinely different prediction returns to the ordinary policy and
+        # cannot exploit the safety bypass for an immediate third transition.
+        engine.current_predicted_scene = "green"
+        self.assertFalse(router.step())
+        self.assertEqual(engine.changes, ["strobe", "blue"])
+
+    def test_duration_jitter_applies_to_override_and_global_default(self):
+        engine = FakeOculizer()
+        engine.targets.update({"strobe": "strobe", "party": "party"})
+        engine.scene_durations["strobe"] = 8.0
+
+        low = AutomaticSceneRouter(engine, scene_max_duration=40, random_source=lambda: 0.0)
+        high = AutomaticSceneRouter(engine, scene_max_duration=40, random_source=lambda: 1.0)
+
+        self.assertAlmostEqual(low._randomized_duration_for("strobe"), 5.6)
+        self.assertAlmostEqual(high._randomized_duration_for("strobe"), 10.4)
+        self.assertAlmostEqual(low._randomized_duration_for("party"), 28.0)
+        self.assertAlmostEqual(high._randomized_duration_for("party"), 52.0)
+
+    def test_duration_is_drawn_once_per_automatic_activation(self):
+        engine = FakeOculizer()
+        engine.targets.update({"strobe": "strobe", "ambient1": "ambient1"})
+        engine.current_predicted_scene = "strobe"
+        now = [0.0]
+        samples = iter((0.0, 1.0))
+        router = AutomaticSceneRouter(
+            engine,
+            scene_max_duration=10,
+            clock=lambda: now[0],
+            random_source=lambda: next(samples),
+        )
+
+        self.assertTrue(router.step())
+        self.assertAlmostEqual(router.target_duration_seconds, 7.0)
+        now[0] = 6.99
+        self.assertFalse(router.step())
+        self.assertAlmostEqual(router.target_duration_seconds, 7.0)
+        now[0] = 7.0
+        self.assertTrue(router.step())
+        self.assertAlmostEqual(router.target_duration_seconds, 13.0)
 
     def test_live_controls_apply_atomically_and_reset_runtime_budgets(self):
         engine = FakeOculizer()

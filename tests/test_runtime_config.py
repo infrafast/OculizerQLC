@@ -15,7 +15,7 @@ class RuntimeConfigTests(unittest.TestCase):
             "cache": 15, "rate": (4, 15.0), "throttle": (2, 4.0),
         })
         self.assertEqual(defaults["calm"], {
-            "cache": 35, "rate": (2, 20.0), "throttle": (1, 10.0),
+            "cache": 35, "rate": (2, 20.0), "throttle": None,
         })
         custom = configured_scene_presets({
             "control": {"presets": {"show": {
