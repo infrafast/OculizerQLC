@@ -174,17 +174,17 @@ System can be used different trained predictors. `v6` is the default predictor a
 
 ### Train a concert-specific predictor
 
-You can train your own predictor based on the the v4 feature pipeline (1,920 EfficientAT dimensions plus 128 mean-MFCC dimensions) using your own recordings. Put representative MP3, WAV, FLAC, M4A, AAC, or OGG recordings in one directory. Example below to generate the v6 :
+You can regenerate `v6` from your own concert recordings. The process first groups acoustically similar four-second excerpts into clusters; it cannot decide what those clusters should look like on stage. You complete that artistic step by listening to representative excerpts and assigning an existing Oculizer scene to every cluster.
 
-```bash
-python3 scripts/train_predictor_v6.py \
-  --input /path/to/concert-recordings \
-  --clusters 30 \
-  --window-seconds 4 \
-  --hop-seconds 2
-```
+Cluster numbers have no permanent meaning: cluster `7` is not intrinsically a calm or energetic cluster, and its meaning can change when the corpus, cluster count, or training options change.
 
-The initial model remains unavailable to the application because every cluster provisionally maps to `party`. Open `oculizer/scene_predictors/v6/review/cluster_report.md`, listen to its representative excerpts, and edit `oculizer/scene_predictors/v6/scene_mapping.json`. Approve that complete mapping by rerunning the inexpensive statistical stage from the cached audio features:
+#### 1. Prepare the recording corpus
+
+Place representative MP3, WAV, FLAC, M4A, AAC, or OGG recordings in one directory. Include the different songs, intensities, transitions, and atmospheres expected during a show. Avoid unnecessary duplicates; use `--max-windows-per-track` if a long recording would otherwise dominate the corpus.
+
+The command below intentionally replaces the current v6 model, so back it up first if it must be retained.
+
+#### 2. Extract features and create the clusters
 
 ```bash
 python3 scripts/train_predictor_v6.py \
@@ -192,12 +192,69 @@ python3 scripts/train_predictor_v6.py \
   --clusters 30 \
   --window-seconds 4 \
   --hop-seconds 2 \
+  --representatives 8 \
+  --force
+```
+
+This produces the model files and a review workspace under `oculizer/scene_predictors/v6/review/`. The model deliberately remains unavailable at runtime at this point because its provisional mapping assigns every cluster to `party`.
+
+#### 3. Perform the artistic interpretation
+
+Open `oculizer/scene_predictors/v6/review/cluster_report.md`. For each cluster:
+
+1. Listen to all its files in `review/excerpts/`, not only the first one. The source names and the RMS, speech, singing, and music measurements in the report are useful clues, but they are not artistic decisions.
+2. Identify what the excerpts have in common: for example energy, density, rhythm, mood, colour, or the suitability of a strobe effect.
+3. Choose the existing scene that should represent that musical character. Use its exact logical name from the scene definitions under `scenes/`.
+4. Edit the corresponding value in `oculizer/scene_predictors/v6/scene_mapping.json`.
+
+For example:
+
+```json
+{
+  "0": "chill_blue",
+  "1": "electric",
+  "2": "pink_strobe_pulse"
+}
+```
+
+Every cluster from `0` to `29` must occur exactly once. Several clusters may deliberately use the same scene, but no value may be empty and no cluster may be omitted or added. Speech and silence are detected separately at runtime and use the dedicated `announcement` and `off` routes; do not try to encode those two events solely through the musical cluster mapping.
+
+This review is normally iterative: when a cluster is ambiguous, replay all its excerpts and choose the scene whose behaviour is safest and most coherent across the whole group, rather than the scene that best matches one isolated excerpt.
+
+#### 4. Approve and finalize the mapping
+
+Rerun the statistical stage from the cached features. Keep the same cluster and window settings used above:
+
+```bash
+python3 scripts/train_predictor_v6.py \
+  --input /path/to/concert-recordings \
+  --clusters 30 \
+  --window-seconds 4 \
+  --hop-seconds 2 \
+  --representatives 8 \
   --reuse-features \
   --mapping oculizer/scene_predictors/v6/scene_mapping.json \
   --force
 ```
 
-After approval, `--predictor-version v6` appears automatically. Keep `audio.prediction.window_seconds` equal to the v6 training window. The feature cache and review excerpts are local generated data and are ignored by Git; retain a backup until the mapping is final. Use `--max-windows-per-track` to prevent long recordings from dominating, and run `python3 scripts/train_predictor_v6.py --help` for all controls.
+This validates that the mapping is complete, marks the model as reviewed, and enables `--predictor-version v6`. Reusing the feature cache avoids decoding every recording and running feature extraction again.
+
+#### 5. Test the completed predictor
+
+Test it without lighting hardware before using it in a show:
+
+```bash
+python3 oculize.py \
+  --audio-file tests/fascination.wav \
+  --output qlc-osc \
+  --osc-dry-run \
+  --predictor-version v6 \
+  --scene-cache-size 10
+```
+
+Check that the selected scenes remain artistically appropriate across several representative tracks. If an assignment is unsatisfactory, edit `scene_mapping.json` and repeat step 4; feature extraction is not required again.
+
+Keep `audio.prediction.window_seconds` equal to the window used for training (`4` in this example). Also ensure every mapped scene exists in the selected output configuration, especially the QLC+ mapping. The feature cache and review excerpts are generated locally and ignored by Git, so retain a backup until the model and artistic mapping are final. Run `python3 scripts/train_predictor_v6.py --help` for less common controls.
 
 Interactive controls:
 
