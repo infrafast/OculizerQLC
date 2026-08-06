@@ -264,24 +264,25 @@ def configured_frequency_modulation(config: dict[str, Any]) -> FrequencyModulati
     return _parse_frequency_modulation(config.get("audio", {}).get("frequency_modulation", {}))
 
 
-def configured_scene_presets(config: dict[str, Any], reset_cache_size=None) -> dict[str, dict[str, Any]]:
-    """Return validated named cache/rate/throttle control presets."""
+def configured_dynamic_controls(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Return validated named dynamic-control profiles."""
     defaults = {
         "responsive": {"cache": 3, "rate": (10, 10.0), "throttle": (4, 1.0)},
         "normal": {"cache": 15, "rate": (4, 15.0), "throttle": (2, 4.0)},
         "calm": {"cache": 35, "rate": (2, 20.0), "throttle": None},
-        "reset": {"cache": 10, "rate": None, "throttle": None},
     }
-    configured = config.get("control", {}).get("presets", defaults)
+    configured = config.get("control", {}).get("dynamic_controls", defaults)
     if not isinstance(configured, dict) or not configured:
-        raise ValueError("control.presets must be a non-empty object")
+        raise ValueError("control.dynamic_controls must be a non-empty object")
     result = {}
     for name, values in configured.items():
         if not isinstance(name, str) or not name.strip() or not isinstance(values, dict):
-            raise ValueError("each control preset must have a non-empty name and object value")
+            raise ValueError("each dynamic control must have a non-empty name and object value")
+        if name.casefold() == "off":
+            raise ValueError("control.dynamic_controls cannot redefine the reserved 'off' profile")
         cache = values.get("cache")
         if isinstance(cache, bool) or not isinstance(cache, int) or not 1 <= cache <= 100:
-            raise ValueError(f"control.presets.{name}.cache must be between 1 and 100")
+            raise ValueError(f"control.dynamic_controls.{name}.cache must be between 1 and 100")
         parsed = {"cache": cache}
         for key in ("rate", "throttle"):
             value = values.get(key)
@@ -289,16 +290,12 @@ def configured_scene_presets(config: dict[str, Any], reset_cache_size=None) -> d
                 parsed[key] = None
                 continue
             if not isinstance(value, (list, tuple)) or len(value) != 2:
-                raise ValueError(f"control.presets.{name}.{key} must be [count, seconds] or null")
+                raise ValueError(f"control.dynamic_controls.{name}.{key} must be [count, seconds] or null")
             count, seconds = value
             if (isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 100
                     or isinstance(seconds, bool) or not isinstance(seconds, (int, float))
                     or not 0.5 <= seconds <= 300):
-                raise ValueError(f"control.presets.{name}.{key} values are out of range")
+                raise ValueError(f"control.dynamic_controls.{name}.{key} values are out of range")
             parsed[key] = (count, float(seconds))
         result[name] = parsed
-    if reset_cache_size is not None and "reset" in result:
-        if isinstance(reset_cache_size, bool) or not isinstance(reset_cache_size, int) or not 1 <= reset_cache_size <= 100:
-            raise ValueError("reset cache size must be between 1 and 100")
-        result["reset"] = {**result["reset"], "cache": reset_cache_size}
     return result

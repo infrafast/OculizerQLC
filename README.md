@@ -50,7 +50,7 @@ python -c "import efficientat; print('EfficientAT: OK')"
 
 The main user configuration files are:
 
-- `config/oculizer.json`: audio input, analysis behavior, transition presets, silence, and speech settings;
+- `config/oculizer.json`: audio input, analysis behavior, dynamic-control profiles, silence, and speech settings;
 - `config/qlc_config.json`: QLC+ OSC destination, global controls, and logical-scene mappings;
 - `profiles/`: direct-DMX fixture profiles;
 - `scenes/`: lighting scenes;
@@ -120,8 +120,7 @@ Useful options:
 | `--audio-file PATH` | Loop a PCM WAV file instead of capturing audio |
 | `--predictor-version VERSION` | Select the prediction model |
 | `--scene-cache-size N` | Set prediction smoothing (default: `10`) |
-| `--scene-rate-limit N/SECONDS` | Limit automatic scene changes in a rolling window |
-| `--scene-throttle N/SECONDS` | Allow a burst, then progressively recover transition credits |
+| `--dynamic-control PROFILE` | Apply a configured dynamics profile (default: `off`) |
 | `--scene-max-duration SECONDS` | Set the automatic scene-duration base before ±30% per-activation variation (default: `40`) |
 | `--output enttec|qlc-osc` | Select the lighting output |
 | `--no-graph` | Hide the interactive RMS graph |
@@ -160,7 +159,7 @@ Interactive controls:
 
 - `q`: quit;
 - `r`: reload scenes;
-- `l`: edit cache, rate limit, and throttle values live;
+- `l`: select a dynamic-control profile live;
 - `Ctrl+T`: open the scene selector;
 - `Ctrl+O`: switch between manual override and automatic prediction from the integrated selector.
 
@@ -170,9 +169,9 @@ The main screen displays a scrolling RMS graph and scene-transition markers. Dis
 python oculize.py --no-graph [other options]
 ```
 
-The current cache, rate limit, and throttle are shown in the status area. An omitted rate limit or throttle is displayed as `Off`. In the `l` editor, use the arrow keys or `+`/`-` to change values, `0` to disable the selected optional policy, Enter to apply, and Escape to cancel.
+The active dynamic-control profile is shown in the status area. In the `l` selector, use the arrow keys or `+`/`-` to choose a configured profile, Enter to apply it, and Escape to cancel. Starting without `--dynamic-control` selects `off`: transition limiting is disabled and the normal startup cache remains in use.
 
-Automatic music scene duration uses 40 seconds as its default base. Override the global base at startup with, for example, `--scene-max-duration 20`. On every automatic activation, Oculizer draws one effective duration uniformly within ±30% of the scene-specific or global base and keeps that value stable for the complete activation. A base of 8 seconds therefore produces 5.6–10.4 seconds, while the default base produces 28–52 seconds. When that duration expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. This safety replacement bypasses scene rate and throttle admission but is recorded in their budgets; the expired prediction holds that one replacement until a genuinely different prediction arrives, and the expired target cannot immediately re-enter. Silence, announcement, and manual overrides are exempt.
+Automatic music scene duration uses 40 seconds as its default base. Override the global base at startup with, for example, `--scene-max-duration 20`. On every automatic activation, Oculizer draws one effective duration uniformly within ±30% of the scene-specific or global base and keeps that value stable for the complete activation. A base of 8 seconds therefore produces 5.6–10.4 seconds, while the default base produces 28–52 seconds. When that duration expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. This safety replacement bypasses the active profile's transition admission but is recorded in its internal budgets; the expired prediction holds that one replacement until a genuinely different prediction arrives, and the expired target cannot immediately re-enter. Silence, announcement, and manual overrides are exempt.
 
 A scene can override the global duration by declaring a positive duration in its artistic definition under `scenes/`:
 
@@ -295,38 +294,35 @@ python3 oculizerctl.py status
 python3 oculizerctl.py auto
 python3 oculizerctl.py pause
 python3 oculizerctl.py scene wave
-python3 oculizerctl.py limits
-python3 oculizerctl.py limits --cache 7 --rate 6/10 --throttle 3/2
-python3 oculizerctl.py limits --rate off --throttle off
-python3 oculizerctl.py presets
-python3 oculizerctl.py preset responsive
-python3 oculizerctl.py preset normal
-python3 oculizerctl.py preset calm
-python3 oculizerctl.py preset reset
+python3 oculizerctl.py dynamic-controls
+python3 oculizerctl.py dynamic-control responsive
+python3 oculizerctl.py dynamic-control normal
+python3 oculizerctl.py dynamic-control calm
+python3 oculizerctl.py dynamic-control off
 ```
 
 The default socket is `/tmp/oculizer-<uid>.sock`. Start the application with `--control-socket PATH` to use another path, then place `--socket PATH` before the `oculizerctl.py` subcommand. Use `--no-control-socket` to disable external control.
 
 `pause` suspends automatic processing and activates blackout. `auto` clears pause or manual override and resumes automatic operation. `scene NAME` forces a configured logical scene. Live changes last until the application restarts and do not rewrite configuration files.
 
-### Operator presets
+### Dynamic-control profiles
 
-The supplied presets are starting points that can be adjusted under `control.presets` in `config/oculizer.json`:
+The supplied profiles are starting points that can be adjusted or extended under `control.dynamic_controls` in `config/oculizer.json`. Selecting a named profile applies its complete tuple, including its cache value, so it takes precedence over `--scene-cache-size` while active. The reserved `off` profile is always available and cannot be redefined; it restores the startup `--scene-cache-size` value and disables transition filtering:
 
-| Preset | Cache | Throttle | Rate limit | Behavior |
+| Profile | Cache | Throttle | Rate limit | Behavior |
 | --- | ---: | ---: | ---: | --- |
 | `responsive` | `3` | `4/1` | `10/10` | Fast response and generous bursts |
 | `normal` | `15` | `2/4` | `4/15` | Stable general-purpose behavior with restrained transitions |
 | `calm` | `35` | `Off` | `2/20` | Very strong smoothing with at most two changes per rolling 20-second window, without a fixed recovery cadence |
-| `reset` | startup value | `Off` | `Off` | Restore startup smoothing and disable both limits |
+| `off` | startup value | `Off` | `Off` | Restore startup smoothing and leave predictions unrestricted |
 
 QLC+ 5 Virtual Console buttons can call the installed client through script functions such as:
 
 ```javascript
-Engine.systemCommand("/usr/local/bin/oculizerctl preset responsive");
-Engine.systemCommand("/usr/local/bin/oculizerctl preset normal");
-Engine.systemCommand("/usr/local/bin/oculizerctl preset calm");
-Engine.systemCommand("/usr/local/bin/oculizerctl preset reset");
+Engine.systemCommand("/usr/local/bin/oculizerctl dynamic-control responsive");
+Engine.systemCommand("/usr/local/bin/oculizerctl dynamic-control normal");
+Engine.systemCommand("/usr/local/bin/oculizerctl dynamic-control calm");
+Engine.systemCommand("/usr/local/bin/oculizerctl dynamic-control off");
 ```
 
 The `/usr/local/bin/oculizerctl` installation path will be provided by the Raspberry Pi deployment phase. During development, use the absolute paths to Python and `oculizerctl.py`.

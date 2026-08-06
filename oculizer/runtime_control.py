@@ -7,12 +7,15 @@ import threading
 
 class RuntimeControl:
     def __init__(self, oculizer, router, master_modulator, frequency_modulator,
-                 presets=None, health_check=None):
+                 dynamic_controls=None, active_dynamic_control="off", off_cache_size=10,
+                 health_check=None):
         self.oculizer = oculizer
         self.router = router
         self.master_modulator = master_modulator
         self.frequency_modulator = frequency_modulator
-        self.presets = presets or {}
+        self.dynamic_controls = dynamic_controls or {}
+        self.active_dynamic_control = active_dynamic_control
+        self.off_cache_size = off_cache_size
         self.health_check = health_check or (lambda: bool(self.oculizer.is_alive()))
         self.mode = "auto"
         self.lock = threading.RLock()
@@ -71,33 +74,25 @@ class RuntimeControl:
             self.mode = "scene"
             return self.status()
 
-    def configure_limits(self, *, cache="unchanged", rate="unchanged", throttle="unchanged",
-                         expected_revision=None):
-        if isinstance(rate, list):
-            rate = tuple(rate)
-        if isinstance(throttle, list):
-            throttle = tuple(throttle)
-        kwargs = {"expected_revision": expected_revision}
-        if cache != "unchanged":
-            kwargs["scene_cache_size"] = cache
-        if rate != "unchanged":
-            kwargs["scene_rate_limit"] = rate
-        if throttle != "unchanged":
-            kwargs["scene_throttle"] = throttle
-        return self.router.configure_transition_policy(**kwargs)
-
-    def apply_preset(self, name):
+    def apply_dynamic_control(self, name, expected_revision=None):
         with self.lock:
-            if name not in self.presets:
-                raise ValueError(f"unknown preset: {name}")
-            preset = self.presets[name]
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError("dynamic-control requires a profile name")
+            name = name.strip()
+            if name == "off":
+                profile = {"cache": self.off_cache_size, "rate": None, "throttle": None}
+            elif name in self.dynamic_controls:
+                profile = self.dynamic_controls[name]
+            else:
+                raise ValueError(f"unknown dynamic-control profile: {name}")
             self.router.configure_transition_policy(
-                scene_cache_size=preset["cache"],
-                scene_rate_limit=preset["rate"],
-                scene_throttle=preset["throttle"],
+                scene_cache_size=profile["cache"],
+                scene_rate_limit=profile["rate"],
+                scene_throttle=profile["throttle"],
+                expected_revision=expected_revision,
             )
+            self.active_dynamic_control = name
             result = self.status()
-            result["preset"] = name
             return result
 
     def status(self):
@@ -111,6 +106,7 @@ class RuntimeControl:
                 "resolved_scene": current.get("name") if isinstance(current, dict) else None,
                 "blackout": bool(getattr(backend, "blackout_active", self.mode == "pause")),
                 "audio_worker_healthy": bool(self.health_check()),
+                "dynamic_control": self.active_dynamic_control,
                 **policy,
             }
 
@@ -126,17 +122,13 @@ class RuntimeControl:
             return self.set_pause()
         if command == "scene":
             return self.set_scene(request.get("scene"))
-        if command == "limits":
-            if not any(key in request for key in ("cache", "rate", "throttle")):
-                return self.router.get_transition_policy_status()
-            return self.configure_limits(
-                cache=request.get("cache", "unchanged"),
-                rate=request.get("rate", "unchanged"),
-                throttle=request.get("throttle", "unchanged"),
-                expected_revision=request.get("expected_revision"),
+        if command == "dynamic-controls":
+            return {"active": self.active_dynamic_control,
+                    "dynamic_controls": {"off": {"cache": self.off_cache_size,
+                                                    "rate": None, "throttle": None},
+                                         **self.dynamic_controls}}
+        if command == "dynamic-control":
+            return self.apply_dynamic_control(
+                request.get("name"), expected_revision=request.get("expected_revision")
             )
-        if command == "presets":
-            return {"presets": self.presets}
-        if command == "preset":
-            return self.apply_preset(request.get("name"))
         raise ValueError(f"unknown command: {command}")

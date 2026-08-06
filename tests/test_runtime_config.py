@@ -5,34 +5,38 @@ from pathlib import Path
 from unittest.mock import patch
 
 from oculizer.light.control import Oculizer
-from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_presets, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, load_runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
-    def test_loads_default_and_custom_scene_control_presets(self):
-        defaults = configured_scene_presets({})
+    def test_loads_default_and_custom_dynamic_controls(self):
+        defaults = configured_dynamic_controls({})
         self.assertEqual(defaults["normal"], {
             "cache": 15, "rate": (4, 15.0), "throttle": (2, 4.0),
         })
         self.assertEqual(defaults["calm"], {
             "cache": 35, "rate": (2, 20.0), "throttle": None,
         })
-        custom = configured_scene_presets({
-            "control": {"presets": {"show": {
+        custom = configured_dynamic_controls({
+            "control": {"dynamic_controls": {"show": {
                 "cache": 4, "rate": [5, 8], "throttle": None,
             }}},
         })
         self.assertEqual(custom["show"], {
             "cache": 4, "rate": (5, 8.0), "throttle": None,
         })
-        reset = configured_scene_presets({}, reset_cache_size=9)
-        self.assertEqual(reset["reset"]["cache"], 9)
-
-    def test_rejects_invalid_scene_control_preset(self):
+    def test_rejects_invalid_dynamic_control(self):
         with self.assertRaisesRegex(ValueError, "cache"):
-            configured_scene_presets({
-                "control": {"presets": {"bad": {
+            configured_dynamic_controls({
+                "control": {"dynamic_controls": {"bad": {
                     "cache": 0, "rate": None, "throttle": None,
+                }}},
+            })
+
+        with self.assertRaisesRegex(ValueError, "reserved 'off'"):
+            configured_dynamic_controls({
+                "control": {"dynamic_controls": {"off": {
+                    "cache": 10, "rate": None, "throttle": None,
                 }}},
             })
 

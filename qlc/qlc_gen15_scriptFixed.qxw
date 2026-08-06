@@ -1469,23 +1469,23 @@
   <Function ID="155" Type="Collection" Name="MOTION_BASS" Path="Motion">
    <Step Number="0">11</Step>
   </Function>
-  <Function ID="156" Type="Script" Name="SCRIPT_OCULIZER_PRESET_RESPONSIVE" Path="Scripts/Oculizer" Version="2">
+  <Function ID="156" Type="Script" Name="SCRIPT_OCULIZER_DYNAMIC_CONTROL_RESPONSIVE" Path="Scripts/Oculizer" Version="2">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <Direction>Forward</Direction>
    <RunOrder>SingleShot</RunOrder>
-   <Command>systemcommand%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2F.venv%2Fbin%2Fpython%20arg%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2Foculizerctl.py%20arg%3Apreset%20arg%3Aresponsive</Command>
+   <Command>systemcommand%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2F.venv%2Fbin%2Fpython%20arg%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2Foculizerctl.py%20arg%3Adynamic-control%20arg%3Aresponsive</Command>
   </Function>
-  <Function ID="157" Type="Script" Name="SCRIPT_OCULIZER_PRESET_NORMAL" Path="Scripts/Oculizer" Version="2">
+  <Function ID="157" Type="Script" Name="SCRIPT_OCULIZER_DYNAMIC_CONTROL_NORMAL" Path="Scripts/Oculizer" Version="2">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <Direction>Forward</Direction>
    <RunOrder>SingleShot</RunOrder>
-   <Command>systemcommand%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2F.venv%2Fbin%2Fpython%20arg%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2Foculizerctl.py%20arg%3Apreset%20arg%3Anormal</Command>
+   <Command>systemcommand%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2F.venv%2Fbin%2Fpython%20arg%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2Foculizerctl.py%20arg%3Adynamic-control%20arg%3Anormal</Command>
   </Function>
-  <Function ID="158" Type="Script" Name="SCRIPT_OCULIZER_PRESET_CALM" Path="Scripts/Oculizer" Version="2">
+  <Function ID="158" Type="Script" Name="SCRIPT_OCULIZER_DYNAMIC_CONTROL_CALM" Path="Scripts/Oculizer" Version="2">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <Direction>Forward</Direction>
    <RunOrder>SingleShot</RunOrder>
-   <Command>systemcommand%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2F.venv%2Fbin%2Fpython%20arg%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2Foculizerctl.py%20arg%3Apreset%20arg%3Acalm</Command>
+   <Command>systemcommand%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2F.venv%2Fbin%2Fpython%20arg%3A%2FUsers%2Fts%2FDocuments%2FPlatformIO%2FProjects%2FOculizerQLC%2Foculizerctl.py%20arg%3Adynamic-control%20arg%3Acalm</Command>
   </Function>
   <Function ID="159" Type="Script" Name="SCRIPT_OCULIZER_AUTO" Path="Scripts/Oculizer" Version="2">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>

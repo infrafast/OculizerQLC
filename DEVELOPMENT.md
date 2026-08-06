@@ -357,23 +357,23 @@ Design constraints:
 
 Exit criterion: `oculize.py --audio-file <file.wav> --output qlc-osc --osc-dry-run` runs the existing automatic scene, speech, silence, master, and frequency-band pipelines at real-time pace on an audio-less host, loops cleanly, and stops safely without importing or opening `sounddevice`.
 
-### Phase 8a — Shared local runtime control and operator presets
+### Phase 8a — Shared local runtime control and dynamic-control profiles
 
 Status: **complete — implementation and live QLC+ operator validation accepted**
 
 - [x] host the same configurable Unix-domain control socket from either `oculize.py` or `oculizer_service.py`, with exactly one runtime owning the socket at a time;
-- [x] add `oculizerctl` commands for `auto`, `pause`, forced logical scenes, status, live cache/rate/throttle inspection, modification, and disabling optional policies;
-- [x] expose configurable named transition presets suitable for four operator buttons: `responsive`, `normal`, `calm`, and `reset`;
-- [x] make `oculizerctl preset <name>` apply cache, rate, and throttle as one validated atomic update, and add `oculizerctl presets` to list the resolved preset values;
-- [x] keep preset values in normal Oculizer configuration rather than hard-coding artistic choices in the client or QLC+ workspace;
-- [x] validate the documented QLC+ 5 `Engine.systemCommand` preset buttons against a live Virtual Console;
-- [x] keep the interactive main-screen cache/rate/throttle status synchronized with changes received through the socket on its normal render cadence;
+- [x] add `oculizerctl` commands for `auto`, `pause`, forced logical scenes, status, profile discovery, and atomic dynamic-profile selection;
+- [x] expose configurable named transition profiles suitable for four operator buttons: `responsive`, `normal`, `calm`, and the reserved neutral `off` state;
+- [x] make `oculizerctl dynamic-control <name>` apply cache, rate, and throttle as one validated atomic update, and add `oculizerctl dynamic-controls` to list resolved values;
+- [x] keep profile values in normal Oculizer configuration rather than hard-coding artistic choices in the client or QLC+ workspace;
+- [x] validate the documented QLC+ 5 `Engine.systemCommand` profile buttons against a live Virtual Console;
+- [x] keep the interactive main-screen active profile synchronized with changes received through the socket on its normal render cadence;
 - [x] add a monotonically increasing policy revision so an `l` editor opened before an external change cannot silently overwrite newer socket values;
 - [x] make all updates atomic and thread-safe inside `AutomaticSceneRouter`, with validation before mutation and explicit reset semantics for cache, rolling-window history, and throttle credits;
 - [x] validate malformed commands, concurrent clients, permissions, stale sockets, acknowledgements, and client disconnects locally;
-- [x] document how a development terminal discovers the interactive runtime socket and how QLC+ buttons invoke presets.
+- [x] document how a development terminal discovers the interactive runtime socket and how QLC+ buttons invoke dynamic-control profiles.
 
-Exit criterion: while the interactive application or headless runtime is running, a second terminal and QLC+-originated actions can select modes, scenes, and named transition presets; every active interactive display reflects external changes without restart or split state.
+Exit criterion: while the interactive application or headless runtime is running, a second terminal and QLC+-originated actions can select modes, scenes, and named dynamic-control profiles; every active interactive display reflects external changes without restart or split state.
 
 ### Phase 8a.1 — QLC+ 5 WebSocket button backend
 
@@ -473,18 +473,11 @@ oculizerctl auto
 oculizerctl pause
 oculizerctl scene <logical-scene-name>
 oculizerctl status
-oculizerctl limits
-oculizerctl limits --cache 10
-oculizerctl limits --rate 6/10
-oculizerctl limits --throttle 3/2
-oculizerctl limits --rate 6/10 --throttle 3/2
-oculizerctl limits --rate off
-oculizerctl limits --throttle off
-oculizerctl presets
-oculizerctl preset responsive
-oculizerctl preset normal
-oculizerctl preset calm
-oculizerctl preset reset
+oculizerctl dynamic-controls
+oculizerctl dynamic-control responsive
+oculizerctl dynamic-control normal
+oculizerctl dynamic-control calm
+oculizerctl dynamic-control off
 ```
 
 The service has three mutually exclusive operator modes:
@@ -493,11 +486,11 @@ The service has three mutually exclusive operator modes:
 - `scene <name>`: enter manual override and activate the requested logical scene through the normal configured fallback and QLC+ mapping path;
 - `pause`: suspend prediction routing, discard queued prediction audio, send safe zero values for continuous modulations, and assert blackout. Returning to `auto` must clear blackout and require fresh audio state so a stale prediction cannot flash a scene.
 
-`status` must report at least the operator mode, requested manual scene if any, resolved active scene, blackout state, whether the audio worker is healthy, prediction cache size, the active scene rate limit and its current rolling-window usage, and the active throttle plus its currently available credits. `limits` without options reports the same smoothing and transition-policy state. Commands must return a clear success or error response and must not silently accept an unknown scene, an unmapped scene, or an invalid limit.
+`status` must report at least the operator mode, requested manual scene if any, resolved active scene, blackout state, whether the audio worker is healthy, and the active dynamic-control profile with its resolved cache and internal transition-policy diagnostics. Commands must return a clear success or error response and must not silently accept an unknown scene, an unmapped scene, or an unknown profile.
 
-Live control changes are process-local and must not rewrite configuration files. Supplying cache and both policies applies them atomically after validating every value; any validation failure preserves the complete previous state. `off` explicitly disables one optional policy. Changing cache size preserves its newest entries and recomputes the smoothed prediction under the prediction lock. Changing the rate limit clears its rolling-window history, while changing the throttle refills it to the newly configured burst capacity. The acknowledgement must state that these resets may affect the next prediction or permit a fresh burst. A service restart always restores the command-line or configured startup values rather than replaying live adjustments.
+Live control changes are process-local and must not rewrite configuration files. Selecting a profile applies its cache and both internal policies atomically after validating the configuration; any failure preserves the complete previous state. Changing profiles preserves the newest applicable cache entries, clears rolling-window history, and refills throttle credits. A service restart restores `--dynamic-control`, which defaults to the reserved neutral `off` state rather than replaying a live adjustment.
 
-Named presets are configuration aliases for one complete cache/rate/throttle tuple. Applying a preset uses the same atomic router API as `limits` and the interactive `l` editor. QLC+ buttons, another terminal, and future automation must invoke these commands rather than writing router fields directly. The interactive display reads live router status every render, so external updates become visible automatically. A policy revision guards the modal `l` editor: if socket state changes while it is open, applying its stale snapshot must fail visibly instead of overwriting the newer values.
+Named dynamic controls are configuration aliases for one complete cache/rate/throttle tuple. Applying a profile uses the same atomic router API as the interactive `l` selector. QLC+ buttons, another terminal, and future automation must invoke this command rather than writing router fields directly. The interactive display reads live control state every render, so external updates become visible automatically. A policy revision guards the modal selector: if socket state changes while it is open, applying its stale snapshot must fail visibly instead of overwriting newer values.
 
 POSIX signals remain reserved for process lifecycle (`SIGINT` and `SIGTERM`) and possibly a future configuration reload. They are not the scene-control protocol: signals cannot carry arbitrary logical scene names, provide acknowledgements, or report current state. The local socket avoids opening a network port, supports access control through filesystem ownership and permissions, and can later be wrapped by a web, GPIO, MIDI, or home-automation interface without duplicating routing logic.
 
@@ -506,6 +499,25 @@ Control state is initially process-local and is not restored after a crash or re
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-06 — Unified dynamic-control profiles
+
+Delivered behavior:
+
+- replaced the public `--scene-rate-limit` and `--scene-throttle` options with one `--dynamic-control PROFILE` option in interactive and headless entry points;
+- made `off` the reserved default, restoring startup cache smoothing while applying no transition rate or throttle policy;
+- moved configurable profile definitions to `control.dynamic_controls`, retaining rate and throttle only as internal profile implementation details;
+- replaced socket/client `limits`, `preset`, and `presets` commands with `dynamic-control NAME` and `dynamic-controls`;
+- replaced the interactive field editor with a configured-profile selector and synchronized its active name with external socket changes;
+- updated supplied QLC+ scripts to invoke the unified command.
+
+Compatibility decision: the removed CLI and socket commands intentionally have no aliases. Custom behavior is expressed by adding or editing a named profile in `config/oculizer.json` and selecting it as one atomic policy.
+
+Validation:
+
+- `python3 -m unittest discover -s tests`: 143 tests passed;
+- strict compilation and `--help` checks passed for interactive, headless, and control-client entry points;
+- a real headless WAV/QLC-OSC dry run started with `calm`, reported cache `35` and rate `2/20`, accepted a live switch to `normal`, then switched to `off` with cache `10` and both policies disabled before clean shutdown.
 
 ### 2026-08-06 — Non-mechanical calm routing and strict scene expiry
 

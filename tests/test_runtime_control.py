@@ -48,11 +48,13 @@ def make_control():
     router = AutomaticSceneRouter(engine)
     master = Mock()
     frequency = Mock()
-    presets = {
+    dynamic_controls = {
         "normal": {"cache": 7, "rate": (6, 10.0), "throttle": (3, 2.0)},
-        "reset": {"cache": 25, "rate": None, "throttle": None},
     }
-    return RuntimeControl(engine, router, master, frequency, presets=presets), engine, master, frequency
+    return RuntimeControl(
+        engine, router, master, frequency, dynamic_controls=dynamic_controls,
+        off_cache_size=25,
+    ), engine, master, frequency
 
 
 class RuntimeControlTests(unittest.TestCase):
@@ -78,12 +80,12 @@ class RuntimeControlTests(unittest.TestCase):
         self.assertEqual(automatic["mode"], "auto")
         self.assertIsNone(automatic["manual_scene"])
 
-    def test_named_preset_applies_all_values_atomically(self):
+    def test_named_dynamic_control_applies_all_values_atomically(self):
         control, _engine, _master, _frequency = make_control()
 
-        result = control.apply_preset("normal")
+        result = control.apply_dynamic_control("normal")
 
-        self.assertEqual(result["preset"], "normal")
+        self.assertEqual(result["dynamic_control"], "normal")
         self.assertEqual(result["scene_cache_size"], 7)
         self.assertEqual(result["scene_rate_limit"], (6, 10.0))
         self.assertEqual(result["scene_throttle"], (3, 2.0))
@@ -91,10 +93,20 @@ class RuntimeControlTests(unittest.TestCase):
     def test_policy_revision_rejects_stale_editor(self):
         control, _engine, _master, _frequency = make_control()
         revision = control.status()["policy_revision"]
-        control.configure_limits(cache=5)
+        control.apply_dynamic_control("normal")
 
         with self.assertRaises(PolicyConflictError):
-            control.configure_limits(cache=6, expected_revision=revision)
+            control.apply_dynamic_control("off", expected_revision=revision)
 
-        self.assertEqual(control.status()["scene_cache_size"], 5)
+        self.assertEqual(control.status()["scene_cache_size"], 7)
 
+    def test_off_restores_startup_cache_and_disables_transition_filters(self):
+        control, _engine, _master, _frequency = make_control()
+        control.apply_dynamic_control("normal")
+
+        result = control.apply_dynamic_control("off")
+
+        self.assertEqual(result["dynamic_control"], "off")
+        self.assertEqual(result["scene_cache_size"], 25)
+        self.assertIsNone(result["scene_rate_limit"])
+        self.assertIsNone(result["scene_throttle"])

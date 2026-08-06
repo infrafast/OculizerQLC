@@ -16,23 +16,28 @@ logger = logging.getLogger(__name__)
 
 class HeadlessOculizerService:
     def __init__(self, oculizer, poll_seconds=0.02, silence_config=None, speech_config=None,
-                 master_config=None, frequency_config=None, scene_rate_limit=None,
-                 scene_throttle=None, scene_max_duration=40.0, presets=None,
+                 master_config=None, frequency_config=None, dynamic_control="off",
+                 dynamic_controls=None, off_cache_size=10, scene_max_duration=40.0,
                  control_socket_path=None):
+        dynamic_controls = dynamic_controls or {}
+        profile = ({"cache": off_cache_size, "rate": None, "throttle": None}
+                   if dynamic_control == "off" else dynamic_controls[dynamic_control])
+        oculizer.set_scene_cache_size(profile["cache"])
         self.oculizer = oculizer
         self.router = AutomaticSceneRouter(
             oculizer,
             silence_config=silence_config,
             speech_config=speech_config,
-            scene_rate_limit=scene_rate_limit,
-            scene_throttle=scene_throttle,
+            scene_rate_limit=profile["rate"],
+            scene_throttle=profile["throttle"],
             scene_max_duration=scene_max_duration,
         )
         self.master_modulator = MasterModulator(oculizer, config=master_config)
         self.frequency_modulator = FrequencyBandModulator(oculizer, config=frequency_config)
         self.control = RuntimeControl(
             oculizer, self.router, self.master_modulator, self.frequency_modulator,
-            presets=presets, health_check=lambda: self.oculizer.is_alive(),
+            dynamic_controls=dynamic_controls, active_dynamic_control=dynamic_control,
+            off_cache_size=off_cache_size, health_check=lambda: self.oculizer.is_alive(),
         )
         self.control_server = ControlSocketServer(control_socket_path, self.control) if control_socket_path else None
         self.poll_seconds = poll_seconds

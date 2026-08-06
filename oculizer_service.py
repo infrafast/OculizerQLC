@@ -4,23 +4,12 @@ import argparse
 import logging
 import signal
 import sys
-import re
 
 from oculizer.headless import HeadlessOculizerService
 from oculizer.control_socket import default_control_socket_path
 from oculizer.light import Oculizer, OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_presets, configured_silence, configured_speech, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.scenes import SceneManager
-
-
-def parse_scene_rate_limit(value):
-    match = re.fullmatch(r"([1-9][0-9]*)/([0-9]+(?:\.[0-9]+)?)", value.strip())
-    if match is None:
-        raise argparse.ArgumentTypeError("expected COUNT/SECONDS, for example 4/5")
-    count, seconds = int(match.group(1)), float(match.group(2))
-    if not 1 <= count <= 100 or not 0.5 <= seconds <= 300:
-        raise argparse.ArgumentTypeError("count must be 1-100 and seconds 0.5-300")
-    return count, seconds
 
 
 def configure_service_streams() -> None:
@@ -49,12 +38,10 @@ def parse_args():
     )
     parser.add_argument("--scene-cache-size", type=int, default=10,
                         help="Number of recent predictions used for smoothing (default: 10)")
-    parser.add_argument("--scene-rate-limit", type=parse_scene_rate_limit, default=None, metavar="MAX/SECONDS",
-                        help="Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)")
-    parser.add_argument("--scene-throttle", type=parse_scene_rate_limit, default=None, metavar="BURST/RECOVERY_SECONDS",
-                        help="Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)")
+    parser.add_argument("--dynamic-control", default="off", metavar="PROFILE",
+                        help="Apply a named dynamic-control profile (default: off)")
     parser.add_argument("--scene-max-duration", type=float, default=40.0, metavar="SECONDS",
-                        help="Base automatic music-scene duration before ±30% variation (default: 40 seconds)")
+                        help="Base automatic music-scene duration before ±30%% variation (default: 40 seconds)")
     parser.add_argument("--control-socket", default=default_control_socket_path(), help="Unix runtime control socket path")
     parser.add_argument("--no-control-socket", action="store_true", help="Disable the local runtime control socket")
     parser.add_argument("--qlc-config", default=None, help="Unified QLC+ configuration (default: config/qlc_config.json)")
@@ -91,7 +78,9 @@ def parse_args():
     args.prediction_config = configured_prediction(config)
     args.master_config = configured_master_modulation(config)
     args.frequency_config = configured_frequency_modulation(config)
-    args.scene_presets = configured_scene_presets(config, reset_cache_size=args.scene_cache_size)
+    args.dynamic_controls = configured_dynamic_controls(config)
+    if args.dynamic_control != "off" and args.dynamic_control not in args.dynamic_controls:
+        parser.error("--dynamic-control must be 'off' or a profile from control.dynamic_controls")
     if args.output == "enttec" and not args.profile:
         parser.error("--profile is required with --output enttec")
     if args.dmx_dry_run and args.output != "enttec":
@@ -141,10 +130,10 @@ def build_service(args) -> HeadlessOculizerService:
         speech_config=args.speech_config,
         master_config=args.master_config,
         frequency_config=args.frequency_config,
-        scene_rate_limit=args.scene_rate_limit,
-        scene_throttle=args.scene_throttle,
+        dynamic_control=args.dynamic_control,
+        dynamic_controls=args.dynamic_controls,
+        off_cache_size=args.scene_cache_size,
         scene_max_duration=args.scene_max_duration,
-        presets=args.scene_presets,
         control_socket_path=None if args.no_control_socket else args.control_socket,
     )
 

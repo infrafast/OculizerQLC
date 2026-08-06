@@ -9,17 +9,15 @@ from contextlib import redirect_stderr, redirect_stdout
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
 from oculizer.light import OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_presets, configured_silence, configured_speech, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.automatic import AutomaticSceneRouter, PolicyConflictError
 from oculizer.control_socket import ControlSocketServer, default_control_socket_path
 from oculizer.modulation import FrequencyBandModulator, MasterModulator
 from oculizer.runtime_control import RuntimeControl
 from oculizer.rms_graph import RmsGraph, SCENE_COLOR_FAMILIES, scene_visual
-from oculizer.scene_limits import describe_scene_limits
 import logging
 from collections import deque, OrderedDict
 import math
-import re
 
 COLOR_PAIRS = {
     'title': (curses.COLOR_WHITE, curses.COLOR_BLACK),
@@ -190,8 +188,13 @@ class AudioOculizerController:
                  speech_config=None, master_config=None, frequency_config=None,
                  prediction_window_seconds=2.0, audio_file=None, osc_log_filters=(),
                  dmx_dry_run=False, filter_dmx=False, graph_enabled=True,
-                 scene_rate_limit=None, scene_throttle=None, scene_max_duration=40.0, presets=None,
+                 dynamic_control="off", dynamic_controls=None, scene_max_duration=40.0,
                  control_socket_path=None):
+        dynamic_controls = dynamic_controls or {}
+        off_cache_size = scene_cache_size
+        profile = ({"cache": scene_cache_size, "rate": None, "throttle": None}
+                   if dynamic_control == "off" else dynamic_controls[dynamic_control])
+        scene_cache_size = profile["cache"]
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
@@ -239,15 +242,16 @@ class AudioOculizerController:
             self.oculizer,
             silence_config=silence_config,
             speech_config=speech_config,
-            scene_rate_limit=scene_rate_limit,
-            scene_throttle=scene_throttle,
+            scene_rate_limit=profile["rate"],
+            scene_throttle=profile["throttle"],
             scene_max_duration=scene_max_duration,
         )
         self.master_modulator = MasterModulator(self.oculizer, config=master_config)
         self.frequency_modulator = FrequencyBandModulator(self.oculizer, config=frequency_config)
         self.runtime_control = RuntimeControl(
             self.oculizer, self.scene_router, self.master_modulator,
-            self.frequency_modulator, presets=presets,
+            self.frequency_modulator, dynamic_controls=dynamic_controls,
+            active_dynamic_control=dynamic_control, off_cache_size=off_cache_size,
             health_check=lambda: self.oculizer.is_alive(),
         )
         self.control_server = ControlSocketServer(control_socket_path, self.runtime_control) if control_socket_path else None
@@ -640,67 +644,41 @@ class AudioOculizerController:
                 self.info_message = "Scenes reloaded"
                 logging.info("Scenes reloaded")
             elif key == ord('l'):
-                self.run_scene_limits_mode()
+                self.run_dynamic_control_mode()
             return True
         except Exception as e:
             self.error_message = f"Error handling user input: {str(e)}"
             logging.error(f"Error handling user input: {str(e)}")
             return False
 
-    @staticmethod
-    def _adjust_limit_value(values, selected, direction):
-        """Adjust one bounded editor field; direction is -1 or +1."""
-        if selected == 0:
-            values["cache"] = min(100, max(1, values["cache"] + direction))
-            return
-        policy = "rate" if selected in (1, 2) else "throttle"
-        defaults = (4, 5.0) if policy == "rate" else (3, 2.0)
-        current = values[policy] or defaults
-        count, seconds = current
-        if selected in (1, 3):
-            count = min(100, max(1, count + direction))
-        else:
-            seconds = min(300.0, max(0.5, seconds + direction * 0.5))
-        values[policy] = (count, seconds)
-
-    def run_scene_limits_mode(self):
-        """Edit cache, rolling rate, and token throttle without restarting."""
-        status = self.scene_router.get_transition_policy_status()
+    def run_dynamic_control_mode(self):
+        """Select one configured dynamic-control profile without restarting."""
+        status = self.runtime_control.status()
         initial_revision = status["policy_revision"]
-        values = {
-            "cache": status["scene_cache_size"],
-            "rate": status["scene_rate_limit"],
-            "throttle": status["scene_throttle"],
-        }
-        selected = 0
-        labels = (
-            "Prediction cache size", "Rate maximum", "Rate window",
-            "Throttle burst", "Throttle recovery",
-        )
+        profiles = ["off", *self.runtime_control.dynamic_controls]
+        selected = profiles.index(status["dynamic_control"])
         while True:
             self.stdscr.erase()
             height, width = self.stdscr.getmaxyx()
-            rate = values["rate"]
-            throttle = values["throttle"]
-            rendered_values = (
-                str(values["cache"]),
-                "Off" if rate is None else str(rate[0]),
-                "Off" if rate is None else f"{rate[1]:g}s",
-                "Off" if throttle is None else str(throttle[0]),
-                "Off" if throttle is None else f"{throttle[1]:g}s/credit",
-            )
-            title = "LIVE SCENE CONTROLS"
+            name = profiles[selected]
+            profile = ({"cache": self.runtime_control.off_cache_size,
+                        "rate": None, "throttle": None}
+                       if name == "off" else self.runtime_control.dynamic_controls[name])
+            title = "DYNAMIC CONTROL"
             self.stdscr.addstr(1, max(0, (width - len(title)) // 2), title[:width - 1],
                                curses.color_pair(COLOR_PAIRS['title']) | curses.A_BOLD)
-            for index, (label, value) in enumerate(zip(labels, rendered_values)):
-                row = 4 + index
-                prefix = "> " if index == selected else "  "
-                attribute = curses.color_pair(COLOR_PAIRS['toggle_selected']) if index == selected else curses.color_pair(COLOR_PAIRS['info'])
-                line = f"{prefix}{label}: {value}"
-                if row < height - 3:
-                    self.stdscr.addstr(row, 2, line[:max(0, width - 4)], attribute)
-            help_text = "Up/Down: field | Left/Right or +/-: adjust | 0: Off | Enter: apply | Esc: cancel"
-            note = "Cache range 1-100; policy counts 1-100; times 0.5-300s"
+            rate = "Off" if profile["rate"] is None else f"{profile['rate'][0]}/{profile['rate'][1]:g}s"
+            throttle = ("Off" if profile["throttle"] is None
+                        else f"{profile['throttle'][0]}/{profile['throttle'][1]:g}s")
+            lines = (f"Profile: < {name} >", f"Cache: {profile['cache']}",
+                     f"Rate limit: {rate}", f"Throttle: {throttle}")
+            for index, line in enumerate(lines):
+                attribute = curses.color_pair(
+                    COLOR_PAIRS['toggle_selected'] if index == 0 else COLOR_PAIRS['info']
+                )
+                self.stdscr.addstr(4 + index, 2, line[:max(0, width - 4)], attribute)
+            help_text = "Up/Down or Left/Right: select | Enter: apply | Esc: cancel"
+            note = "Profiles are defined under control.dynamic_controls in config/oculizer.json"
             if height >= 3:
                 self.stdscr.addstr(height - 2, 0, note[:width - 1], curses.color_pair(COLOR_PAIRS['info']))
                 self.stdscr.addstr(height - 1, 0, help_text[:width - 1], curses.color_pair(COLOR_PAIRS['controls']))
@@ -713,29 +691,20 @@ class AudioOculizerController:
             if key == 27:
                 self.info_message = "Scene control changes cancelled"
                 return
-            if key in (curses.KEY_UP, ord('k')):
-                selected = (selected - 1) % len(labels)
-            elif key in (curses.KEY_DOWN, ord('j')):
-                selected = (selected + 1) % len(labels)
-            elif key in (curses.KEY_LEFT, ord('-')):
-                self._adjust_limit_value(values, selected, -1)
-            elif key in (curses.KEY_RIGHT, ord('+'), ord('=')):
-                self._adjust_limit_value(values, selected, 1)
-            elif key == ord('0') and selected != 0:
-                values["rate" if selected in (1, 2) else "throttle"] = None
+            if key in (curses.KEY_UP, curses.KEY_LEFT, ord('k'), ord('-')):
+                selected = (selected - 1) % len(profiles)
+            elif key in (curses.KEY_DOWN, curses.KEY_RIGHT, ord('j'), ord('+'), ord('=')):
+                selected = (selected + 1) % len(profiles)
             elif key in (curses.KEY_ENTER, 10, 13):
                 try:
-                    self.scene_router.configure_transition_policy(
-                        scene_cache_size=values["cache"],
-                        scene_rate_limit=values["rate"],
-                        scene_throttle=values["throttle"],
-                        expected_revision=initial_revision,
+                    self.runtime_control.apply_dynamic_control(
+                        profiles[selected], expected_revision=initial_revision
                     )
-                    self.info_message = "Live scene controls applied"
+                    self.info_message = f"Dynamic control: {profiles[selected]}"
                     return
                 except PolicyConflictError as exc:
                     self.error_message = str(exc)
-                    self.info_message = "External scene-control change detected; reopen 'l' to reload"
+                    self.info_message = "External dynamic-control change detected; reopen 'l'"
                     return
                 except (ValueError, RuntimeError) as exc:
                     self.error_message = str(exc)
@@ -882,16 +851,8 @@ class AudioOculizerController:
                 else:
                     detail_parts.append("AGC: initialising...")
             policy = self.scene_router.get_transition_policy_status()
-            detail_parts.append(f"Cache: {policy['scene_cache_size']}")
-            rate = policy["scene_rate_limit"]
             detail_parts.append(
-                "Rate: Off" if rate is None
-                else f"Rate: {rate[0]}/{rate[1]:g}s ({policy['scene_rate_used']} used)"
-            )
-            throttle = policy["scene_throttle"]
-            detail_parts.append(
-                "Throttle: Off" if throttle is None
-                else f"Throttle: {throttle[0]}/{throttle[1]:g}s ({policy['throttle_tokens']:.1f} credits)"
+                f"Dynamic: {self.runtime_control.active_dynamic_control} (cache {policy['scene_cache_size']})"
             )
             detail_info = " | ".join(detail_parts)
             self.stdscr.addstr(3, 0, detail_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
@@ -915,7 +876,7 @@ class AudioOculizerController:
                 self.stdscr.addstr(height-2, 0, self.error_message[:width-1], curses.color_pair(COLOR_PAIRS['error']))
 
             # Display controls (bottom)
-            controls = "Press 'q' to quit, Ctrl+T for toggle mode, 'r' to reload scenes, 'l' for live scene controls"
+            controls = "Press 'q' to quit, Ctrl+T for toggle mode, 'r' to reload scenes, 'l' for dynamic control"
             self.stdscr.addstr(height-1, 0, controls[:width-1], curses.color_pair(COLOR_PAIRS['controls']))
 
             self.stdscr.noutrefresh()
@@ -940,17 +901,6 @@ class AudioOculizerController:
         except Exception as e:
             self.error_message = f"Error stopping controller: {str(e)}"
             logging.error(f"Error stopping controller: {str(e)}")
-
-def parse_scene_rate_limit(value):
-    """Parse COUNT/SECONDS scene transition policies."""
-    match = re.fullmatch(r"([1-9][0-9]*)/([0-9]+(?:\.[0-9]+)?)", value.strip())
-    if match is None:
-        raise argparse.ArgumentTypeError("expected COUNT/SECONDS, for example 4/5")
-    count, seconds = int(match.group(1)), float(match.group(2))
-    if not 1 <= count <= 100 or not 0.5 <= seconds <= 300:
-        raise argparse.ArgumentTypeError("count must be 1-100 and seconds 0.5-300")
-    return count, seconds
-
 
 def parse_args():
     # Detect OS and set defaults
@@ -977,7 +927,7 @@ def parse_args():
         epilog="""
 Single-stream mode (default on macOS):
   - Uses Scarlett channel 1 for both FFT reactivity and scene prediction
-  - Predictor: v4 (default)
+  - Predictor: v6 (default)
   
 Dual-stream mode (--prediction-device):
   - FFT stream: Scarlett interface for DMX modulation
@@ -1020,12 +970,10 @@ Scene Cache Size:
                       help='Average first two input channels together for FFT (useful for Scarlett 18i20)')
     parser.add_argument('--scene-cache-size', type=int, default=10,
                       help='Number of recent predictions to cache for smoothing (default: 10). 1=instant, 25=heavy smoothing')
-    parser.add_argument('--scene-rate-limit', type=parse_scene_rate_limit, default=None,
-                      metavar='MAX/SECONDS', help='Limit automatic music scene changes in a rolling window, e.g. 4/5 (default: disabled)')
-    parser.add_argument('--scene-throttle', type=parse_scene_rate_limit, default=None,
-                      metavar='BURST/RECOVERY_SECONDS', help='Allow a burst then recover one automatic music change credit per interval, e.g. 3/2 (default: disabled)')
+    parser.add_argument('--dynamic-control', default='off', metavar='PROFILE',
+                      help="Apply a named dynamic-control profile (default: off)")
     parser.add_argument('--scene-max-duration', type=float, default=40.0, metavar='SECONDS',
-                      help='Base automatic music-scene duration before ±30% variation (default: 40 seconds)')
+                      help='Base automatic music-scene duration before ±30%% variation (default: 40 seconds)')
     parser.add_argument('--control-socket', default=default_control_socket_path(), help='Unix runtime control socket path')
     parser.add_argument('--no-control-socket', action='store_true', help='Disable the local runtime control socket')
     parser.add_argument('--prediction-channels', type=str, default=default_prediction_channels,
@@ -1064,7 +1012,9 @@ Scene Cache Size:
     args.prediction_config = configured_prediction(config)
     args.master_config = configured_master_modulation(config)
     args.frequency_config = configured_frequency_modulation(config)
-    args.scene_presets = configured_scene_presets(config, reset_cache_size=args.scene_cache_size)
+    args.dynamic_controls = configured_dynamic_controls(config)
+    if args.dynamic_control != 'off' and args.dynamic_control not in args.dynamic_controls:
+        parser.error("--dynamic-control must be 'off' or a profile from control.dynamic_controls")
     if args.profile is None and args.output == 'enttec':
         args.profile = default_profile
     if args.audio_file and args.prediction_device:
@@ -1084,8 +1034,8 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
          output, qlc_config, osc_host, osc_port, osc_dry_run,
          silence_config, speech_config, master_config, frequency_config,
          prediction_window_seconds, audio_file, osc_log_filters, dmx_dry_run,
-         filter_dmx, graph_enabled, scene_rate_limit, scene_throttle,
-         scene_max_duration, scene_presets, control_socket_path):
+         filter_dmx, graph_enabled, dynamic_control, dynamic_controls,
+         scene_max_duration, control_socket_path):
     setup_colors()
     initialize_screen(stdscr)
     lighting_detail = "Lighting: QLC+ OSC" if output == 'qlc-osc' else (
@@ -1100,7 +1050,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         lighting_detail,
         audio_detail,
         f"Profile: {profile_detail} | Predictor: {predictor_version}",
-        *describe_scene_limits(scene_rate_limit, scene_throttle),
+        f"Dynamic control: {dynamic_control}",
     ])
 
     startup_output = io.StringIO()
@@ -1132,10 +1082,9 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
                 dmx_dry_run=dmx_dry_run,
                 filter_dmx=filter_dmx,
                 graph_enabled=graph_enabled,
-                scene_rate_limit=scene_rate_limit,
-                scene_throttle=scene_throttle,
+                dynamic_control=dynamic_control,
+                dynamic_controls=dynamic_controls,
                 scene_max_duration=scene_max_duration,
-                presets=scene_presets,
                 control_socket_path=control_socket_path,
             )
     finally:
@@ -1253,9 +1202,8 @@ if __name__ == "__main__":
             args.dmx_dry_run,
             args.filter_dmx,
             not args.no_graph,
-            args.scene_rate_limit,
-            args.scene_throttle,
+            args.dynamic_control,
+            args.dynamic_controls,
             args.scene_max_duration,
-            args.scene_presets,
             None if args.no_control_socket else args.control_socket,
         ))

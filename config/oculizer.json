@@ -1,10 +1,9 @@
 {
   "control": {
-    "presets": {
+    "dynamic_controls": {
       "responsive": {"cache": 3, "rate": [10, 10], "throttle": [4, 1]},
       "normal": {"cache": 15, "rate": [4, 15], "throttle": [2, 4]},
-      "calm": {"cache": 35, "rate": [2, 20], "throttle": null},
-      "reset": {"cache": 10, "rate": null, "throttle": null}
+      "calm": {"cache": 35, "rate": [2, 20], "throttle": null}
     }
   },
   "audio": {
