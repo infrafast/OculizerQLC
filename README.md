@@ -1,4 +1,4 @@
-# OculizerQC
+# OculizerQLC
 
 OculizerQLC is a music-reactive lighting controller based on the original Oculizer project available here: https://github.com/LandryBulls/Oculizer. It analyzes audio in real time, automatically selects lighting scenes, and lets an operator take manual control when needed.
 
