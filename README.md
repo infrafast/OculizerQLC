@@ -7,6 +7,9 @@ This fork enrich and supports two lighting outputs:
 - direct DMX through an Enttec/DMXKing-compatible interface;
 - QLC+ 5 through OSC, with QLC+ responsible for scenes, chasers, and DMX output.
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/78e758ab-2950-49af-b60f-a08bb41b6d21" />
+
+
 It can use a live audio device or continuously loop an uncompressed PCM WAV file for simulation and testing before live show. Interactive and headless operation share the same live control commands.
 
 Development architecture, implementation details, decisions, validation history, and the roadmap are maintained in [DEVELOPMENT.md](DEVELOPMENT.md).
