@@ -25,6 +25,12 @@ class RuntimeConfigTests(unittest.TestCase):
         self.assertEqual(custom["show"], {
             "cache": 4, "rate": (5, 8.0), "throttle": None,
         })
+
+        self.assertEqual(
+            configured_dynamic_controls({"control": {"dynamic_controls": {}}}),
+            {},
+        )
+
     def test_rejects_invalid_dynamic_control(self):
         with self.assertRaisesRegex(ValueError, "cache"):
             configured_dynamic_controls({

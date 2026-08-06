@@ -50,6 +50,8 @@ def parse_args(argv=None):
     parser.add_argument("--config", type=Path, default=None,
                         help="Oculizer configuration (default: config/oculizer.json)")
     parser.add_argument("--predictor-version", choices=list_available_versions(), default="v6")
+    parser.add_argument("--raw-only", action="store_true",
+                        help="Render only the neutral raw/off panel")
     parser.add_argument("--prediction-hop-seconds", type=float, default=1.0,
                         help="Seconds between expensive model inferences (default: 1.0)")
     parser.add_argument("--simulation-step-seconds", type=float, default=0.1,
@@ -73,6 +75,13 @@ def parse_args(argv=None):
     if not 1 <= args.off_cache_size <= 100:
         parser.error("--off-cache-size must be between 1 and 100")
     return args
+
+
+def comparison_dynamic_controls(config, raw_only=False):
+    """Resolve configured comparison profiles, or suppress them on request."""
+    if raw_only:
+        return {}
+    return configured_dynamic_controls(config)
 
 
 def xterm_rgb(index: int) -> str:
@@ -344,7 +353,7 @@ def main(argv=None):
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logging.getLogger("oculizer.automatic").setLevel(logging.WARNING)
     config = load_runtime_config(args.config)
-    dynamic_controls = configured_dynamic_controls(config)
+    dynamic_controls = comparison_dynamic_controls(config, raw_only=args.raw_only)
     prediction_config = configured_prediction(config)
     silence_config = configured_silence(config)
     speech_config = configured_speech(config)

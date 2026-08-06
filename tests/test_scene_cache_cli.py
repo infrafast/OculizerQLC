@@ -6,6 +6,19 @@ import oculizer_service
 
 
 class SceneCacheCliTests(unittest.TestCase):
+    def test_both_entry_points_accept_no_named_dynamic_controls(self):
+        empty_controls = {"control": {"dynamic_controls": {}}}
+        with patch("sys.argv", ["oculize.py"]), \
+                patch("oculize.load_runtime_config", return_value=empty_controls):
+            args = oculize.parse_args()
+            self.assertEqual(args.dynamic_control, "off")
+            self.assertEqual(args.dynamic_controls, {})
+        with patch("sys.argv", ["oculizer_service.py"]), \
+                patch("oculizer_service.load_runtime_config", return_value=empty_controls):
+            args = oculizer_service.parse_args()
+            self.assertEqual(args.dynamic_control, "off")
+            self.assertEqual(args.dynamic_controls, {})
+
     def test_v6_is_the_default_predictor_for_both_entry_points(self):
         with patch("sys.argv", ["oculize.py"]):
             self.assertEqual(oculize.parse_args().predictor_version, "v6")

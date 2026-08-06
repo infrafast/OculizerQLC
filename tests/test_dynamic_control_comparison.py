@@ -6,6 +6,7 @@ import numpy as np
 
 from oculizer.runtime_config import SilenceConfig, SpeechConfig
 from scripts.render_dynamic_control_comparison import (
+    comparison_dynamic_controls,
     count_transitions,
     render_svg,
     scene_style,
@@ -15,6 +16,17 @@ from scripts.render_dynamic_control_comparison import (
 
 
 class DynamicControlComparisonTests(unittest.TestCase):
+    def test_raw_only_and_explicit_empty_config_skip_dynamic_profiles(self):
+        configured = {"control": {"dynamic_controls": {
+            "show": {"cache": 3, "rate": None, "throttle": None},
+        }}}
+
+        self.assertEqual(comparison_dynamic_controls(configured, raw_only=True), {})
+        self.assertEqual(
+            comparison_dynamic_controls({"control": {"dynamic_controls": {}}}), {}
+        )
+        self.assertIn("show", comparison_dynamic_controls(configured))
+
     def test_scene_styles_reuse_terminal_identity(self):
         self.assertEqual(xterm_rgb(196), "#ff0000")
         self.assertEqual(scene_style("pink_strobe_pulse")[0], "●")

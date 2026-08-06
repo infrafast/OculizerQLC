@@ -119,9 +119,19 @@ Configure the two routes under `audio` in `config/oculizer.json`:
 
 Change each `scene` value to any logical scene available to the selected output backend. Silence must remain below its threshold for the configured duration before its scene is activated. Speech routing uses confidence and timing margins to avoid switching on brief or ambiguous sounds, then returns automatically to music prediction when music becomes dominant again. Set the corresponding `enabled` value to `false` to disable either detector.
 
-The following example processes `mixvoicemusic.wav`, which contains silence, spoken voice, and music. The scene markers include `off` during detected silence and `announcement` when speech becomes dominant, alongside the scenes selected for musical passages. The four panels also show how the same detections behave with each dynamic-control profile; silence and speech remain priority events rather than ordinary music transitions.
+The following example processes `mixvoicemusic.wav`, which contains silence, spoken voice, and music. The scene markers include `off` during detected silence and `announcement` when speech becomes dominant, alongside the scenes selected for musical passages. It uses the neutral raw view because silence and speech are priority events rather than ordinary music transitions and do not require a dynamic-control comparison.
 
 ![Silence, speech, and music scene detection on mixvoicemusic.wav](docs/mixvoicemusic.svg)
+
+Generate this single-panel example without changing the configured profiles:
+
+```bash
+python3 scripts/render_dynamic_control_comparison.py \
+  tests/mixvoicemusic.wav \
+  --output docs/mixvoicemusic.svg \
+  --prediction-hop-seconds 2 \
+  --raw-only
+```
 
 ## Interactive automatic operation
 
@@ -349,7 +359,9 @@ The default socket is `/tmp/oculizer-<uid>.sock`. Start the application with `--
 The engine responsivity can be controlled using a dynamic parameter. This is used when you want to calm down the scene or unleash a very color full show. 
 Use `--dynamic-control PROFILE` at startup, press `l` in the interactive interface, or run `oculizerctl dynamic-control PROFILE` from another terminal. The active profile is shown in the status area and changes received through the control socket appear there automatically.
 
-The supplied profiles can be adjusted or extended under `control.dynamic_controls` in `config/oculizer.json`. Selecting a named profile applies its complete tuple, including its cache value, so it takes precedence over `--scene-cache-size` while active. Starting without `--dynamic-control` selects the reserved `off` state: it restores the startup cache value and disables transition filtering.
+Named profiles can be added, adjusted, or removed under `control.dynamic_controls` in `config/oculizer.json`. An empty object is valid and leaves `off` as the only available profile. Selecting a named profile applies its complete tuple, including its cache value, so it takes precedence over `--scene-cache-size` while active. Starting without `--dynamic-control` selects the reserved `off` state: it restores the startup cache value and disables transition filtering.
+
+The following values are recommended starting points when those named profiles are configured:
 
 | Profile | Cache | Throttle | Rate limit | Behavior |
 | --- | ---: | ---: | ---: | --- |

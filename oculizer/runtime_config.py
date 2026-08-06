@@ -272,8 +272,8 @@ def configured_dynamic_controls(config: dict[str, Any]) -> dict[str, dict[str, A
         "calm": {"cache": 35, "rate": (2, 20.0), "throttle": None},
     }
     configured = config.get("control", {}).get("dynamic_controls", defaults)
-    if not isinstance(configured, dict) or not configured:
-        raise ValueError("control.dynamic_controls must be a non-empty object")
+    if not isinstance(configured, dict):
+        raise ValueError("control.dynamic_controls must be an object")
     result = {}
     for name, values in configured.items():
         if not isinstance(name, str) or not name.strip() or not isinstance(values, dict):

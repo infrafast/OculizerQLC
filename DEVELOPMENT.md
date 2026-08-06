@@ -512,6 +512,7 @@ Delivered behavior:
 - updated supplied QLC+ scripts to invoke the unified command.
 - added a reusable WAV comparison renderer that performs one predictor pass, replays identical RMS/prediction data through `off` and every configured profile, reuses the terminal scene-identity algorithm, and writes a dependency-free vector SVG for the user documentation;
 - generated the checked-in README comparison from `tests/fascination.wav` with v6 and a two-second offline inference hop, while retaining 0.1-second routing and RMS simulation.
+- allowed `control.dynamic_controls` to be empty in production, leaving the reserved `off` state as the sole valid profile while continuing to reject unknown profile selections;
 
 Compatibility decision: the removed CLI and socket commands intentionally have no aliases. Custom behavior is expressed by adding or editing a named profile in `config/oculizer.json` and selecting it as one atomic policy.
 
