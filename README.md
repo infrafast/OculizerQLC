@@ -1,4 +1,4 @@
-# Oculizer
+# OculizerQC
 
 OculizerQLC is a music-reactive lighting controller based on the original Oculizer project available here: https://github.com/LandryBulls/Oculizer. It analyzes audio in real time, automatically selects lighting scenes, and lets an operator take manual control when needed.
 
@@ -312,7 +312,7 @@ The default socket is `/tmp/oculizer-<uid>.sock`. Start the application with `--
 `pause` suspends automatic processing and activates blackout. `auto` clears pause or manual override and resumes automatic operation. `scene NAME` forces a configured logical scene. Live changes last until the application restarts and do not rewrite configuration files.
 
 ## Dynamic control
-
+The engine responsivity can be controlled using a dynamic parameter. This is used when you want to calm down the scene or unleash a very color full show. 
 Use `--dynamic-control PROFILE` at startup, press `l` in the interactive interface, or run `oculizerctl dynamic-control PROFILE` from another terminal. The active profile is shown in the status area and changes received through the control socket appear there automatically.
 
 The supplied profiles can be adjusted or extended under `control.dynamic_controls` in `config/oculizer.json`. Selecting a named profile applies its complete tuple, including its cache value, so it takes precedence over `--scene-cache-size` while active. Starting without `--dynamic-control` selects the reserved `off` state: it restores the startup cache value and disables transition filtering.
