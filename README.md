@@ -123,7 +123,7 @@ The following example processes `mixvoicemusic.wav`, which contains silence, spo
 
 ![Silence, speech, and music scene detection on mixvoicemusic.wav](docs/mixvoicemusic.svg)
 
-Generate this single-panel example without changing the configured profiles:
+This panel example was generated using following command:
 
 ```bash
 python3 scripts/render_dynamic_control_comparison.py \
@@ -132,6 +132,8 @@ python3 scripts/render_dynamic_control_comparison.py \
   --prediction-hop-seconds 2 \
   --raw-only
 ```
+
+Please note that since it is a single panel, profiles where first removed from oculizer.json config file (see
 
 ## Interactive automatic operation
 
