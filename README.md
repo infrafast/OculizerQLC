@@ -249,6 +249,37 @@ Override the OSC destination with `--osc-host HOST` and `--osc-port PORT`.
 
 `config/qlc_config.json` contains every logical scene emitted by predictors v4 and v6 and derives each OSC address as `/oculizer/scenes/<scene-name>`. All 30 v6 scenes carry a temporary `"implemented": false` marker so the operator can track QLC+ widget creation. Oculizer deliberately ignores this marker; change it manually as the QLC+ project progresses. Predictor mappings and artistic scene filenames use the same canonical identifiers; historical aliases and misspellings have been normalized.
 
+### Real-time audio controls
+
+In addition to selecting scenes, Oculizer can continuously send four normalized values from `0` to `1` for use inside QLC+:
+
+| OSC path | Signal | Typical QLC+ use |
+| --- | --- | --- |
+| `/oculizer/master` | Overall audio RMS/level | Grand master, scene brightness, or a dimmer group |
+| `/oculizer/bass` | Low-frequency energy | Bass pulses, fixture intensity, or effect speed |
+| `/oculizer/mid` | Mid-frequency energy | Color, movement, or secondary intensity |
+| `/oculizer/high` | High-frequency energy | Sparkle, strobe depth, or fast effects |
+
+Enable or disable the overall level under `audio.master_modulation`, and the frequency controls under `audio.frequency_modulation` in `config/oculizer.json`:
+
+```json
+"master_modulation": {
+  "enabled": true
+},
+"frequency_modulation": {
+  "enabled": true,
+  "bands": {
+    "bass": { "enabled": true },
+    "mid":  { "enabled": false },
+    "high": { "enabled": false }
+  }
+}
+```
+
+Set `frequency_modulation.enabled` to `false` to disable all three bands, or change one band's `enabled` value independently. The supplied configuration enables `master` and `bass` but leaves `mid` and `high` disabled. Keep the other tuning fields already present in the configuration when editing these abbreviated examples.
+
+On the QLC+ side, enable an OSC input listening on the same port as `config/qlc_config.json` (`7700` by default), create a Virtual Console slider for each signal you want to use, and assign its external input with QLC+'s input auto-detection while Oculizer is running. Then connect that slider to the desired master, dimmer, fixture group, or effect parameter. The OSC paths can be changed under `controls` in `config/qlc_config.json`. These continuous controls apply to the QLC+ OSC backend; direct Enttec output does not consume them.
+
 Test without sending UDP packets:
 
 ```bash
