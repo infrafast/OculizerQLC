@@ -344,16 +344,9 @@
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="5" Type="Scene" Name="yellow tmp strobe for test">
+  <Function ID="5" Type="Scene" Name="SPECIAL_OFF" Path="Specials">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-   <FixtureVal ID="0">0,0,1,0,2,0,3,0,4,0,5,255,6,1,7,255,8,255,9,0,10,0,11,0,12,0</FixtureVal>
-   <FixtureVal ID="1">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0</FixtureVal>
-   <FixtureVal ID="2">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
-   <FixtureVal ID="3">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
-   <FixtureVal ID="7">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
-   <FixtureVal ID="8">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
-   <FixtureVal ID="9">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0</FixtureVal>
-   <FixtureVal ID="10">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0</FixtureVal>
+   <FixtureVal ID="0">0,51,1,0,2,0,3,0,4,0,5,255,6,0,7,255,8,255,9,0,10,0,11,0,12,0</FixtureVal>
   </Function>
   <Function ID="7" Type="Scene" Name="all" Hidden="True" Path="Legacy">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
@@ -814,7 +807,6 @@
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="1000" FadeOut="0">5</Step>
   </Function>
   <Function ID="72" Type="Chaser" Name="SPECIAL_QUASAR" Path="Specials">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
@@ -1832,7 +1824,7 @@
       </Appearance>
       <Input ID="0" Universe="0" Channel="30161"/>
       <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
-      <Level LowLimit="0" HighLimit="255" Value="111"/>
+      <Level LowLimit="0" HighLimit="255" Value="0"/>
      </Slider>
      <Button Caption="RIGHTROUND" ID="49">
       <WindowState Visible="True" X="1065" Y="120" Width="112" Height="54"/>
@@ -2237,7 +2229,7 @@
      <Appearance>
       <BackgroundColor>4282664004</BackgroundColor>
      </Appearance>
-     <Function ID="102"/>
+     <Function ID="5"/>
      <Action>Toggle</Action>
      <Input ID="0" Universe="0" Channel="36806"/>
     </Button>
