@@ -7,6 +7,7 @@ import argparse
 import contextlib
 import html
 import io
+import json
 import logging
 import math
 import random
@@ -27,6 +28,7 @@ from oculizer.automatic import AutomaticSceneRouter
 from oculizer.rms_graph import SCENE_COLOR_FAMILIES, scene_visual
 from oculizer.runtime_config import (
     configured_dynamic_controls,
+    configured_fast_detection,
     configured_prediction,
     configured_silence,
     configured_speech,
@@ -46,6 +48,10 @@ def parse_args(argv=None):
     parser.add_argument(
         "--output", type=Path, default=ROOT / "docs" / "dynamic_control_comparison.svg",
         help="Output SVG path (default: docs/dynamic_control_comparison.svg)",
+    )
+    parser.add_argument(
+        "--statistics-output", type=Path, default=None,
+        help="Optional reproducible JSON scene statistics output",
     )
     parser.add_argument("--config", type=Path, default=None,
                         help="Oculizer configuration (default: config/oculizer.json)")
@@ -132,7 +138,9 @@ def load_scene_durations() -> tuple[set[str], dict[str, float]]:
 
 
 def analyse_wav(path: Path, predictor_version: str, window_seconds: float,
-                prediction_hop: float, sample_rate: int = 48000):
+                prediction_hop: float, sample_rate: int = 48000,
+                semantic_window_seconds: float | None = None,
+                semantic_interval_seconds: float = 0.5):
     logger.info("Loading %s", path)
     audio, _ = librosa.load(path, sr=sample_rate, mono=True, dtype=np.float32)
     duration = len(audio) / sample_rate
@@ -161,15 +169,33 @@ def analyse_wav(path: Path, predictor_version: str, window_seconds: float,
         if len(window) < window_samples:
             window = np.pad(window, (window_samples - len(window), 0))
         scene, cluster = predictor.predict(window, return_cluster=True)
+        artistic_scores = dict(predictor.last_audioset_scores or {})
         predictions.append({
             "time": float(end_seconds),
             "scene": str(scene),
             "cluster": int(cluster),
-            "scores": dict(predictor.last_audioset_scores or {}),
+            "scores": artistic_scores,
         })
         if number == 1 or number % 25 == 0 or number == total:
             logger.info("Inference %d/%d", number, total)
-    return np.asarray(rms, dtype=np.float64), duration, predictions
+    semantic_predictions = []
+    if semantic_window_seconds is not None:
+        semantic_samples = max(1, round(semantic_window_seconds * sample_rate))
+        semantic_times = np.arange(
+            semantic_window_seconds, duration + 1e-9, semantic_interval_seconds
+        )
+        for end_seconds in semantic_times:
+            end = min(len(audio), round(end_seconds * sample_rate))
+            semantic_audio = audio[max(0, end - semantic_samples):end]
+            if len(semantic_audio) < semantic_samples:
+                semantic_audio = np.pad(
+                    semantic_audio, (semantic_samples - len(semantic_audio), 0)
+                )
+            semantic_predictions.append({
+                "time": float(end_seconds),
+                "scores": predictor.get_semantic_scores(semantic_audio),
+            })
+    return np.asarray(rms, dtype=np.float64), duration, predictions, semantic_predictions
 
 
 class SimulationEngine:
@@ -179,10 +205,12 @@ class SimulationEngine:
         self.current_predicted_scene = None
         self.current_audio_rms = None
         self.current_audioset_scores = None
+        self.current_fast_audioset_scores = None
         self.active_scene = None
         self.scene_names = scene_names
         self.scene_durations = scene_durations
         self.prediction_suspended = False
+        self.prediction_reset_generation = 0
 
     def set_scene_cache_size(self, size):
         self.scene_cache_size = size
@@ -207,17 +235,23 @@ class SimulationEngine:
     def get_scene_max_duration(self, scene):
         return self.scene_durations.get(scene)
 
-    def accept_prediction(self, scene, scores):
+    def accept_prediction(self, scene, scores, fast_scores=None):
         if self.prediction_suspended:
             return
         self.scene_cache.append(scene)
         self.current_predicted_scene = mode(self.scene_cache)
         self.current_audioset_scores = scores
+        self.current_fast_audioset_scores = fast_scores
+
+    def reset_prediction_state(self):
+        self.scene_cache.clear()
+        self.current_predicted_scene = None
+        self.prediction_reset_generation += 1
 
 
 def simulate_profile(name, profile, rms, duration, predictions, simulation_step,
                      silence_config, speech_config, scene_names, scene_durations,
-                     scene_max_duration, seed):
+                     scene_max_duration, seed, semantic_predictions=()):
     now = [0.0]
     engine = SimulationEngine(profile["cache"], scene_names, scene_durations)
     router = AutomaticSceneRouter(
@@ -234,6 +268,8 @@ def simulate_profile(name, profile, rms, duration, predictions, simulation_step,
     prediction_index = 0
     held_prediction = None
     held_scores = None
+    held_fast_scores = None
+    semantic_index = 0
     steps = math.ceil(duration / simulation_step)
     for step in range(steps + 1):
         now[0] = min(duration, step * simulation_step)
@@ -241,14 +277,26 @@ def simulate_profile(name, profile, rms, duration, predictions, simulation_step,
             held_prediction = predictions[prediction_index]["scene"]
             held_scores = predictions[prediction_index]["scores"]
             prediction_index += 1
+        while (
+            semantic_index < len(semantic_predictions)
+            and semantic_predictions[semantic_index]["time"] <= now[0] + 1e-9
+        ):
+            held_fast_scores = semantic_predictions[semantic_index]["scores"]
+            semantic_index += 1
         rms_index = min(len(rms) - 1, int(now[0] / 0.1))
         engine.current_audio_rms = float(rms[rms_index])
         if held_prediction is not None:
             # Runtime normally receives one prediction every 0.1 s. Repeating
             # the latest expensive offline inference preserves that cache-time
             # meaning while keeping documentation generation practical.
-            engine.accept_prediction(held_prediction, held_scores)
+            engine.accept_prediction(held_prediction, held_scores, held_fast_scores)
+        reset_generation = engine.prediction_reset_generation
         router.step()
+        if engine.prediction_reset_generation != reset_generation:
+            # Match the runtime: after speech ends, do not refill the cache
+            # with the prediction produced before that transition.
+            held_prediction = None
+            held_scores = None
         result.append((now[0], engine.current_audio_rms, engine.active_scene))
     logger.info("Simulated %s: %d scene changes", name, count_transitions(result))
     return result
@@ -263,6 +311,81 @@ def count_transitions(samples):
         if scene is not None:
             previous = scene
     return count
+
+
+def summarize_simulation(samples, duration):
+    """Summarize sampled scene state as transitions and wall-clock occupancy."""
+    durations = Counter()
+    transitions = []
+    previous = None
+    interval_start = None
+    for index, (timestamp, _rms, scene) in enumerate(samples):
+        end = samples[index + 1][0] if index + 1 < len(samples) else duration
+        if end > timestamp:
+            durations[scene or "<unrouted>"] += end - timestamp
+        if scene != previous:
+            if previous is not None and interval_start is not None:
+                transitions[-1]["end_seconds"] = round(timestamp, 6)
+                transitions[-1]["duration_seconds"] = round(timestamp - interval_start, 6)
+            if scene is not None:
+                interval_start = timestamp
+                transitions.append({
+                    "scene": scene,
+                    "start_seconds": round(timestamp, 6),
+                })
+            else:
+                interval_start = None
+        previous = scene
+    if transitions and "end_seconds" not in transitions[-1]:
+        transitions[-1]["end_seconds"] = round(duration, 6)
+        transitions[-1]["duration_seconds"] = round(duration - interval_start, 6)
+    scene_statistics = [
+        {
+            "scene": scene,
+            "duration_seconds": round(seconds, 6),
+            "percentage_of_file": round(seconds / duration * 100.0, 4),
+        }
+        for scene, seconds in sorted(durations.items(), key=lambda item: (-item[1], item[0]))
+    ]
+    return {
+        "scene_change_count": count_transitions(samples),
+        "scene_statistics": scene_statistics,
+        "transitions": transitions,
+    }
+
+
+def write_statistics(output, source, predictor_version, window_seconds,
+                     prediction_hop, simulation_step, seed, duration,
+                     predictions, profiles, simulations, semantic_predictions=(),
+                     semantic_window_seconds=None, semantic_interval_seconds=None):
+    """Persist enough inputs and results to reproduce a before/after comparison."""
+    payload = {
+        "schema_version": 1,
+        "source": str(source),
+        "predictor_version": predictor_version,
+        "prediction_window_seconds": window_seconds,
+        "prediction_hop_seconds": prediction_hop,
+        "simulation_step_seconds": simulation_step,
+        "duration_seconds": round(duration, 6),
+        "random_seed": seed,
+        "fast_semantic_window_seconds": semantic_window_seconds,
+        "fast_semantic_interval_seconds": semantic_interval_seconds,
+        "raw_predictions": predictions,
+        "fast_semantic_predictions": list(semantic_predictions),
+        "profiles": {
+            name: {
+                "policy": {
+                    "cache": profile["cache"],
+                    "rate": profile["rate"],
+                    "throttle": profile["throttle"],
+                },
+                **summarize_simulation(simulations[name], duration),
+            }
+            for name, profile in profiles
+        },
+    }
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def svg_path(samples, x0, y0, width, height, duration, rms_max):
@@ -355,12 +478,19 @@ def main(argv=None):
     config = load_runtime_config(args.config)
     dynamic_controls = comparison_dynamic_controls(config, raw_only=args.raw_only)
     prediction_config = configured_prediction(config)
+    fast_detection_config = configured_fast_detection(config)
     silence_config = configured_silence(config)
     speech_config = configured_speech(config)
     scene_names, scene_durations = load_scene_durations()
-    rms, duration, predictions = analyse_wav(
+    rms, duration, predictions, semantic_predictions = analyse_wav(
         args.wav, args.predictor_version, prediction_config.window_seconds,
         args.prediction_hop_seconds,
+        semantic_window_seconds=(
+            fast_detection_config.speech.window_seconds
+            if fast_detection_config.enabled and fast_detection_config.speech.enabled
+            else None
+        ),
+        semantic_interval_seconds=fast_detection_config.speech.interval_seconds,
     )
     profiles = [("raw (off)", {"cache": args.off_cache_size,
                                 "rate": None, "throttle": None}),
@@ -371,12 +501,24 @@ def main(argv=None):
             name, profile, rms, duration, predictions, args.simulation_step_seconds,
             silence_config, speech_config, scene_names, scene_durations,
             args.scene_max_duration, args.seed,
+            semantic_predictions=semantic_predictions,
         )
     render_svg(
         args.output, args.wav, args.predictor_version, args.prediction_hop_seconds,
         profiles, simulations, duration, args.width,
     )
     print(f"Wrote {args.output}")
+    if args.statistics_output is not None:
+        write_statistics(
+            args.statistics_output, args.wav, args.predictor_version,
+            prediction_config.window_seconds, args.prediction_hop_seconds,
+            args.simulation_step_seconds, args.seed, duration, predictions,
+            profiles, simulations,
+            semantic_predictions=semantic_predictions,
+            semantic_window_seconds=fast_detection_config.speech.window_seconds,
+            semantic_interval_seconds=fast_detection_config.speech.interval_seconds,
+        )
+        print(f"Wrote {args.statistics_output}")
     return 0
 
 

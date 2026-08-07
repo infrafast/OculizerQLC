@@ -1,0 +1,1168 @@
+{
+  "duration_seconds": 45.07075,
+  "fast_semantic_interval_seconds": 1.0,
+  "fast_semantic_predictions": [
+    {
+      "scores": {
+        "music": 0.5816599130630493,
+        "singing": 0.061746835708618164,
+        "speech": 0.4401082694530487
+      },
+      "time": 2.0
+    },
+    {
+      "scores": {
+        "music": 0.12341609597206116,
+        "singing": 0.12341609597206116,
+        "speech": 0.027699587866663933
+      },
+      "time": 3.0
+    },
+    {
+      "scores": {
+        "music": 0.08694309741258621,
+        "singing": 0.07441810518503189,
+        "speech": 0.024488963186740875
+      },
+      "time": 4.0
+    },
+    {
+      "scores": {
+        "music": 0.027146698907017708,
+        "singing": 0.012459653429687023,
+        "speech": 0.08880667388439178
+      },
+      "time": 5.0
+    },
+    {
+      "scores": {
+        "music": 0.11339635401964188,
+        "singing": 0.024507805705070496,
+        "speech": 0.4411105513572693
+      },
+      "time": 6.0
+    },
+    {
+      "scores": {
+        "music": 0.29308342933654785,
+        "singing": 0.028997864574193954,
+        "speech": 0.013781876303255558
+      },
+      "time": 7.0
+    },
+    {
+      "scores": {
+        "music": 0.32309678196907043,
+        "singing": 0.02518397942185402,
+        "speech": 0.01721464842557907
+      },
+      "time": 8.0
+    },
+    {
+      "scores": {
+        "music": 0.21773521602153778,
+        "singing": 0.025752544403076172,
+        "speech": 0.08205724507570267
+      },
+      "time": 9.0
+    },
+    {
+      "scores": {
+        "music": 0.1540384143590927,
+        "singing": 0.020311791449785233,
+        "speech": 0.014289098791778088
+      },
+      "time": 10.0
+    },
+    {
+      "scores": {
+        "music": 0.28355446457862854,
+        "singing": 0.005116524640470743,
+        "speech": 0.01655671000480652
+      },
+      "time": 11.0
+    },
+    {
+      "scores": {
+        "music": 0.7968431115150452,
+        "singing": 0.004693613853305578,
+        "speech": 0.009886275976896286
+      },
+      "time": 12.0
+    },
+    {
+      "scores": {
+        "music": 0.7187281250953674,
+        "singing": 0.06298836320638657,
+        "speech": 0.04182521998882294
+      },
+      "time": 13.0
+    },
+    {
+      "scores": {
+        "music": 0.2368311882019043,
+        "singing": 0.005560822784900665,
+        "speech": 0.8121297955513
+      },
+      "time": 14.0
+    },
+    {
+      "scores": {
+        "music": 0.18572667241096497,
+        "singing": 0.011706192046403885,
+        "speech": 0.6922632455825806
+      },
+      "time": 15.0
+    },
+    {
+      "scores": {
+        "music": 0.275706022977829,
+        "singing": 0.011256102472543716,
+        "speech": 0.5209810137748718
+      },
+      "time": 16.0
+    },
+    {
+      "scores": {
+        "music": 0.02609609067440033,
+        "singing": 0.010712944902479649,
+        "speech": 0.8033866882324219
+      },
+      "time": 17.0
+    },
+    {
+      "scores": {
+        "music": 0.009631778113543987,
+        "singing": 0.0018774681957438588,
+        "speech": 0.896325945854187
+      },
+      "time": 18.0
+    },
+    {
+      "scores": {
+        "music": 0.01894104667007923,
+        "singing": 0.00461522676050663,
+        "speech": 0.7984971404075623
+      },
+      "time": 19.0
+    },
+    {
+      "scores": {
+        "music": 0.15545186400413513,
+        "singing": 0.0019663760904222727,
+        "speech": 0.08990364521741867
+      },
+      "time": 20.0
+    },
+    {
+      "scores": {
+        "music": 0.06995893269777298,
+        "singing": 0.02216377854347229,
+        "speech": 0.22662904858589172
+      },
+      "time": 21.0
+    },
+    {
+      "scores": {
+        "music": 0.03102169930934906,
+        "singing": 0.004737338051199913,
+        "speech": 0.3809676170349121
+      },
+      "time": 22.0
+    },
+    {
+      "scores": {
+        "music": 0.035291027277708054,
+        "singing": 0.00641045393422246,
+        "speech": 0.5283176898956299
+      },
+      "time": 23.0
+    },
+    {
+      "scores": {
+        "music": 0.03348630666732788,
+        "singing": 0.0014455353375524282,
+        "speech": 0.9170840382575989
+      },
+      "time": 24.0
+    },
+    {
+      "scores": {
+        "music": 0.8354476690292358,
+        "singing": 0.0943707674741745,
+        "speech": 0.7228719592094421
+      },
+      "time": 25.0
+    },
+    {
+      "scores": {
+        "music": 0.8592538833618164,
+        "singing": 0.05403349921107292,
+        "speech": 0.19143563508987427
+      },
+      "time": 26.0
+    },
+    {
+      "scores": {
+        "music": 0.8445872068405151,
+        "singing": 0.0033415949437767267,
+        "speech": 0.07092174142599106
+      },
+      "time": 27.0
+    },
+    {
+      "scores": {
+        "music": 0.8024091720581055,
+        "singing": 0.0018991505494341254,
+        "speech": 0.014185089617967606
+      },
+      "time": 28.0
+    },
+    {
+      "scores": {
+        "music": 0.8325927257537842,
+        "singing": 0.004938303958624601,
+        "speech": 0.30018508434295654
+      },
+      "time": 29.0
+    },
+    {
+      "scores": {
+        "music": 0.8527988791465759,
+        "singing": 0.004083430394530296,
+        "speech": 0.6094568371772766
+      },
+      "time": 30.0
+    },
+    {
+      "scores": {
+        "music": 0.03301176801323891,
+        "singing": 0.0018302231328561902,
+        "speech": 0.7571175694465637
+      },
+      "time": 31.0
+    },
+    {
+      "scores": {
+        "music": 0.6548447608947754,
+        "singing": 0.011077513918280602,
+        "speech": 0.2876133620738983
+      },
+      "time": 32.0
+    },
+    {
+      "scores": {
+        "music": 0.6156832575798035,
+        "singing": 0.005191492848098278,
+        "speech": 0.28059640526771545
+      },
+      "time": 33.0
+    },
+    {
+      "scores": {
+        "music": 0.5580848455429077,
+        "singing": 0.003154024248942733,
+        "speech": 0.47343727946281433
+      },
+      "time": 34.0
+    },
+    {
+      "scores": {
+        "music": 0.04027346149086952,
+        "singing": 0.0007841139449737966,
+        "speech": 0.7254339456558228
+      },
+      "time": 35.0
+    },
+    {
+      "scores": {
+        "music": 0.8097773194313049,
+        "singing": 0.003355951514095068,
+        "speech": 0.6120389699935913
+      },
+      "time": 36.0
+    },
+    {
+      "scores": {
+        "music": 0.859621524810791,
+        "singing": 0.00927799753844738,
+        "speech": 0.023722954094409943
+      },
+      "time": 37.0
+    },
+    {
+      "scores": {
+        "music": 0.8497756719589233,
+        "singing": 0.002859976375475526,
+        "speech": 0.023600278422236443
+      },
+      "time": 38.0
+    },
+    {
+      "scores": {
+        "music": 0.8529529571533203,
+        "singing": 0.002997288480401039,
+        "speech": 0.010345323011279106
+      },
+      "time": 39.0
+    },
+    {
+      "scores": {
+        "music": 0.8560421466827393,
+        "singing": 0.006479745265096426,
+        "speech": 0.02414226531982422
+      },
+      "time": 40.0
+    },
+    {
+      "scores": {
+        "music": 0.8791794180870056,
+        "singing": 0.011509912088513374,
+        "speech": 0.06349249929189682
+      },
+      "time": 41.0
+    },
+    {
+      "scores": {
+        "music": 0.8630138635635376,
+        "singing": 0.003398504573851824,
+        "speech": 0.009422335773706436
+      },
+      "time": 42.0
+    },
+    {
+      "scores": {
+        "music": 0.841063380241394,
+        "singing": 0.003054089145734906,
+        "speech": 0.015537337400019169
+      },
+      "time": 43.0
+    },
+    {
+      "scores": {
+        "music": 0.8992416262626648,
+        "singing": 0.0027795962523669004,
+        "speech": 0.011978811584413052
+      },
+      "time": 44.0
+    },
+    {
+      "scores": {
+        "music": 0.8919852375984192,
+        "singing": 0.014366007409989834,
+        "speech": 0.012309873476624489
+      },
+      "time": 45.0
+    }
+  ],
+  "fast_semantic_window_seconds": 2.0,
+  "prediction_hop_seconds": 1.0,
+  "prediction_window_seconds": 4.0,
+  "predictor_version": "v6",
+  "profiles": {
+    "calm": {
+      "policy": {
+        "cache": 5,
+        "rate": [
+          2,
+          20.0
+        ],
+        "throttle": [
+          1,
+          6.0
+        ]
+      },
+      "scene_change_count": 3,
+      "scene_statistics": [
+        {
+          "duration_seconds": 15.07075,
+          "percentage_of_file": 33.438,
+          "scene": "chill_blue"
+        },
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "<unrouted>"
+        },
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "announcement"
+        },
+        {
+          "duration_seconds": 6.0,
+          "percentage_of_file": 13.3124,
+          "scene": "ambient2"
+        }
+      ],
+      "transitions": [
+        {
+          "duration_seconds": 3.0,
+          "end_seconds": 15.0,
+          "scene": "chill_blue",
+          "start_seconds": 12.0
+        },
+        {
+          "duration_seconds": 12.0,
+          "end_seconds": 27.0,
+          "scene": "announcement",
+          "start_seconds": 15.0
+        },
+        {
+          "duration_seconds": 6.0,
+          "end_seconds": 33.0,
+          "scene": "ambient2",
+          "start_seconds": 27.0
+        },
+        {
+          "duration_seconds": 12.07075,
+          "end_seconds": 45.07075,
+          "scene": "chill_blue",
+          "start_seconds": 33.0
+        }
+      ]
+    },
+    "normal": {
+      "policy": {
+        "cache": 5,
+        "rate": [
+          6,
+          15.0
+        ],
+        "throttle": [
+          3,
+          2.0
+        ]
+      },
+      "scene_change_count": 7,
+      "scene_statistics": [
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "<unrouted>"
+        },
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "announcement"
+        },
+        {
+          "duration_seconds": 6.87075,
+          "percentage_of_file": 15.2444,
+          "scene": "chill_red"
+        },
+        {
+          "duration_seconds": 6.0,
+          "percentage_of_file": 13.3124,
+          "scene": "chill_blue"
+        },
+        {
+          "duration_seconds": 5.2,
+          "percentage_of_file": 11.5374,
+          "scene": "ambient2"
+        },
+        {
+          "duration_seconds": 3.0,
+          "percentage_of_file": 6.6562,
+          "scene": "goosebumps"
+        }
+      ],
+      "transitions": [
+        {
+          "duration_seconds": 3.0,
+          "end_seconds": 15.0,
+          "scene": "chill_blue",
+          "start_seconds": 12.0
+        },
+        {
+          "duration_seconds": 12.0,
+          "end_seconds": 27.0,
+          "scene": "announcement",
+          "start_seconds": 15.0
+        },
+        {
+          "duration_seconds": 5.2,
+          "end_seconds": 32.2,
+          "scene": "ambient2",
+          "start_seconds": 27.0
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 33.2,
+          "scene": "chill_blue",
+          "start_seconds": 32.2
+        },
+        {
+          "duration_seconds": 3.0,
+          "end_seconds": 36.2,
+          "scene": "goosebumps",
+          "start_seconds": 33.2
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 37.2,
+          "scene": "chill_red",
+          "start_seconds": 36.2
+        },
+        {
+          "duration_seconds": 2.0,
+          "end_seconds": 39.2,
+          "scene": "chill_blue",
+          "start_seconds": 37.2
+        },
+        {
+          "duration_seconds": 5.87075,
+          "end_seconds": 45.07075,
+          "scene": "chill_red",
+          "start_seconds": 39.2
+        }
+      ]
+    },
+    "raw (off)": {
+      "policy": {
+        "cache": 10,
+        "rate": null,
+        "throttle": null
+      },
+      "scene_change_count": 9,
+      "scene_statistics": [
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "<unrouted>"
+        },
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "announcement"
+        },
+        {
+          "duration_seconds": 6.0,
+          "percentage_of_file": 13.3124,
+          "scene": "chill_blue"
+        },
+        {
+          "duration_seconds": 5.57075,
+          "percentage_of_file": 12.36,
+          "scene": "chill_red"
+        },
+        {
+          "duration_seconds": 5.5,
+          "percentage_of_file": 12.203,
+          "scene": "ambient2"
+        },
+        {
+          "duration_seconds": 3.0,
+          "percentage_of_file": 6.6562,
+          "scene": "goosebumps"
+        },
+        {
+          "duration_seconds": 1.0,
+          "percentage_of_file": 2.2187,
+          "scene": "sequence_cosmic"
+        }
+      ],
+      "transitions": [
+        {
+          "duration_seconds": 3.0,
+          "end_seconds": 15.0,
+          "scene": "chill_blue",
+          "start_seconds": 12.0
+        },
+        {
+          "duration_seconds": 12.0,
+          "end_seconds": 27.0,
+          "scene": "announcement",
+          "start_seconds": 15.0
+        },
+        {
+          "duration_seconds": 5.5,
+          "end_seconds": 32.5,
+          "scene": "ambient2",
+          "start_seconds": 27.0
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 33.5,
+          "scene": "chill_blue",
+          "start_seconds": 32.5
+        },
+        {
+          "duration_seconds": 3.0,
+          "end_seconds": 36.5,
+          "scene": "goosebumps",
+          "start_seconds": 33.5
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 37.5,
+          "scene": "chill_red",
+          "start_seconds": 36.5
+        },
+        {
+          "duration_seconds": 2.0,
+          "end_seconds": 39.5,
+          "scene": "chill_blue",
+          "start_seconds": 37.5
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 40.5,
+          "scene": "chill_red",
+          "start_seconds": 39.5
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 41.5,
+          "scene": "sequence_cosmic",
+          "start_seconds": 40.5
+        },
+        {
+          "duration_seconds": 3.57075,
+          "end_seconds": 45.07075,
+          "scene": "chill_red",
+          "start_seconds": 41.5
+        }
+      ]
+    },
+    "responsive": {
+      "policy": {
+        "cache": 3,
+        "rate": [
+          12,
+          10.0
+        ],
+        "throttle": [
+          5,
+          0.75
+        ]
+      },
+      "scene_change_count": 9,
+      "scene_statistics": [
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "<unrouted>"
+        },
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "announcement"
+        },
+        {
+          "duration_seconds": 6.0,
+          "percentage_of_file": 13.3124,
+          "scene": "chill_blue"
+        },
+        {
+          "duration_seconds": 5.97075,
+          "percentage_of_file": 13.2475,
+          "scene": "chill_red"
+        },
+        {
+          "duration_seconds": 5.1,
+          "percentage_of_file": 11.3155,
+          "scene": "ambient2"
+        },
+        {
+          "duration_seconds": 3.0,
+          "percentage_of_file": 6.6562,
+          "scene": "goosebumps"
+        },
+        {
+          "duration_seconds": 1.0,
+          "percentage_of_file": 2.2187,
+          "scene": "sequence_cosmic"
+        }
+      ],
+      "transitions": [
+        {
+          "duration_seconds": 3.0,
+          "end_seconds": 15.0,
+          "scene": "chill_blue",
+          "start_seconds": 12.0
+        },
+        {
+          "duration_seconds": 12.0,
+          "end_seconds": 27.0,
+          "scene": "announcement",
+          "start_seconds": 15.0
+        },
+        {
+          "duration_seconds": 5.1,
+          "end_seconds": 32.1,
+          "scene": "ambient2",
+          "start_seconds": 27.0
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 33.1,
+          "scene": "chill_blue",
+          "start_seconds": 32.1
+        },
+        {
+          "duration_seconds": 3.0,
+          "end_seconds": 36.1,
+          "scene": "goosebumps",
+          "start_seconds": 33.1
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 37.1,
+          "scene": "chill_red",
+          "start_seconds": 36.1
+        },
+        {
+          "duration_seconds": 2.0,
+          "end_seconds": 39.1,
+          "scene": "chill_blue",
+          "start_seconds": 37.1
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 40.1,
+          "scene": "chill_red",
+          "start_seconds": 39.1
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 41.1,
+          "scene": "sequence_cosmic",
+          "start_seconds": 40.1
+        },
+        {
+          "duration_seconds": 3.97075,
+          "end_seconds": 45.07075,
+          "scene": "chill_red",
+          "start_seconds": 41.1
+        }
+      ]
+    }
+  },
+  "random_seed": 0,
+  "raw_predictions": [
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.46004560589790344,
+        "singing": 0.11886158585548401,
+        "speech": 0.33190929889678955
+      },
+      "time": 4.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.07118052989244461,
+        "singing": 0.07118052989244461,
+        "speech": 0.16494318842887878
+      },
+      "time": 5.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.17710573971271515,
+        "singing": 0.14625132083892822,
+        "speech": 0.19240710139274597
+      },
+      "time": 6.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.11731646955013275,
+        "singing": 0.05913371965289116,
+        "speech": 0.21626807749271393
+      },
+      "time": 7.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.19225122034549713,
+        "singing": 0.049801114946603775,
+        "speech": 0.25314003229141235
+      },
+      "time": 8.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.4727289378643036,
+        "singing": 0.07345675677061081,
+        "speech": 0.01884613372385502
+      },
+      "time": 9.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.4580807685852051,
+        "singing": 0.05083692818880081,
+        "speech": 0.02260631136596203
+      },
+      "time": 10.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.4595488905906677,
+        "singing": 0.07873519510030746,
+        "speech": 0.2741124927997589
+      },
+      "time": 11.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.7460705637931824,
+        "singing": 0.06092279776930809,
+        "speech": 0.015050128102302551
+      },
+      "time": 12.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8087578415870667,
+        "singing": 0.09117777645587921,
+        "speech": 0.039497025310993195
+      },
+      "time": 13.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.7867598533630371,
+        "singing": 0.1410948932170868,
+        "speech": 0.3427015244960785
+      },
+      "time": 14.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.7737830877304077,
+        "singing": 0.1161092072725296,
+        "speech": 0.49990561604499817
+      },
+      "time": 15.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.3592648208141327,
+        "singing": 0.03194690868258476,
+        "speech": 0.7856264114379883
+      },
+      "time": 16.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.17072856426239014,
+        "singing": 0.026172354817390442,
+        "speech": 0.8411078453063965
+      },
+      "time": 17.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.0699886828660965,
+        "singing": 0.014869095757603645,
+        "speech": 0.8827353715896606
+      },
+      "time": 18.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.025052614510059357,
+        "singing": 0.00795929878950119,
+        "speech": 0.8216120600700378
+      },
+      "time": 19.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.021228034049272537,
+        "singing": 0.007134744897484779,
+        "speech": 0.8275207281112671
+      },
+      "time": 20.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.031552985310554504,
+        "singing": 0.02322985790669918,
+        "speech": 0.5660558342933655
+      },
+      "time": 21.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.06897540390491486,
+        "singing": 0.023974427953362465,
+        "speech": 0.567924976348877
+      },
+      "time": 22.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.025519313290715218,
+        "singing": 0.009814676828682423,
+        "speech": 0.7673709988594055
+      },
+      "time": 23.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.04843997210264206,
+        "singing": 0.007318869698792696,
+        "speech": 0.8046814203262329
+      },
+      "time": 24.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8848878145217896,
+        "singing": 0.17792858183383942,
+        "speech": 0.6925233006477356
+      },
+      "time": 25.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8650672435760498,
+        "singing": 0.15908531844615936,
+        "speech": 0.6518612504005432
+      },
+      "time": 26.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8868154287338257,
+        "singing": 0.1733754575252533,
+        "speech": 0.6864907741546631
+      },
+      "time": 27.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8809914588928223,
+        "singing": 0.06612356007099152,
+        "speech": 0.297262966632843
+      },
+      "time": 28.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8549162745475769,
+        "singing": 0.008078653365373611,
+        "speech": 0.27902594208717346
+      },
+      "time": 29.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8975656032562256,
+        "singing": 0.013218412175774574,
+        "speech": 0.6781373023986816
+      },
+      "time": 30.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8788880109786987,
+        "singing": 0.012424481101334095,
+        "speech": 0.724659264087677
+      },
+      "time": 31.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.831048309803009,
+        "singing": 0.008461354300379753,
+        "speech": 0.6250671744346619
+      },
+      "time": 32.0
+    },
+    {
+      "cluster": 23,
+      "scene": "goosebumps",
+      "scores": {
+        "music": 0.6361567974090576,
+        "singing": 0.006218707654625177,
+        "speech": 0.5400483012199402
+      },
+      "time": 33.0
+    },
+    {
+      "cluster": 23,
+      "scene": "goosebumps",
+      "scores": {
+        "music": 0.594971239566803,
+        "singing": 0.010355981066823006,
+        "speech": 0.4020744860172272
+      },
+      "time": 34.0
+    },
+    {
+      "cluster": 23,
+      "scene": "goosebumps",
+      "scores": {
+        "music": 0.6015509963035583,
+        "singing": 0.0055202157236635685,
+        "speech": 0.5356190800666809
+      },
+      "time": 35.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.7002081274986267,
+        "singing": 0.007563015446066856,
+        "speech": 0.6387084722518921
+      },
+      "time": 36.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8231346607208252,
+        "singing": 0.008171670138835907,
+        "speech": 0.7109667658805847
+      },
+      "time": 37.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8304728865623474,
+        "singing": 0.00857519917190075,
+        "speech": 0.6604368090629578
+      },
+      "time": 38.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8831892013549805,
+        "singing": 0.007426088210195303,
+        "speech": 0.03040703758597374
+      },
+      "time": 39.0
+    },
+    {
+      "cluster": 18,
+      "scene": "sequence_cosmic",
+      "scores": {
+        "music": 0.8760511875152588,
+        "singing": 0.015764150768518448,
+        "speech": 0.04224541783332825
+      },
+      "time": 40.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8799596428871155,
+        "singing": 0.015535063110291958,
+        "speech": 0.037271760404109955
+      },
+      "time": 41.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8439620733261108,
+        "singing": 0.012243558652698994,
+        "speech": 0.03286230191588402
+      },
+      "time": 42.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8726626634597778,
+        "singing": 0.009446939453482628,
+        "speech": 0.06651508808135986
+      },
+      "time": 43.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8742629289627075,
+        "singing": 0.0035042627714574337,
+        "speech": 0.01433629635721445
+      },
+      "time": 44.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8600320219993591,
+        "singing": 0.015439296141266823,
+        "speech": 0.016827983781695366
+      },
+      "time": 45.0
+    }
+  ],
+  "schema_version": 1,
+  "simulation_step_seconds": 0.1,
+  "source": "tests/mixvoicemusic.wav"
+}

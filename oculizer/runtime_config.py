@@ -30,7 +30,18 @@ class SpeechConfig:
 
 @dataclass(frozen=True)
 class PredictionConfig:
+    window_seconds: float = 4.0
+
+@dataclass(frozen=True)
+class FastSpeechConfig:
+    enabled: bool = True
     window_seconds: float = 2.0
+    interval_seconds: float = 1.0
+
+@dataclass(frozen=True)
+class FastDetectionConfig:
+    enabled: bool = True
+    speech: FastSpeechConfig = FastSpeechConfig()
 
 @dataclass(frozen=True)
 class MasterModulationConfig:
@@ -126,7 +137,7 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
     prediction = audio.get("prediction", {})
     if not isinstance(prediction, dict):
         raise ValueError("audio.prediction must be an object")
-    window_seconds = prediction.get("window_seconds", 2.0)
+    window_seconds = prediction.get("window_seconds", 4.0)
     if isinstance(window_seconds, bool) or not isinstance(window_seconds, (int, float)) or not 0.5 <= window_seconds <= 10:
         raise ValueError("audio.prediction.window_seconds must be between 0.5 and 10 seconds")
     master = audio.get("master_modulation", {})
@@ -155,6 +166,7 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
     if master_config.refresh_seconds <= 0:
         raise ValueError("audio.master_modulation.refresh_seconds must be greater than zero")
     _parse_frequency_modulation(audio.get("frequency_modulation", {}))
+    configured_fast_detection(config)
     return config
 
 def _parse_frequency_modulation(raw: Any) -> FrequencyModulationConfig:
@@ -247,7 +259,37 @@ def configured_speech(config: dict[str, Any]) -> SpeechConfig:
 
 def configured_prediction(config: dict[str, Any]) -> PredictionConfig:
     prediction = config.get("audio", {}).get("prediction", {})
-    return PredictionConfig(window_seconds=float(prediction.get("window_seconds", 2.0)))
+    return PredictionConfig(window_seconds=float(prediction.get("window_seconds", 4.0)))
+
+def configured_fast_detection(config: dict[str, Any]) -> FastDetectionConfig:
+    raw = config.get("audio", {}).get("fast_detection", {})
+    if not isinstance(raw, dict):
+        raise ValueError("audio.fast_detection must be an object")
+    enabled = raw.get("enabled", True)
+    speech_raw = raw.get("speech", {})
+    if not isinstance(enabled, bool) or not isinstance(speech_raw, dict):
+        raise ValueError("invalid audio.fast_detection configuration")
+    speech_defaults = FastSpeechConfig()
+    speech = FastSpeechConfig(**{
+        key: speech_raw.get(key, getattr(speech_defaults, key))
+        for key in FastSpeechConfig.__dataclass_fields__
+    })
+    if not isinstance(speech.enabled, bool):
+        raise ValueError("fast detection enable flags must be boolean")
+    for name in ("window_seconds", "interval_seconds"):
+        value = getattr(speech, name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            raise ValueError(f"audio.fast_detection.speech.{name} must be positive")
+    if not 0.25 <= speech.window_seconds <= 4.0:
+        raise ValueError("audio.fast_detection.speech.window_seconds must be between 0.25 and 4")
+    if not 0.5 <= speech.interval_seconds <= 5.0:
+        raise ValueError("audio.fast_detection.speech.interval_seconds must be between 0.5 and 5")
+    return FastDetectionConfig(
+        enabled=enabled,
+        speech=FastSpeechConfig(**{**speech.__dict__, **{
+            key: float(getattr(speech, key)) for key in speech.__dict__ if key != "enabled"
+        }}),
+    )
 
 def configured_master_modulation(config: dict[str, Any]) -> MasterModulationConfig:
     master = config.get("audio", {}).get("master_modulation", {})
@@ -268,8 +310,8 @@ def configured_dynamic_controls(config: dict[str, Any]) -> dict[str, dict[str, A
     """Return validated named dynamic-control profiles."""
     defaults = {
         "responsive": {"cache": 3, "rate": (10, 10.0), "throttle": (4, 1.0)},
-        "normal": {"cache": 15, "rate": (4, 15.0), "throttle": (2, 4.0)},
-        "calm": {"cache": 35, "rate": (2, 20.0), "throttle": None},
+        "normal": {"cache": 15, "rate": (3, 15.0), "throttle": (2, 4.0)},
+        "calm": {"cache": 5, "rate": (2, 20.0), "throttle": (1, 6.0)},
     }
     configured = config.get("control", {}).get("dynamic_controls", defaults)
     if not isinstance(configured, dict):

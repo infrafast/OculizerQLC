@@ -8,7 +8,7 @@ import sys
 from oculizer.headless import HeadlessOculizerService
 from oculizer.control_socket import default_control_socket_path
 from oculizer.light import Oculizer, OUTPUT_CHOICES
-from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.scenes import SceneManager
 
 
@@ -78,6 +78,7 @@ def parse_args():
     args.prediction_config = configured_prediction(config)
     args.master_config = configured_master_modulation(config)
     args.frequency_config = configured_frequency_modulation(config)
+    args.fast_detection_config = configured_fast_detection(config)
     args.dynamic_controls = configured_dynamic_controls(config)
     if args.dynamic_control != "off" and args.dynamic_control not in args.dynamic_controls:
         parser.error("--dynamic-control must be 'off' or a profile from control.dynamic_controls")
@@ -122,6 +123,7 @@ def build_service(args) -> HeadlessOculizerService:
         filter_dmx=args.filter_dmx,
         prediction_window_seconds=args.prediction_config.window_seconds,
         audio_file=args.audio_file,
+        fast_detection_config=args.fast_detection_config,
     )
     oculizer.restrict_scenes_to_backend()
     return HeadlessOculizerService(

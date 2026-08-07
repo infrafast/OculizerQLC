@@ -68,9 +68,9 @@ class Oculizer(threading.Thread):
                  average_dual_channels=False, scene_cache_size=10, prediction_channels=None,
                  test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
                  qlc_config_path=None, osc_host=None,
-                 osc_port=None, osc_dry_run=None, prediction_window_seconds=2.0,
+                 osc_port=None, osc_dry_run=None, prediction_window_seconds=4.0,
                  audio_file=None, osc_log_filters=(), dmx_dry_run=False,
-                 filter_dmx=False):
+                 filter_dmx=False, fast_detection_config=None):
         threading.Thread.__init__(self)
         self.profile_name = profile_name
         self.input_device = str(input_device).strip()
@@ -167,6 +167,10 @@ class Oculizer(threading.Thread):
         self.prediction_thread = None  # Separate thread for prediction processing
         self.prediction_lock = threading.Lock()  # Lock for thread-safe access
         self.prediction_suspended = threading.Event()
+        self.fast_detection_config = fast_detection_config
+        self.current_fast_audioset_scores = None
+        self.last_fast_semantic_time = 0.0
+        self.last_fast_semantic_duration = None
         
         # Audio quality monitoring
         self.audio_quality_check_interval = 100  # Check every N callbacks
@@ -555,6 +559,40 @@ class Oculizer(threading.Thread):
                 # Check if the configured source-rate window is full.
                 with self.prediction_lock:
                     cache_length = len(self.prediction_audio_cache)
+
+                # Speech/music checks run at one fixed, predictable cadence
+                # on this thread and the existing EfficientAT model instance.
+                fast_config = self.fast_detection_config
+                if fast_config is not None and fast_config.enabled and fast_config.speech.enabled:
+                    now = time.monotonic()
+                    short_samples = int(
+                        self.prediction_audio_sample_rate * fast_config.speech.window_seconds
+                    )
+                    if (
+                        cache_length >= short_samples
+                        and now - self.last_fast_semantic_time >= fast_config.speech.interval_seconds
+                    ):
+                        with self.prediction_lock:
+                            semantic_audio = np.asarray(self.prediction_audio_cache)[-short_samples:]
+                        if self.prediction_audio_sample_rate != self.prediction_sr:
+                            semantic_audio = librosa.resample(
+                                semantic_audio,
+                                orig_sr=self.prediction_audio_sample_rate,
+                                target_sr=self.prediction_sr,
+                            )
+                        semantic_started = time.monotonic()
+                        semantic_scores = self.scene_predictor.get_semantic_scores(semantic_audio)
+                        semantic_duration = time.monotonic() - semantic_started
+                        with self.prediction_lock:
+                            self.current_fast_audioset_scores = semantic_scores
+                            self.last_fast_semantic_time = time.monotonic()
+                            self.last_fast_semantic_duration = semantic_duration
+                        logger.debug(
+                            "Semantic speech check: %.1fms speech=%.3f music=%.3f",
+                            semantic_duration * 1000.0,
+                            semantic_scores.get("speech", 0.0),
+                            semantic_scores.get("music", 0.0),
+                        )
                 
                 if cache_length < int(self.prediction_audio_sample_rate * self.prediction_window_seconds):
                     continue
@@ -648,6 +686,14 @@ class Oculizer(threading.Thread):
         
         logger.info("Prediction processing thread stopped")
 
+    def reset_prediction_state(self) -> None:
+        """Discard scene evidence that must not cross a priority-route boundary."""
+        with self.prediction_lock:
+            if self.scene_cache is not None:
+                self.scene_cache.clear()
+            self.current_predicted_scene = None
+            self.latest_prediction = None
+
     def set_prediction_suspended(self, suspended: bool) -> None:
         """Pause heavy inference and discard stale prediction audio during silence."""
         if suspended:
@@ -662,6 +708,7 @@ class Oculizer(threading.Thread):
                 self.current_predicted_scene = None
                 self.latest_prediction = None
                 self.current_audioset_scores = None
+                self.current_fast_audioset_scores = None
             logger.info("Prediction inference suspended")
         else:
             if not self.prediction_suspended.is_set():
@@ -679,6 +726,7 @@ class Oculizer(threading.Thread):
                 self.current_predicted_scene = None
                 self.latest_prediction = None
                 self.current_audioset_scores = None
+                self.current_fast_audioset_scores = None
             self.prediction_suspended.clear()
             self.last_prediction_time = 0
             logger.info("Prediction inference resumed")
@@ -993,6 +1041,7 @@ class Oculizer(threading.Thread):
             if self.scene_cache is not None:
                 self.scene_cache.clear()
             self.current_audioset_scores = None
+            self.current_fast_audioset_scores = None
             self.latest_prediction = None
             self.current_predicted_scene = None
             self.current_cluster = None

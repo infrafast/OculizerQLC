@@ -191,6 +191,12 @@ class ScenePredictor:
             logger.error(f"Error generating EfficientAT embeddings: {e}")
             raise
     
+    @torch.no_grad()
+    def get_semantic_scores(self, audio):
+        """Run only EfficientAT semantics, skipping artistic scene processing."""
+        self.get_efficientat_embedding(audio)
+        return dict(self.last_audioset_scores or {})
+
     def extract_mfcc_features(self, audio):
         """
         Extract MFCC features from audio and aggregate across time.

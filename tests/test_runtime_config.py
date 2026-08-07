@@ -5,18 +5,27 @@ from pathlib import Path
 from unittest.mock import patch
 
 from oculizer.light.control import Oculizer
-from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, load_runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
     def test_loads_default_and_custom_dynamic_controls(self):
         defaults = configured_dynamic_controls({})
         self.assertEqual(defaults["normal"], {
-            "cache": 15, "rate": (4, 15.0), "throttle": (2, 4.0),
+            "cache": 15, "rate": (3, 15.0), "throttle": (2, 4.0),
         })
         self.assertEqual(defaults["calm"], {
-            "cache": 35, "rate": (2, 20.0), "throttle": None,
+            "cache": 5, "rate": (2, 20.0), "throttle": (1, 6.0),
         })
+
+    def test_fast_detection_defaults_and_validation(self):
+        fast = configured_fast_detection({})
+        self.assertEqual(fast.speech.window_seconds, 2.0)
+        self.assertEqual(fast.speech.interval_seconds, 1.0)
+        with self.assertRaisesRegex(ValueError, "interval_seconds"):
+            configured_fast_detection({
+                "audio": {"fast_detection": {"speech": {"interval_seconds": 0.1}}}
+            })
         custom = configured_dynamic_controls({
             "control": {"dynamic_controls": {"show": {
                 "cache": 4, "rate": [5, 8], "throttle": None,

@@ -21,6 +21,8 @@ class FakeOculizer:
         self.alive = False
         self.current_audio_rms = None
         self.current_audioset_scores = None
+        self.current_fast_audioset_scores = None
+        self.latest_prediction = None
         self.prediction_suspended = False
         self.scene_cache_size = 25
         self.scene_cache = deque(maxlen=25)
@@ -483,6 +485,71 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         self.assertTrue(router.step())
 
         self.assertEqual(engine.changes, ["wave"])
+
+    def test_fast_speech_bypasses_every_dynamic_policy(self):
+        for name, rate, throttle in (
+            ("responsive", (1, 60.0), (1, 60.0)),
+            ("normal", (1, 60.0), (1, 60.0)),
+            ("calm", (1, 60.0), (1, 60.0)),
+        ):
+            with self.subTest(profile=name):
+                engine = FakeOculizer()
+                engine.targets.update({"announcement": "announcement"})
+                engine.current_predicted_scene = "party"
+                engine.current_fast_audioset_scores = {
+                    "speech": 0.9, "music": 0.1, "singing": 0.0,
+                }
+                router = AutomaticSceneRouter(
+                    engine,
+                    speech_config=SpeechConfig(minimum_duration_seconds=0),
+                    scene_rate_limit=rate,
+                    scene_throttle=throttle,
+                )
+                router.automatic_change_times.append(router.clock())
+                router.throttle_tokens = 0.0
+
+                self.assertTrue(router.step())
+                self.assertEqual(engine.changes, ["announcement"])
+                self.assertEqual(router.get_route_status()["route_reason"], "priority_speech")
+
+    def test_silence_bypasses_depleted_ordinary_limits(self):
+        engine = FakeOculizer()
+        engine.current_predicted_scene = "party"
+        now = [0.0]
+        router = AutomaticSceneRouter(
+            engine,
+            speech_config=SpeechConfig(enabled=False),
+            silence_config=SilenceConfig(scene="off", duration_seconds=0.1),
+            scene_rate_limit=(1, 60.0),
+            scene_throttle=(1, 60.0),
+            clock=lambda: now[0],
+        )
+        engine.current_audio_rms = 0.1
+        self.assertTrue(router.step())
+        engine.current_audio_rms = 0.0
+        now[0] = 1.0
+        self.assertFalse(router.step())
+        now[0] = 1.11
+        self.assertTrue(router.step())
+
+        self.assertEqual(engine.changes, ["party", "off"])
+        self.assertEqual(router.get_route_status()["route_reason"], "priority_silence")
+
+    def test_status_distinguishes_stable_candidate_blocked_by_policy(self):
+        engine = FakeOculizer()
+        engine.targets.update({"one": "one", "two": "two"})
+        router = AutomaticSceneRouter(engine, scene_rate_limit=(1, 60.0))
+        engine.current_predicted_scene = "one"
+        engine.latest_prediction = "one"
+        self.assertTrue(router.step())
+        engine.current_predicted_scene = "two"
+        engine.latest_prediction = "two"
+        self.assertFalse(router.step())
+
+        status = router.get_route_status()
+        self.assertEqual(status["active_scene"], "one")
+        self.assertEqual(status["stable_candidate_scene"], "two")
+        self.assertEqual(status["transition_block_reason"], "rate limit 1/60s")
 
 
 class HeadlessServiceTests(unittest.TestCase):

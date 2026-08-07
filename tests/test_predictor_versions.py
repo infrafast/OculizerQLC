@@ -1,12 +1,24 @@
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import Mock
 
 from oculizer.scene_predictors import AVAILABLE_VERSIONS, get_predictor, list_available_versions
 from oculizer.scene_predictors.v6.predictor import ScenePredictor as V6ScenePredictor
 
 
 class PredictorVersionTests(unittest.TestCase):
+    def test_semantic_path_skips_artistic_feature_pipeline(self):
+        predictor = object.__new__(V6ScenePredictor)
+        predictor.last_audioset_scores = {"speech": 0.8, "singing": 0.0, "music": 0.1}
+        predictor.get_efficientat_embedding = Mock(return_value=None)
+        predictor.extract_mfcc_features = Mock(side_effect=AssertionError("MFCC must be skipped"))
+
+        scores = predictor.get_semantic_scores(__import__("numpy").zeros(1000))
+
+        self.assertEqual(scores["speech"], 0.8)
+        predictor.get_efficientat_embedding.assert_called_once()
+        predictor.extract_mfcc_features.assert_not_called()
     def test_only_complete_predictors_are_available(self):
         self.assertEqual(AVAILABLE_VERSIONS, list_available_versions())
         self.assertEqual(list_available_versions()[:2], ["v4", "v5"])

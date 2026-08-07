@@ -1,0 +1,820 @@
+{
+  "duration_seconds": 45.07075,
+  "prediction_hop_seconds": 1.0,
+  "prediction_window_seconds": 4.0,
+  "predictor_version": "v6",
+  "profiles": {
+    "calm": {
+      "policy": {
+        "cache": 35,
+        "rate": [
+          2,
+          20.0
+        ],
+        "throttle": null
+      },
+      "scene_change_count": 4,
+      "scene_statistics": [
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "<unrouted>"
+        },
+        {
+          "duration_seconds": 10.87075,
+          "percentage_of_file": 24.1193,
+          "scene": "goosebumps"
+        },
+        {
+          "duration_seconds": 9.3,
+          "percentage_of_file": 20.6342,
+          "scene": "announcement"
+        },
+        {
+          "duration_seconds": 7.4,
+          "percentage_of_file": 16.4186,
+          "scene": "chill_blue"
+        },
+        {
+          "duration_seconds": 5.5,
+          "percentage_of_file": 12.203,
+          "scene": "ambient2"
+        }
+      ],
+      "transitions": [
+        {
+          "duration_seconds": 4.5,
+          "end_seconds": 16.5,
+          "scene": "chill_blue",
+          "start_seconds": 12.0
+        },
+        {
+          "duration_seconds": 9.3,
+          "end_seconds": 25.8,
+          "scene": "announcement",
+          "start_seconds": 16.5
+        },
+        {
+          "duration_seconds": 2.9,
+          "end_seconds": 28.7,
+          "scene": "chill_blue",
+          "start_seconds": 25.8
+        },
+        {
+          "duration_seconds": 5.5,
+          "end_seconds": 34.2,
+          "scene": "ambient2",
+          "start_seconds": 28.7
+        },
+        {
+          "duration_seconds": 10.87075,
+          "end_seconds": 45.07075,
+          "scene": "goosebumps",
+          "start_seconds": 34.2
+        }
+      ]
+    },
+    "normal": {
+      "policy": {
+        "cache": 15,
+        "rate": [
+          4,
+          15.0
+        ],
+        "throttle": [
+          2,
+          4.0
+        ]
+      },
+      "scene_change_count": 7,
+      "scene_statistics": [
+        {
+          "duration_seconds": 12.4,
+          "percentage_of_file": 27.5123,
+          "scene": "chill_blue"
+        },
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "<unrouted>"
+        },
+        {
+          "duration_seconds": 9.3,
+          "percentage_of_file": 20.6342,
+          "scene": "announcement"
+        },
+        {
+          "duration_seconds": 5.0,
+          "percentage_of_file": 11.0937,
+          "scene": "ambient2"
+        },
+        {
+          "duration_seconds": 4.0,
+          "percentage_of_file": 8.8749,
+          "scene": "goosebumps"
+        },
+        {
+          "duration_seconds": 2.37075,
+          "percentage_of_file": 5.2601,
+          "scene": "chill_red"
+        }
+      ],
+      "transitions": [
+        {
+          "duration_seconds": 4.5,
+          "end_seconds": 16.5,
+          "scene": "chill_blue",
+          "start_seconds": 12.0
+        },
+        {
+          "duration_seconds": 9.3,
+          "end_seconds": 25.8,
+          "scene": "announcement",
+          "start_seconds": 16.5
+        },
+        {
+          "duration_seconds": 1.9,
+          "end_seconds": 27.7,
+          "scene": "chill_blue",
+          "start_seconds": 25.8
+        },
+        {
+          "duration_seconds": 5.0,
+          "end_seconds": 32.7,
+          "scene": "ambient2",
+          "start_seconds": 27.7
+        },
+        {
+          "duration_seconds": 1.3,
+          "end_seconds": 34.0,
+          "scene": "chill_blue",
+          "start_seconds": 32.7
+        },
+        {
+          "duration_seconds": 4.0,
+          "end_seconds": 38.0,
+          "scene": "goosebumps",
+          "start_seconds": 34.0
+        },
+        {
+          "duration_seconds": 4.7,
+          "end_seconds": 42.7,
+          "scene": "chill_blue",
+          "start_seconds": 38.0
+        },
+        {
+          "duration_seconds": 2.37075,
+          "end_seconds": 45.07075,
+          "scene": "chill_red",
+          "start_seconds": 42.7
+        }
+      ]
+    },
+    "raw (off)": {
+      "policy": {
+        "cache": 10,
+        "rate": null,
+        "throttle": null
+      },
+      "scene_change_count": 9,
+      "scene_statistics": [
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "<unrouted>"
+        },
+        {
+          "duration_seconds": 9.3,
+          "percentage_of_file": 20.6342,
+          "scene": "announcement"
+        },
+        {
+          "duration_seconds": 9.2,
+          "percentage_of_file": 20.4124,
+          "scene": "chill_blue"
+        },
+        {
+          "duration_seconds": 5.0,
+          "percentage_of_file": 11.0937,
+          "scene": "ambient2"
+        },
+        {
+          "duration_seconds": 4.57075,
+          "percentage_of_file": 10.1413,
+          "scene": "chill_red"
+        },
+        {
+          "duration_seconds": 4.0,
+          "percentage_of_file": 8.8749,
+          "scene": "goosebumps"
+        },
+        {
+          "duration_seconds": 1.0,
+          "percentage_of_file": 2.2187,
+          "scene": "sequence_cosmic"
+        }
+      ],
+      "transitions": [
+        {
+          "duration_seconds": 4.5,
+          "end_seconds": 16.5,
+          "scene": "chill_blue",
+          "start_seconds": 12.0
+        },
+        {
+          "duration_seconds": 9.3,
+          "end_seconds": 25.8,
+          "scene": "announcement",
+          "start_seconds": 16.5
+        },
+        {
+          "duration_seconds": 1.7,
+          "end_seconds": 27.5,
+          "scene": "chill_blue",
+          "start_seconds": 25.8
+        },
+        {
+          "duration_seconds": 5.0,
+          "end_seconds": 32.5,
+          "scene": "ambient2",
+          "start_seconds": 27.5
+        },
+        {
+          "duration_seconds": 1.5,
+          "end_seconds": 34.0,
+          "scene": "chill_blue",
+          "start_seconds": 32.5
+        },
+        {
+          "duration_seconds": 4.0,
+          "end_seconds": 38.0,
+          "scene": "goosebumps",
+          "start_seconds": 34.0
+        },
+        {
+          "duration_seconds": 1.5,
+          "end_seconds": 39.5,
+          "scene": "chill_blue",
+          "start_seconds": 38.0
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 40.5,
+          "scene": "chill_red",
+          "start_seconds": 39.5
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 41.5,
+          "scene": "sequence_cosmic",
+          "start_seconds": 40.5
+        },
+        {
+          "duration_seconds": 3.57075,
+          "end_seconds": 45.07075,
+          "scene": "chill_red",
+          "start_seconds": 41.5
+        }
+      ]
+    },
+    "responsive": {
+      "policy": {
+        "cache": 3,
+        "rate": [
+          10,
+          10.0
+        ],
+        "throttle": [
+          4,
+          1.0
+        ]
+      },
+      "scene_change_count": 9,
+      "scene_statistics": [
+        {
+          "duration_seconds": 12.0,
+          "percentage_of_file": 26.6248,
+          "scene": "<unrouted>"
+        },
+        {
+          "duration_seconds": 9.3,
+          "percentage_of_file": 20.6342,
+          "scene": "announcement"
+        },
+        {
+          "duration_seconds": 8.8,
+          "percentage_of_file": 19.5249,
+          "scene": "chill_blue"
+        },
+        {
+          "duration_seconds": 5.0,
+          "percentage_of_file": 11.0937,
+          "scene": "ambient2"
+        },
+        {
+          "duration_seconds": 4.97075,
+          "percentage_of_file": 11.0288,
+          "scene": "chill_red"
+        },
+        {
+          "duration_seconds": 4.0,
+          "percentage_of_file": 8.8749,
+          "scene": "goosebumps"
+        },
+        {
+          "duration_seconds": 1.0,
+          "percentage_of_file": 2.2187,
+          "scene": "sequence_cosmic"
+        }
+      ],
+      "transitions": [
+        {
+          "duration_seconds": 4.5,
+          "end_seconds": 16.5,
+          "scene": "chill_blue",
+          "start_seconds": 12.0
+        },
+        {
+          "duration_seconds": 9.3,
+          "end_seconds": 25.8,
+          "scene": "announcement",
+          "start_seconds": 16.5
+        },
+        {
+          "duration_seconds": 1.3,
+          "end_seconds": 27.1,
+          "scene": "chill_blue",
+          "start_seconds": 25.8
+        },
+        {
+          "duration_seconds": 5.0,
+          "end_seconds": 32.1,
+          "scene": "ambient2",
+          "start_seconds": 27.1
+        },
+        {
+          "duration_seconds": 1.9,
+          "end_seconds": 34.0,
+          "scene": "chill_blue",
+          "start_seconds": 32.1
+        },
+        {
+          "duration_seconds": 4.0,
+          "end_seconds": 38.0,
+          "scene": "goosebumps",
+          "start_seconds": 34.0
+        },
+        {
+          "duration_seconds": 1.1,
+          "end_seconds": 39.1,
+          "scene": "chill_blue",
+          "start_seconds": 38.0
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 40.1,
+          "scene": "chill_red",
+          "start_seconds": 39.1
+        },
+        {
+          "duration_seconds": 1.0,
+          "end_seconds": 41.1,
+          "scene": "sequence_cosmic",
+          "start_seconds": 40.1
+        },
+        {
+          "duration_seconds": 3.97075,
+          "end_seconds": 45.07075,
+          "scene": "chill_red",
+          "start_seconds": 41.1
+        }
+      ]
+    }
+  },
+  "random_seed": 0,
+  "raw_predictions": [
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.46004560589790344,
+        "singing": 0.11886158585548401,
+        "speech": 0.33190929889678955
+      },
+      "time": 4.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.07118052989244461,
+        "singing": 0.07118052989244461,
+        "speech": 0.16494318842887878
+      },
+      "time": 5.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.17710573971271515,
+        "singing": 0.14625132083892822,
+        "speech": 0.19240710139274597
+      },
+      "time": 6.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.11731646955013275,
+        "singing": 0.05913371965289116,
+        "speech": 0.21626807749271393
+      },
+      "time": 7.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.19225122034549713,
+        "singing": 0.049801114946603775,
+        "speech": 0.25314003229141235
+      },
+      "time": 8.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.4727289378643036,
+        "singing": 0.07345675677061081,
+        "speech": 0.01884613372385502
+      },
+      "time": 9.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.4580807685852051,
+        "singing": 0.05083692818880081,
+        "speech": 0.02260631136596203
+      },
+      "time": 10.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.4595488905906677,
+        "singing": 0.07873519510030746,
+        "speech": 0.2741124927997589
+      },
+      "time": 11.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.7460705637931824,
+        "singing": 0.06092279776930809,
+        "speech": 0.015050128102302551
+      },
+      "time": 12.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8087578415870667,
+        "singing": 0.09117777645587921,
+        "speech": 0.039497025310993195
+      },
+      "time": 13.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.7867598533630371,
+        "singing": 0.1410948932170868,
+        "speech": 0.3427015244960785
+      },
+      "time": 14.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.7737830877304077,
+        "singing": 0.1161092072725296,
+        "speech": 0.49990561604499817
+      },
+      "time": 15.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.3592648208141327,
+        "singing": 0.03194690868258476,
+        "speech": 0.7856264114379883
+      },
+      "time": 16.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.17072856426239014,
+        "singing": 0.026172354817390442,
+        "speech": 0.8411078453063965
+      },
+      "time": 17.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.0699886828660965,
+        "singing": 0.014869095757603645,
+        "speech": 0.8827353715896606
+      },
+      "time": 18.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.025052614510059357,
+        "singing": 0.00795929878950119,
+        "speech": 0.8216120600700378
+      },
+      "time": 19.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.021228034049272537,
+        "singing": 0.007134744897484779,
+        "speech": 0.8275207281112671
+      },
+      "time": 20.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.031552985310554504,
+        "singing": 0.02322985790669918,
+        "speech": 0.5660558342933655
+      },
+      "time": 21.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.06897540390491486,
+        "singing": 0.023974427953362465,
+        "speech": 0.567924976348877
+      },
+      "time": 22.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.025519313290715218,
+        "singing": 0.009814676828682423,
+        "speech": 0.7673709988594055
+      },
+      "time": 23.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.04843997210264206,
+        "singing": 0.007318869698792696,
+        "speech": 0.8046814203262329
+      },
+      "time": 24.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8848878145217896,
+        "singing": 0.17792858183383942,
+        "speech": 0.6925233006477356
+      },
+      "time": 25.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8650672435760498,
+        "singing": 0.15908531844615936,
+        "speech": 0.6518612504005432
+      },
+      "time": 26.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8868154287338257,
+        "singing": 0.1733754575252533,
+        "speech": 0.6864907741546631
+      },
+      "time": 27.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8809914588928223,
+        "singing": 0.06612356007099152,
+        "speech": 0.297262966632843
+      },
+      "time": 28.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8549162745475769,
+        "singing": 0.008078653365373611,
+        "speech": 0.27902594208717346
+      },
+      "time": 29.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8975656032562256,
+        "singing": 0.013218412175774574,
+        "speech": 0.6781373023986816
+      },
+      "time": 30.0
+    },
+    {
+      "cluster": 25,
+      "scene": "ambient2",
+      "scores": {
+        "music": 0.8788880109786987,
+        "singing": 0.012424481101334095,
+        "speech": 0.724659264087677
+      },
+      "time": 31.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.831048309803009,
+        "singing": 0.008461354300379753,
+        "speech": 0.6250671744346619
+      },
+      "time": 32.0
+    },
+    {
+      "cluster": 23,
+      "scene": "goosebumps",
+      "scores": {
+        "music": 0.6361567974090576,
+        "singing": 0.006218707654625177,
+        "speech": 0.5400483012199402
+      },
+      "time": 33.0
+    },
+    {
+      "cluster": 23,
+      "scene": "goosebumps",
+      "scores": {
+        "music": 0.594971239566803,
+        "singing": 0.010355981066823006,
+        "speech": 0.4020744860172272
+      },
+      "time": 34.0
+    },
+    {
+      "cluster": 23,
+      "scene": "goosebumps",
+      "scores": {
+        "music": 0.6015509963035583,
+        "singing": 0.0055202157236635685,
+        "speech": 0.5356190800666809
+      },
+      "time": 35.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.7002081274986267,
+        "singing": 0.007563015446066856,
+        "speech": 0.6387084722518921
+      },
+      "time": 36.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8231346607208252,
+        "singing": 0.008171670138835907,
+        "speech": 0.7109667658805847
+      },
+      "time": 37.0
+    },
+    {
+      "cluster": 29,
+      "scene": "chill_blue",
+      "scores": {
+        "music": 0.8304728865623474,
+        "singing": 0.00857519917190075,
+        "speech": 0.6604368090629578
+      },
+      "time": 38.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8831892013549805,
+        "singing": 0.007426088210195303,
+        "speech": 0.03040703758597374
+      },
+      "time": 39.0
+    },
+    {
+      "cluster": 18,
+      "scene": "sequence_cosmic",
+      "scores": {
+        "music": 0.8760511875152588,
+        "singing": 0.015764150768518448,
+        "speech": 0.04224541783332825
+      },
+      "time": 40.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8799596428871155,
+        "singing": 0.015535063110291958,
+        "speech": 0.037271760404109955
+      },
+      "time": 41.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8439620733261108,
+        "singing": 0.012243558652698994,
+        "speech": 0.03286230191588402
+      },
+      "time": 42.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8726626634597778,
+        "singing": 0.009446939453482628,
+        "speech": 0.06651508808135986
+      },
+      "time": 43.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8742629289627075,
+        "singing": 0.0035042627714574337,
+        "speech": 0.01433629635721445
+      },
+      "time": 44.0
+    },
+    {
+      "cluster": 0,
+      "scene": "chill_red",
+      "scores": {
+        "music": 0.8600320219993591,
+        "singing": 0.015439296141266823,
+        "speech": 0.016827983781695366
+      },
+      "time": 45.0
+    }
+  ],
+  "schema_version": 1,
+  "simulation_step_seconds": 0.1,
+  "source": "tests/mixvoicemusic.wav"
+}

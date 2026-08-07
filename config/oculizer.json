@@ -2,14 +2,22 @@
   "control": {
     "dynamic_controls": {
       "responsive": {"cache": 3, "rate": [10, 10], "throttle": [4, 1]},
-      "normal": {"cache": 15, "rate": [4, 15], "throttle": [2, 4]},
-      "calm": {"cache": 35, "rate": [2, 20], "throttle": null}
+      "normal": {"cache": 15, "rate": [3, 15], "throttle": [2, 4]},
+      "calm": {"cache": 5, "rate": [2, 20], "throttle": [1, 6]}
     }
   },
   "audio": {
     "input_device": "default",
     "prediction": {
       "window_seconds": 4.0
+    },
+    "fast_detection": {
+      "enabled": true,
+      "speech": {
+        "enabled": true,
+        "window_seconds": 2.0,
+        "interval_seconds": 1.0
+      }
     },
     "master_modulation": {
       "enabled": true,
@@ -75,7 +83,7 @@
       "enabled": true,
       "threshold": 0.55,
       "music_margin": 0.15,
-      "minimum_duration_seconds": 0.5,
+      "minimum_duration_seconds": 1.0,
       "release_duration_seconds": 0.75,
       "scene": "announcement"
     }

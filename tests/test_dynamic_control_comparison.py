@@ -11,11 +11,32 @@ from scripts.render_dynamic_control_comparison import (
     render_svg,
     scene_style,
     simulate_profile,
+    summarize_simulation,
     xterm_rgb,
 )
 
 
 class DynamicControlComparisonTests(unittest.TestCase):
+    def test_statistics_report_scene_durations_and_transition_intervals(self):
+        summary = summarize_simulation(
+            [(0.0, 0.1, None), (1.0, 0.2, "one"),
+             (2.0, 0.2, "one"), (3.0, 0.3, "two")],
+            4.0,
+        )
+
+        self.assertEqual(summary["scene_change_count"], 1)
+        self.assertEqual(
+            {item["scene"]: item["duration_seconds"]
+             for item in summary["scene_statistics"]},
+            {"<unrouted>": 1.0, "one": 2.0, "two": 1.0},
+        )
+        self.assertEqual(summary["transitions"], [
+            {"scene": "one", "start_seconds": 1.0,
+             "end_seconds": 3.0, "duration_seconds": 2.0},
+            {"scene": "two", "start_seconds": 3.0,
+             "end_seconds": 4.0, "duration_seconds": 1.0},
+        ])
+
     def test_raw_only_and_explicit_empty_config_skip_dynamic_profiles(self):
         configured = {"control": {"dynamic_controls": {
             "show": {"cache": 3, "rate": None, "throttle": None},

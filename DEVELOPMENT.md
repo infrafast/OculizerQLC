@@ -375,7 +375,79 @@ Status: **complete — implementation and live QLC+ operator validation accepted
 
 Exit criterion: while the interactive application or headless runtime is running, a second terminal and QLC+-originated actions can select modes, scenes, and named dynamic-control profiles; every active interactive display reflects external changes without restart or split state.
 
-### Phase 8a.1 — QLC+ 5 WebSocket button backend
+### Phase 8a.1 — Fast event detection and scene-transition separation
+
+Status: **implemented — automated/offline validation complete; live macOS validation pending**
+
+Objective: make detection latency independent from the operator's scene-change-frequency policy. The v6 predictor remains the source of artistic scene candidates and keeps its training-compatible four-second window. A lightweight priority path detects silence, audio recovery, and speech transitions without waiting for a v6 artistic classification. `responsive`, `normal`, and `calm` may accept ordinary music scenes at different rates, but they must observe priority events and stable candidate changes at the same latency.
+
+Architecture and ownership:
+
+- [x] add small timestamped priority-event records for `SUDDEN_SILENCE`, `AUDIO_RESUME`, `SPEECH_START`, and `SPEECH_END`;
+- [x] feed the detector from the existing shared audio-source boundary without opening another capture stream or performing routing inside an audio callback;
+- [x] send events to the shared `AutomaticSceneRouter`; the detector never issues QLC+, Enttec, or scene commands directly;
+- [x] use the same detector, router, and runtime-control state in interactive and headless execution; curses remains presentation and operator control only;
+- [x] preserve v6's EfficientAT/MFCC/scaler/PCA/KMeans artistic pipeline and make four seconds its code and configuration default where no explicit compatible value is supplied.
+
+Low-cost silence slice:
+
+- [x] reuse the existing RMS threshold, duration, and resume hysteresis instead of maintaining a second energy/baseline state machine;
+- [x] keep silence evaluation bounded and allocation-free, using the RMS value already produced by audio capture;
+- [x] route confirmed silence immediately after its configured duration and resume from fresh audio state without waiting for v6;
+- [x] omit energy-rise/drop-triggered semantic inference: it added scheduling complexity and burst CPU load without being required for the accepted one-to-two-second response target.
+
+Short semantic slice — accepted Raspberry Pi design:
+
+- [x] keep exactly one EfficientAT model instance and one serialized inference execution path; do not run concurrent semantic and artistic inference;
+- [x] run a semantic-only inference over a `2.0s` rolling window; evaluation on `mixvoicemusic.wav` showed shorter windows were too unstable for EfficientAT speech/music confidence;
+- [x] use one fixed `1.0s` cadence both during music and announcements, targeting a predictable one-to-two-second response without burst inference;
+- [x] short semantic work extracts only speech, singing, and music scores and skips MFCC, scaler, PCA, KMeans, and scene mapping;
+- [x] do not create a second model instance, process, permanent high-rate inference loop, or new VAD dependency in this phase;
+- [x] never interrupt a native inference already in progress and never build a separate semantic request queue;
+- [x] retain configurable speech threshold, music margin, minimum duration, and release duration, targeting confident `SPEECH_START` routing within one to two seconds.
+
+Router and dynamic-control semantics:
+
+- [x] distinguish priority routes from ordinary music routes explicitly;
+- [x] make confirmed silence and speech-start routes bypass scene cache, rate limit, throttle, maximum duration, and scene re-entry delay while retaining their own event-specific hysteresis;
+- [x] treat audio resume and speech end as immediate release from the priority state, then require fresh candidate state before returning to music;
+- [x] keep one small prediction-stability cache across dynamic-control profiles instead of using a large cache to make a show calm;
+- [x] tune from measured tests to `responsive` cache `3`, rate `10/10`, throttle `4/1`; `normal` cache `15`, rate `3/15`, throttle `2/4`; and `calm` cache `5`, rate `2/20`, throttle `1/6`;
+- [x] track raw prediction, latest prediction, stable candidate scene, and active scene as separate state;
+- [x] when policy rejects an ordinary candidate, retain only the newest valid stable candidate and reconsider it when admission becomes available; never queue obsolete scene transitions;
+- [x] distinguish in status and logs between a stable candidate deliberately retained by policy, a priority route, and an accepted ordinary transition; raw and stable values expose candidates still converging.
+
+Configuration and observability:
+
+- [x] strictly validate the semantic window and fixed interval under `audio.fast_detection.speech`;
+- [x] expose active scene, raw prediction, stable candidate, last priority event, speech score, music score, route reason, block reason, and active dynamic-control profile;
+- [x] ensure selecting a dynamic-control profile changes no detector threshold, window, or semantic polling frequency;
+- [x] preserve existing silence thresholds/routes and speech thresholds/hysteresis as the single routing policy.
+
+Implementation slices and validation gates:
+
+1. Add validated semantic scheduling configuration, small priority-event records, and status fields.
+2. Integrate priority silence/resume routing and prove it bypasses every ordinary policy.
+3. Add a fixed-rate serialized semantic check using the existing EfficientAT instance, then integrate speech-start/end priority routing.
+4. Separate stable candidates from active scenes, reduce profile caches, retain only the latest rejected candidate, and add block/reason observability.
+5. Validate on synthetic signals and representative WAV/concert inputs before live QLC+ acceptance.
+
+Automated acceptance must prove:
+
+- [x] speech and silence bypass `responsive`, `normal`, and `calm` ordinary limits;
+- [x] calm observes a stable candidate immediately while intentionally retaining the active scene;
+- [x] responsive accepts stable candidates rapidly and alternating prediction jitter does not churn scenes;
+- [x] rejected candidates do not reappear later as a stale queue;
+- [x] speech release clears cached artistic evidence and resumes from fresh prediction state;
+- [x] profile changes cannot alter fast-detector behavior because runtime policy mutation is confined to cache/rate/throttle fields;
+- [x] v6 continues using a four-second artistic classification window;
+- [x] interactive, headless, QLC+ OSC, Enttec, WAV, live audio, runtime control, and shutdown behavior remain covered.
+
+Embedded-system impact gate: this phase targets a Raspberry Pi 5 with 8 GB RAM. The approved design avoids duplicate model memory and concurrent inference; the material risk is CPU scheduling and latency. Record short semantic inference time, v6 inference time, queue depth, process RSS, sustained CPU, temperature, and missed audio deadlines on macOS and later on Raspberry Pi. All queues and logs must remain bounded, and semantic work must degrade by delaying or replacing an obsolete request rather than accumulating work.
+
+Exit criterion: all dynamic-control profiles detect priority events at essentially the same latency; silence follows its configured RMS hysteresis without waiting for v6; a confident music-to-speech transition selects `announcement` within one to two seconds; v6 retains its four-second artistic window; calm substantially reduces ordinary activations without hiding stable candidates; and status clearly explains every detected, blocked, priority, and accepted route.
+
+### Phase 8a.2 — QLC+ 5 WebSocket button backend
 
 Status: **planned before Phase 8b — protocol research and implementation pending**
 
@@ -442,7 +514,7 @@ Exit criterion: `--output qlc-websocket` discovers Virtual Console buttons by un
 
 ### Phase 8b — Raspberry Pi 5 production target
 
-Status: **pending after Phase 8a.1 — deployment design and Linux ARM64 validation pending**
+Status: **pending after Phase 8a.2 — deployment design and Linux ARM64 validation pending**
 
 - [ ] validate every dependency on Linux ARM64;
 - [ ] remove assumptions about macOS paths or devices;
@@ -553,13 +625,13 @@ Remaining work: validate the revised `calm` preset against a live concert-length
 
 Roadmap decision:
 
-- added Phase 8a.1 before the Raspberry Pi production phase, preserving Phase 8b numbering and its deployment scope;
+- added the WebSocket milestone before the Raspberry Pi production phase, preserving Phase 8b numbering and its deployment scope; it was subsequently renumbered from Phase 8a.1 to Phase 8a.2 when fast event detection became the preceding milestone;
 - retained OSC as a fully supported QLC+ transport and limited the first WebSocket slice to Virtual Console button discovery and actuation behind `LightingBackend`;
 - adopted activation-only scene intent for both QLC+ transports: Oculizer must not deactivate the prior scene during an ordinary change, leaving overlap to ordinary Frames and exclusivity to Solo Frames; any required wire-level release remains part of one activation gesture rather than a second routing intention;
 - made official QLC+ 5 documentation and matching source inspection a mandatory pre-implementation gate, including verification of exact messages, button press/release semantics, widget discovery, and connection lifecycle;
 - prohibited persisted widget IDs and required per-connection unique-caption discovery, explicit duplicate/missing-caption errors, configurable `off` and `announcement` routes, bounded transport behavior, and a network-free dry-run;
 - separated automated fake-peer coverage from live QLC+ 5 validation and deferred advanced widgets until the button backend is proven;
-- preserved Enttec, audio/prediction behavior, OSC availability, and the Phase 8a `oculizerctl.py` Unix socket; the current OSC previous-scene pulse is now explicitly scheduled for replacement and parity validation in Phase 8a.1.
+- preserved Enttec, audio/prediction behavior, OSC availability, and the Phase 8a `oculizerctl.py` Unix socket; the current OSC previous-scene pulse is now explicitly scheduled for replacement and parity validation in Phase 8a.2.
 
 Validation:
 
@@ -567,7 +639,146 @@ Validation:
 - recorded every uncertain protocol detail as a documentation/source-backed validation gate rather than assuming a wire format;
 - checked Markdown formatting and roadmap ordering after integration.
 
-Remaining work: execute Phase 8a.1 research, implementation, automated validation, and manual QLC+ 5 parity testing before starting Phase 8b.
+Remaining work: complete live macOS/QLC+ validation of Phase 8a.1, then execute Phase 8a.2 research, implementation, automated validation, and manual QLC+ 5 parity testing before starting Phase 8b.
+
+### 2026-08-07 — Fast event detection strategy integrated
+
+Roadmap decision:
+
+- inserted Phase 8a.1 before the WebSocket transport milestone and renumbered that transport milestone to Phase 8a.2 without changing Phase 8b deployment scope;
+- preserved the v6 four-second artistic classifier and separated fast audio events, candidate stability, and ordinary scene-admission policy;
+- accepted a continuous lightweight energy detector plus one serialized EfficientAT execution path: energy edges trigger urgent short semantic work, a low-rate watchdog covers speech without an edge, and active speech receives faster release checks;
+- prohibited duplicate EfficientAT instances, concurrent inference, an unbounded semantic queue, and a speculative VAD dependency;
+- made silence and speech priority routes independent from dynamic-control policies while initially limiting energy rise/drop events to observable, non-routing hints;
+- planned small stability caches for all named profiles and explicit raw/stable/active scene state so calm can detect immediately while changing scenes deliberately infrequently;
+- recorded staged implementation, automated acceptance, representative-audio validation, and Raspberry Pi 5 CPU/latency measurement gates.
+
+Documentation decision:
+
+- consolidated the accepted standalone strategy into this technical source of truth and removed its source Markdown file;
+- kept all repository documentation in English as required by the project policy.
+
+Remaining work: the strategy has now been implemented; retain this entry as the accepted design record and use the implementation report below for measured results. Do not begin Phase 8a.2 until the operator accepts the live Phase 8a.1 behavior.
+
+### 2026-08-07 — Phase 8a.1 voice/music baseline protocol
+
+Implemented:
+
+- extended the existing dynamic-control comparison tool with an optional deterministic JSON statistics output;
+- recorded source duration, predictor/window/hop/simulation settings, random seed, raw v6 predictions, per-profile policy values, ordered scene intervals, transition counts, and per-scene wall-clock duration/percentage;
+- selected `tests/mixvoicemusic.wav` and the operator-authored `tests/mixvoicemusic.md` timeline as the fixed qualitative and quantitative before/after reference for Phase 8a.1.
+
+Comparison rule:
+
+- generate the pre-implementation baseline with v6, its configured four-second window, a one-second inference hop, a 0.1-second router step, and seed zero;
+- after Phase 8a.1, rerun the same source and settings through the updated analyzer, preserving the baseline artefact rather than overwriting it;
+- compare scene occupancy and transition timing against the human-described silence/noise, solo singing, speech, dry-guitar, and full-music regions, with particular attention to announcement entry latency and fresh music recovery.
+
+Baseline result:
+
+- retained `reports/phase_8a1_baseline_mixvoicemusic.json` and `.svg` as the machine-readable and visual pre-implementation artefacts;
+- all four profiles first routed `announcement` at `16.5s`, approximately `2.5s` after the human reference marks speech beginning at `14s`, and retained it until `25.8s` across the two speech regions;
+- no profile activated a scene before `12.0s`; this exposes the existing large-cache/startup latency separately from priority speech latency;
+- raw/off and responsive produced nine ordinary scene changes, normal seven, and calm four, confirming that admission policy already changes show activity while the shared slow semantic path determines announcement timing.
+
+Validation:
+
+- all 42 four-second v6 inference windows completed and both baseline artefacts were generated;
+- the focused statistics/SVG tests pass;
+- the complete suite passes: 149 tests; one local-socket startup race failed on the first aggregate run, then passed both in isolation and in the immediate complete rerun.
+
+### 2026-08-07 — Phase 8a.1 fast event implementation
+
+Implemented:
+
+- added a bounded EMA-based fast-energy detector for silence, recovery, and structural rise/drop hints, sharing the existing audio capture and router;
+- added one replaceable semantic-work request and a low-rate watchdog on the existing prediction thread and EfficientAT instance, with no second model, process, inference thread, or unbounded queue;
+- selected a two-second semantic window after shorter windows proved unstable for speech/music discrimination, while retaining the training-compatible four-second v6 artistic window;
+- made silence and speech priority routes bypass ordinary dynamic-control admission policies, and cleared artistic evidence after speech so music recovery requires a fresh prediction;
+- separated raw prediction, stable candidate, active scene, fast-event state, semantic scores, routing reason, and policy-block reason in runtime status;
+- reduced profile stability caches and kept calmness in rate/throttle policy: responsive `3 / 12-per-10s / 5-per-0.75s`, normal `5 / 6-per-15s / 3-per-2s`, and calm `5 / 2-per-20s / 1-per-6s`;
+- extended the deterministic WAV analyzer with the fast semantic timeline and preserved separate baseline and post-implementation JSON/SVG artefacts.
+
+Reference comparison (`tests/mixvoicemusic.wav`, v6, four-second artistic windows, one-second artistic hop, 0.1-second simulation step, seed zero):
+
+- baseline `announcement` began at `16.5s`; Phase 8a.1 begins it at `14.5s`, reducing entry latency against the human `14.0s` speech marker from `2.5s` to `0.5s` for every profile;
+- Phase 8a.1 retains `announcement` through `27.0s`; the final human speech region ends at `24.0s`, and the deliberate two-second speech-release hysteresis plus semantic sampling explains the tail;
+- first ordinary routing moves from `12.0s` to `9.5s`; post-implementation scene-change counts are raw/off `9`, responsive `9`, normal `7`, and calm `3`;
+- retained `reports/phase_8a1_baseline_mixvoicemusic.{json,svg}` and `reports/phase_8a1_post_mixvoicemusic.{json,svg}` for exact inspection.
+
+Embedded-resource observations on the macOS development machine:
+
+- a two-second semantic-only EfficientAT call averaged about `113ms`; a four-second full v6 artistic call averaged about `266ms` in the same process;
+- observed maximum resident memory was about `946MB` (`902MiB`) with one loaded model; Phase 8a.1 adds only small bounded state and does not duplicate model memory;
+- the live WAV/headless smoke test remained responsive, reported a bounded audio queue with an observed maximum depth of `11`, emitted fast energy events, and shut down cooperatively with `Ctrl+C`;
+- sustained CPU, temperature, and missed-deadline measurements remain mandatory on the Raspberry Pi 5 during Phase 8b because macOS timings cannot establish target thermal behavior.
+
+Validation:
+
+- focused fast-event, routing, configuration, analyzer, and predictor tests pass;
+- the complete suite passes: 157 tests;
+- deterministic post-implementation JSON and SVG reports were regenerated after fresh-prediction recovery behavior was aligned with runtime behavior;
+- live QLC+ scene behavior and subjective transition quality remain the operator acceptance gate before Phase 8a.2.
+
+### 2026-08-07 — Phase 8a.1 embedded compromise and simplification
+
+Decision:
+
+- clarified that the product target is a reliable one-to-two-second announcement response, not sub-second event reaction;
+- replaced event-triggered and speech-active semantic scheduling with one fixed semantic check every `1.0s` over the latest `2.0s` of audio;
+- increased speech confirmation from `0.5s` to `1.0s`, requiring two coherent fixed-cadence observations and preventing isolated semantic errors from selecting `announcement`;
+- removed the EMA energy-rise/drop detector, energy-triggered work requests, active-speech cadence state, related configuration fields, and energy diagnostics;
+- retained the inexpensive existing RMS silence detector, the same EfficientAT model instance, the same prediction thread, priority routing, and fresh artistic evidence after speech release.
+
+Reference comparison:
+
+- preserved the original `phase_8a1_baseline` and first `phase_8a1_post` JSON/SVG artefacts unchanged;
+- added `reports/phase_8a1_simplified_mixvoicemusic.{json,svg}` for the accepted compromise;
+- baseline announcement entry is `16.5s`, the initial high-frequency design is `14.5s`, and the simplified design is `15.0s` against the human `14.0s` reference;
+- the simplified result therefore remains within the accepted one-to-two-second entry latency and produces no additional false announcement activation later in the file; the configured release hysteresis deliberately bridges the short gap between the two speech regions and extends beyond their end;
+- scene-change counts remain raw/off `9`, responsive `9`, normal `7`, and calm `3`, matching the first post-implementation result;
+- the deterministic reference uses `44` semantic checks instead of `87`, approximately halving semantic inference work for this file without changing model memory.
+
+Embedded impact:
+
+- fixed-rate scheduling removes inference bursts and makes CPU/thermal demand more predictable on Raspberry Pi 5;
+- deleting event-driven state reduces code and configuration surface as well as maintenance risk;
+- resident memory remains dominated by PyTorch and the single EfficientAT/v6 model, so this compromise primarily improves CPU use rather than maximum RSS.
+
+Validation:
+
+- focused routing, configuration, predictor, event-record, and comparison-tool tests pass;
+- the complete suite passes: 155 tests;
+- the simplified reference JSON and SVG were generated with the same WAV, v6 model, four-second artistic window, one-second artistic hop, 0.1-second simulation step, and seed zero as the retained references.
+- regenerated `docs/dynamic_control_comparison.svg` from `tests/fascination.wav` using the documented two-second artistic hop and the simplified one-second semantic cadence; retained the operator's renamed `dynamic_control_comparisonOLD.svg`, and stored exact statistics in `reports/dynamic_control_comparison_fascination.json`;
+- the initial simplified fascination comparison produced 73 changes for raw/off, responsive, and normal, versus 30 for calm, exposing that normal no longer provided a meaningful intermediate behavior.
+
+### 2026-08-07 — Dynamic-control profile retuning after simplification
+
+Implemented:
+
+- restored conservative safeguards for `responsive` while keeping its cache at `3`: rate `10/10s` and throttle `4/1s`;
+- changed `normal` to cache `15`, rate `3/15s`, and throttle `2/4s` so it again provides a distinct middle position;
+- retained the accepted `calm` values: cache `5`, rate `2/20s`, and throttle `1/6s`;
+- updated both the shipped JSON and code defaults, then regenerated the fascination SVG and machine-readable statistics.
+
+Measured result with the documented fascination protocol:
+
+- raw/off: `73` changes;
+- responsive: `73` changes;
+- normal: `52` changes;
+- calm: `30` changes;
+- no `announcement` or `off` priority route was activated.
+
+Decision: the `73 → 52 → 30` progression was accepted by the operator. Responsive intentionally remains close to off; normal now retains scenes materially longer without approaching calm.
+
+Reference refresh:
+
+- the operator replaced `tests/fascination.wav` with a version containing introductory silence and speech and removed the old comparison SVG;
+- regenerated the user-facing SVG and JSON with the unchanged v6/two-second-hop protocol;
+- the longer reference produces `80 / 80 / 55 / 34` changes for raw/off, responsive, normal, and calm respectively;
+- all profiles route identically through priority segments: `off` at `2.0–18.0s`, `announcement` at `18.0–19.3s`, `off` at `19.3–24.0s`, and a second `off` interval at `47.0–56.0s`;
+- the result preserves the intended profile ordering and demonstrates that speech/silence latency is independent from ordinary transition policy.
 
 ### 2026-08-04 — Concert-specific v6 training pipeline
 

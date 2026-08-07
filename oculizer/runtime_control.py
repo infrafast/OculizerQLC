@@ -98,6 +98,7 @@ class RuntimeControl:
     def status(self):
         with self.lock:
             policy = self.router.get_transition_policy_status()
+            route = self.router.get_route_status()
             backend = getattr(self.oculizer, "backend", None)
             current = getattr(getattr(self.oculizer, "scene_manager", None), "current_scene", None)
             return {
@@ -107,6 +108,7 @@ class RuntimeControl:
                 "blackout": bool(getattr(backend, "blackout_active", self.mode == "pause")),
                 "audio_worker_healthy": bool(self.health_check()),
                 "dynamic_control": self.active_dynamic_control,
+                **route,
                 **policy,
             }
 

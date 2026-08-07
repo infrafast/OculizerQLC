@@ -9,6 +9,7 @@ import time
 from collections import deque
 
 from oculizer.runtime_config import SilenceConfig, SpeechConfig
+from oculizer.audio.fast_events import FastAudioEvent, FastEventType
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,10 @@ class AutomaticSceneRouter:
         self.priority_route_pending = False
         self.route_lock = threading.RLock()
         self.policy_revision = 0
+        self.last_fast_event = None
+        self.stable_candidate_scene = None
+        self.route_reason = None
+        self.transition_block_reason = None
 
     @staticmethod
     def _validate_duration(value, label):
@@ -269,11 +274,13 @@ class AutomaticSceneRouter:
 
         if reason is None:
             self.last_limited_target = None
+            self.transition_block_reason = None
             return True
         limited = (target, reason)
         if limited != self.last_limited_target:
             logger.info("Automatic scene target '%s' held by %s", target, reason)
             self.last_limited_target = limited
+        self.transition_block_reason = reason
         return False
 
     def _record_automatic_change(self, now: float, rate_limited: bool) -> None:
@@ -295,7 +302,9 @@ class AutomaticSceneRouter:
         """Return speech, music, or hold after applying semantic hysteresis."""
         if not self.speech_config.enabled:
             return "music"
-        scores = getattr(self.oculizer, "current_audioset_scores", None)
+        scores = getattr(self.oculizer, "current_fast_audioset_scores", None)
+        if not scores:
+            scores = getattr(self.oculizer, "current_audioset_scores", None)
         if not scores:
             return "hold"
         now = self.clock()
@@ -317,6 +326,10 @@ class AutomaticSceneRouter:
                 self.speech_active = True
                 self.last_target = None
                 self.target_duration_seconds = None
+                self.last_fast_event = FastAudioEvent(
+                    FastEventType.SPEECH_START, now,
+                    confidence=float(speech_score),
+                )
                 logger.info("Dominant speech detected: speech=%.3f music=%.3f", speech_score, music_score)
             return "speech" if self.speech_active else "hold"
 
@@ -329,6 +342,13 @@ class AutomaticSceneRouter:
                     self.speech_release_at = None
                     self.last_target = None
                     self.target_duration_seconds = None
+                    self.last_fast_event = FastAudioEvent(
+                        FastEventType.SPEECH_END, now,
+                        confidence=float(music_score),
+                    )
+                    resetter = getattr(self.oculizer, "reset_prediction_state", None)
+                    if resetter is not None:
+                        resetter()
                     logger.info("Speech routing released")
                     return "music"
                 return "speech"
@@ -368,6 +388,9 @@ class AutomaticSceneRouter:
                 self.target_duration_seconds = None
                 self._set_prediction_suspended(False)
                 self._reset_speech_state()
+                self.last_fast_event = FastAudioEvent(
+                    FastEventType.AUDIO_RESUME, now,
+                )
                 logger.info("Audio resumed at RMS %.6f", rms)
             return
         if rms <= self.silence_config.threshold:
@@ -379,6 +402,9 @@ class AutomaticSceneRouter:
                 self.target_duration_seconds = None
                 self._set_prediction_suspended(True)
                 self._reset_speech_state()
+                self.last_fast_event = FastAudioEvent(
+                    FastEventType.SUDDEN_SILENCE, now,
+                )
                 logger.info(
                     "Silence detected at RMS %.6f; requesting scene '%s'",
                     rms,
@@ -411,6 +437,9 @@ class AutomaticSceneRouter:
 
     @_synchronized
     def step(self) -> bool:
+        self.transition_block_reason = None
+        self.route_reason = None
+        self.stable_candidate_scene = getattr(self.oculizer, "current_predicted_scene", None)
         requested = self.manual_override
         duration_exempt = requested is not None
         priority_route = requested is not None or self.priority_route_pending
@@ -428,6 +457,7 @@ class AutomaticSceneRouter:
                 requested = self.speech_config.scene
                 priority_route = True
                 duration_exempt = True
+                self.route_reason = "priority_speech"
             elif semantic_route == "hold":
                 return False
             elif speech_was_active:
@@ -435,6 +465,7 @@ class AutomaticSceneRouter:
                 priority_route = True
         if requested is None:
             requested = self.oculizer.current_predicted_scene
+            self.stable_candidate_scene = requested
             # Resuming from silence is also an immediate safety-state release.
             priority_route = priority_route or silence_was_active
         if not requested:
@@ -469,5 +500,27 @@ class AutomaticSceneRouter:
             rate_limited=not priority_route,
         )
         self.priority_route_pending = False
+        if self.route_reason is None:
+            self.route_reason = (
+                "priority_silence" if self.silence_active else
+                "priority_resume" if priority_route else
+                "duration_replacement" if duration_replacement else
+                "ordinary_candidate"
+            )
         logger.info("Automatic scene request '%s' activated as '%s'", requested, target)
         return True
+
+    @_synchronized
+    def get_route_status(self):
+        event = self.last_fast_event
+        scores = getattr(self.oculizer, "current_fast_audioset_scores", None) or {}
+        return {
+            "active_scene": self.last_target,
+            "raw_prediction": getattr(self.oculizer, "latest_prediction", None),
+            "stable_candidate_scene": self.stable_candidate_scene,
+            "fast_event": event.type.value if event is not None else None,
+            "speech_score": scores.get("speech"),
+            "music_score": scores.get("music"),
+            "route_reason": self.route_reason,
+            "transition_block_reason": self.transition_block_reason,
+        }

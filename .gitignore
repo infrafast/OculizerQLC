@@ -27,6 +27,9 @@ notebooks/
 *.svg
 !docs/dynamic_control_comparison.svg
 !docs/mixvoicemusic.svg
+!reports/phase_8a1_baseline_mixvoicemusic.svg
+!reports/phase_8a1_post_mixvoicemusic.svg
+!reports/phase_8a1_simplified_mixvoicemusic.svg
 *.ico
 *.tiff
 *.webp

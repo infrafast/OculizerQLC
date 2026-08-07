@@ -112,15 +112,23 @@ Configure the two routes under `audio` in `config/oculizer.json`:
       "enabled": true,
       "threshold": 0.55,
       "music_margin": 0.15,
-      "minimum_duration_seconds": 0.5,
+      "minimum_duration_seconds": 1.0,
       "release_duration_seconds": 0.75,
       "scene": "announcement"
+    },
+    "fast_detection": {
+      "enabled": true,
+      "speech": {
+        "enabled": true,
+        "window_seconds": 2.0,
+        "interval_seconds": 1.0
+      }
     }
   }
 }
 ```
 
-Change each `scene` value to any logical scene available to the selected output backend. Silence must remain below its threshold for the configured duration before its scene is activated. Speech routing uses confidence and timing margins to avoid switching on brief or ambiguous sounds, then returns automatically to music prediction when music becomes dominant again. Set the corresponding `enabled` value to `false` to disable either detector.
+Change each `scene` value to any logical scene available to the selected output backend. Silence uses the inexpensive RMS thresholds and duration configured under `audio.silence`. Speech routing performs one serialized semantic check per second over the latest two seconds of audio, uses the existing confidence and timing margins, then discards stale scene evidence before returning to music prediction. It shares the existing EfficientAT model and prediction thread: no second model, worker, or event-triggered inference is created. Set the corresponding `enabled` value to `false` to disable a detector.
 
 The following example processes `mixvoicemusic.wav`, which contains silence, spoken voice, and music. The scene markers include `off` during detected silence and `announcement` when speech becomes dominant, alongside the scenes selected for musical passages. It uses the neutral raw view because silence and speech are priority events rather than ordinary music transitions and do not require a dynamic-control comparison.
 
@@ -454,18 +462,22 @@ Use `--dynamic-control PROFILE` at startup, press `l` in the interactive interfa
 
 Named profiles can be added, adjusted, or removed under `control.dynamic_controls` in `config/oculizer.json`. An empty object is valid and leaves `off` as the only available profile. Selecting a named profile applies its complete tuple, including its cache value, so it takes precedence over `--scene-cache-size` while active. Starting without `--dynamic-control` selects the reserved `off` state: it restores the startup cache value and disables transition filtering.
 
+Fast silence, resume, energy-edge, and speech detection is configured independently under `audio.fast_detection`. Dynamic-control profiles only govern ordinary music-scene admission: they do not alter fast detector windows, thresholds, or polling intervals. The v6 artistic classifier continues to use its four-second training-compatible window, while one shared EfficientAT instance performs serialized two-second semantic checks for priority speech routing.
+
 The following values are recommended starting points when those named profiles are configured:
 
 | Profile | Cache | Throttle | Rate limit | Behavior |
 | --- | ---: | ---: | ---: | --- |
-| `responsive` | `3` | `4/1` | `10/10` | Fast response and generous bursts |
-| `normal` | `15` | `2/4` | `4/15` | Stable general-purpose behavior with restrained transitions |
-| `calm` | `35` | `Off` | `2/20` | Very strong smoothing with at most two changes per rolling 20-second window, without a fixed recovery cadence |
+| `responsive` | `3` | `4/1` | `10/10` | Fast response, close to unrestricted behavior |
+| `normal` | `15` | `2/4` | `3/15` | Stable general-purpose behavior with clearly restrained transitions |
+| `calm` | `5` | `1/6` | `2/20` | Immediate candidate detection with deliberately infrequent activation |
 | `off` | startup value | `Off` | `Off` | Restore startup smoothing and leave predictions unrestricted |
 
 `off` is the least restricted profile, but it is not always the fastest. It keeps the normal startup cache (`10` by default), whereas `responsive` uses a shorter cache (`3`) and can therefore react sooner. In exchange, `responsive` retains generous safeguards against unusually rapid or sustained changes. If the predictions are already stable enough to remain below those safeguards, `off` and `responsive` can select the same scenes and produce the same number of changes.
 
-The comparison below demonstrates that case: both produce 72 changes. Its raw predictions are sampled every two seconds, so they do not arrive quickly enough to reach the generous `responsive` limit of ten changes per ten seconds. The shorter cache can still move a transition by a fraction of a second, but that small difference is difficult to see when the complete five-minute track is compressed into one graph. A more unstable track or a shorter inference hop will make the protection provided by `responsive` more visible.
+The comparison below demonstrates the intended progression on the current reference WAV: `off` and `responsive` each produce 80 changes, `normal` produces 55, and `calm` produces 34. Raw predictions are sampled every two seconds. Responsive therefore remains close to unrestricted behavior, while normal and calm provide increasingly deliberate scene retention.
+
+The reference file begins with silence and spoken voice before the music. Every profile follows the same priority timeline: `off` from `2.0s` to `18.0s`, `announcement` from `18.0s` to `19.3s`, then `off` until `24.0s`. A second silence routes to `off` from `47.0s` to `56.0s`. These identical intervals demonstrate that silence and speech routing are independent from ordinary dynamic-control limits; only subsequent artistic scene changes differ between profiles.
 
 ### Visual comparison
 
