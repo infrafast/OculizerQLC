@@ -8,6 +8,22 @@ All repository documentation must remain in English. This applies to `README.md`
 
 User requests and development conversations may be written in French or any other language. Their language must not be copied into repository documentation: translate the relevant information into English before updating either Markdown file. Do not switch the documentation language to match the language of a request.
 
+## QLC+ transport parity policy
+
+Every QLC+ feature must be designed and implemented symmetrically for both the OSC and WebSocket transports unless the user explicitly limits its scope. This includes scene intentions, special routes, continuous controls, pause/resume behavior, reload, shutdown, validation, and error reporting.
+
+Coding agents must follow these rules for every new or modified QLC+ feature:
+
+- define transport-neutral behavior at the `LightingBackend` or a shared service layer, then keep OSC and WebSocket code limited to protocol adaptation;
+- compute shared signals and decisions only once and reuse them across transports, as with the RMS-derived master value and the bass/mid/high frequency values;
+- factor common resolution, normalization, throttling, state, and lifecycle logic instead of independently reimplementing it in each backend;
+- preserve equivalent user-visible semantics even when the wire gestures differ, such as an OSC press/release versus a WebSocket action derived from the discovered widget type;
+- add paired tests that prove both transports receive the same logical intention or normalized value, plus transport-specific protocol tests where required;
+- update `README.md` and this development guide in the same change, documenting any remaining difference or limitation;
+- do not silently omit one transport. If protocol capabilities, QLC+ behavior, embedded resource cost, compatibility, or usability prevent safe parity, stop and clearly report the constraint and proposed compromise before considering the feature complete.
+
+Transport symmetry does not require duplicating code or sending identical bytes. It requires one shared feature contract with the smallest practical protocol-specific adapters.
+
 ## Product objective
 
 Build a hybrid system in which:
