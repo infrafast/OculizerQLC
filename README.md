@@ -317,11 +317,21 @@ python oculize.py \
 
 Override the OSC destination with `--osc-host HOST` and `--osc-port PORT`.
 
-`config/qlc_config.json` contains every logical scene emitted by predictors v4 and v6 and derives each OSC address as `/oculizer/scenes/<scene-name>`. All 30 v6 scenes carry a temporary `"implemented": false` marker so the operator can track QLC+ widget creation. Oculizer deliberately ignores this marker; change it manually as the QLC+ project progresses. Predictor mappings and artistic scene filenames use the same canonical identifiers; historical aliases and misspellings have been normalized.
+`config/qlc_config.json` contains every logical scene emitted by predictors v4 and v6 and derives each OSC address as `/oculizer/scenes/<scene-name>`. Transport-specific fields are explicit: `OSCPath` is the OSC address, `OSCaction` defines the OSC gesture, and the optional `caption` overrides the logical name used for WebSocket lookup. WebSocket never interprets `OSCPath` or `OSCaction`. All 30 v6 scenes carry a temporary `"implemented": false` marker so the operator can track QLC+ widget creation. Oculizer deliberately ignores this marker; change it manually as the QLC+ project progresses. Predictor mappings and artistic scene filenames use the same canonical identifiers; historical aliases and misspellings have been normalized.
 
-### QLC+ 5 WebSocket buttons
+```json
+"off": {
+  "OSCaction": "pushButton",
+  "OSCPath": "/blackout",
+  "caption": "Off"
+}
+```
 
-The optional buttons-only WebSocket backend targets the verified QLC+ `5.2.2` Web API. Start QLC+ with web access enabled; its default endpoint is port `9999`:
+`caption` can be omitted when it is identical to the logical scene name, including differences in case and separators.
+
+### QLC+ 5 WebSocket Virtual Console backend
+
+The optional WebSocket backend targets the verified QLC+ `5.2.2` Web API. It supports scene buttons plus normalized `master`, `bass`, `mid`, and `high` sliders. Start QLC+ with web access enabled; its default endpoint is port `9999`:
 
 ```bash
 qlcplus -w -wp 9999 /path/to/workspace.qxw
@@ -333,9 +343,9 @@ Then start Oculizer with:
 python oculize.py --output qlc-websocket --qlc-config config/qlc_config.json --input-device blackhole
 ```
 
-The backend retrieves `/vc.json` after connecting to `/qlcplusWS`, recursively discovers Virtual Console buttons, and resolves each requested logical scene by a normalized caption. Matching ignores letter case and the common separators space, `_`, and `-`, so `white_fairies`, `WHITE FAIRIES`, and `White-Fairies` are equivalent. No partial or fuzzy match is used. Captions present in QLC+ must remain unique after normalization; ambiguous pairs fail explicitly. A scene uses its logical name as the default caption, or can declare `"caption": "Exact QLC+ label"` beside its OSC `path` when the wording truly differs. Regular scenes and announcements must use **Toggle Function on/off** buttons. A route configured with `"action": "off"` must target a **Stop All Functions** button; `"action": "blackout"` targets a **Toggle Blackout** button. Missing or action-incompatible widgets fail when requested, so a partially built QLC+ workspace can still start while its matrix is populated incrementally. Put mutually exclusive scene buttons in a QLC+ Solo Frame; Oculizer activates the requested button and does not toggle the previous one off.
+The backend retrieves `/vc.json` after connecting to `/qlcplusWS`, recursively discovers Virtual Console buttons and sliders, and resolves each requested logical control by a normalized caption. Matching ignores letter case and the common separators space, `_`, and `-`, so `white_fairies`, `WHITE FAIRIES`, and `White-Fairies` are equivalent. No partial or fuzzy match is used. Captions present in QLC+ must remain unique after normalization; ambiguous pairs fail explicitly. Every route uses its logical name as the default caption, or can declare `"caption": "Exact QLC+ label"`. For every requested button—not only `off`—the backend reads the actual QLC+ `actionType` and sends the matching gesture: state-aware activation for Toggle and Blackout, press/release for Flash, and one momentary press for Stop All. The type or function assigned in QLC+ is therefore not duplicated in Oculizer configuration. Missing controls, unsupported widget/action types, and malformed states fail explicitly. Put mutually exclusive scene buttons in a QLC+ Solo Frame; Oculizer activates the requested button and does not toggle the previous one off.
 
-Use a configured button for `off` when using WebSocket. The existing `action: "off"` remains OSC's blackout policy, while WebSocket resolves the same entry by its caption. `announcement`, fallback resolution, and ordinary scenes follow the same rule.
+The `off` entry is an ordinary route. Its explicit `OSCaction: "pushButton"` sends a press (`1.0`) followed by a release (`0.0`) to the configured `OSCPath`; the default `/blackout` preserves the existing mapping. The name describes the OSC gesture, not the state or type of the receiving QLC+ control. WebSocket ignores both OSC fields, resolves its caption (default `off`), and adapts to the discovered QLC+ button type. No special `off` transport action exists. Keeping `OSCaction` explicit for every shipped route makes future OSC gestures or value policies unambiguous. `announcement`, fallback resolution, and ordinary scenes follow the same transport separation.
 
 Dry-run validates configuration and logs intended captions without opening a network connection:
 
@@ -343,13 +353,13 @@ Dry-run validates configuration and logs intended captions without opening a net
 python oculize.py --output qlc-websocket --qlc-config config/qlc_config.json --qlc-dry-run --input-device blackhole
 ```
 
-The first WebSocket milestone intentionally supports buttons only. Grand Master and bass/mid/high faders continue to require `qlc-osc`; WebSocket slider support is deferred. Connection or protocol failure is reported explicitly, and automatic reconnect plus authenticated (`-wa`) web access are not yet implemented. QLC+ web access is disabled by default, uses `ws://` rather than encrypted `wss://`, and should remain bound to the local host or a trusted network. See the official [QLC+ Web Interface](https://docs.qlcplus.org/v5/advanced/web-interface) and [Web API](https://docs.qlcplus.org/v5/advanced/web-interface/web-api) documentation.
+Continuous values are mapped from Oculizer's normalized `0..1` range to each discovered slider's QLC+ range. Connection or protocol failure is reported explicitly, and automatic reconnect plus authenticated (`-wa`) web access are not yet implemented. QLC+ web access is disabled by default, uses `ws://` rather than encrypted `wss://`, and should remain bound to the local host or a trusted network. See the official [QLC+ Web Interface](https://docs.qlcplus.org/v5/advanced/web-interface) and [Web API](https://docs.qlcplus.org/v5/advanced/web-interface/web-api) documentation.
 
 ### Real-time audio controls
 
 In addition to selecting scenes, Oculizer can continuously send four normalized values from `0` to `1` for use inside QLC+:
 
-| OSC path | Signal | Typical QLC+ use |
+| Default OSC path / WebSocket caption | Signal | Typical QLC+ use |
 | --- | --- | --- |
 | `/oculizer/master` | Overall audio RMS/level | Grand master, scene brightness, or a dimmer group |
 | `/oculizer/bass` | Low-frequency energy | Bass pulses, fixture intensity, or effect speed |
@@ -374,7 +384,7 @@ Enable or disable the overall level under `audio.master_modulation`, and the fre
 
 Set `frequency_modulation.enabled` to `false` to disable all three bands, or change one band's `enabled` value independently. The supplied configuration enables `master` and `bass` but leaves `mid` and `high` disabled. Keep the other tuning fields already present in the configuration when editing these abbreviated examples.
 
-On the QLC+ side, enable an OSC input listening on the same port as `config/qlc_config.json` (`7700` by default), create a Virtual Console slider for each signal you want to use, and assign its external input with QLC+'s input auto-detection while Oculizer is running. Then connect that slider to the desired master, dimmer, fixture group, or effect parameter. The OSC paths can be changed under `controls` in `config/qlc_config.json`. These continuous controls apply to the QLC+ OSC backend; direct Enttec output does not consume them.
+For OSC, enable a QLC+ OSC input listening on the configured port (`7700` by default), create a Virtual Console slider for each signal, and assign its external input with QLC+'s input auto-detection. For WebSocket, create sliders captioned `master`, `bass`, `mid`, and `high`; captions can be overridden under `controls` in `config/qlc_config.json`. Each control object contains its transport-specific `OSCPath` and its WebSocket `caption`. The current reference workspace contains `master` and `bass`; add `mid` and `high` before enabling those bands. Direct Enttec output does not consume these controls.
 
 Test without sending UDP packets:
 
@@ -480,7 +490,7 @@ python3 oculizerctl.py dynamic-control off
 
 The default socket is `/tmp/oculizer-<uid>.sock`. Start the application with `--control-socket PATH` to use another path, then place `--socket PATH` before the `oculizerctl.py` subcommand. Use `--no-control-socket` to disable external control.
 
-`pause` suspends automatic processing and activates blackout. `auto` clears pause or manual override and resumes automatic operation. `scene NAME` forces a configured logical scene. Live changes last until the application restarts and do not rewrite configuration files.
+`pause` only suspends prediction and automatic routing/modulation updates; it deliberately leaves the current QLC+ scene, blackout state, master, and frequency controls untouched. `auto` clears pause or manual override and resumes automatic operation from fresh prediction input. `scene NAME` forces a configured logical scene. Live changes last until the application restarts and do not rewrite configuration files.
 
 ## Dynamic control
 The engine responsivity can be controlled using a dynamic parameter. This is used when you want to calm down the scene or unleash a very color full show. 

@@ -68,13 +68,21 @@ class QLCButton:
     action_type: int
 
 
+@dataclass(frozen=True)
+class QLCSlider:
+    widget_id: int
+    caption: str
+    range_low: int
+    range_high: int
+
+
 def normalize_caption(caption: str) -> str:
     """Normalize case and common word separators without fuzzy matching."""
     return "".join(character for character in caption.casefold() if character.isalnum())
 
 
-def parse_button_inventory(payload: bytes | str | Mapping[str, Any]) -> dict[str, QLCButton]:
-    """Parse /vc.json and index buttons by an unambiguous normalized caption."""
+def parse_widget_inventory(payload: bytes | str | Mapping[str, Any]):
+    """Parse /vc.json and index supported widgets by type and caption."""
     if isinstance(payload, bytes):
         payload = payload.decode("utf-8")
     if isinstance(payload, str):
@@ -86,6 +94,15 @@ def parse_button_inventory(payload: bytes | str | Mapping[str, Any]) -> dict[str
         raise QLCWebSocketError("QLC+ Virtual Console JSON must contain a pages array")
 
     buttons: dict[str, QLCButton] = {}
+    sliders: dict[str, QLCSlider] = {}
+
+    def add_unique(index, key, widget):
+        if key in index:
+            previous = index[key].caption
+            raise QLCWebSocketError(
+                f"Ambiguous QLC+ widget captions '{previous}' and '{widget.caption}'"
+            )
+        index[key] = widget
 
     def visit(widget):
         if not isinstance(widget, Mapping):
@@ -103,12 +120,25 @@ def parse_button_inventory(payload: bytes | str | Mapping[str, Any]) -> dict[str
             key = normalize_caption(caption)
             if not key:
                 raise QLCWebSocketError("QLC+ button caption has no letters or digits")
-            if key in buttons:
-                previous = buttons[key].caption
-                raise QLCWebSocketError(
-                    f"Ambiguous QLC+ button captions '{previous}' and '{caption}'"
-                )
-            buttons[key] = QLCButton(widget_id, caption, action_type)
+            add_unique(buttons, key, QLCButton(widget_id, caption, action_type))
+        elif widget.get("typeId") == 2 or widget.get("type") == "Slider":
+            caption = widget.get("caption")
+            widget_id = widget.get("id")
+            range_low = widget.get("rangeLow")
+            range_high = widget.get("rangeHigh")
+            if not isinstance(caption, str) or not caption:
+                raise QLCWebSocketError("QLC+ slider has an empty caption")
+            if isinstance(widget_id, bool) or not isinstance(widget_id, int):
+                raise QLCWebSocketError(f"QLC+ slider '{caption}' has an invalid ID")
+            if any(isinstance(value, bool) or not isinstance(value, int)
+                   for value in (range_low, range_high)):
+                raise QLCWebSocketError(f"QLC+ slider '{caption}' has an invalid range")
+            if not 0 <= range_low <= range_high <= 255:
+                raise QLCWebSocketError(f"QLC+ slider '{caption}' range must be within 0..255")
+            key = normalize_caption(caption)
+            if not key:
+                raise QLCWebSocketError("QLC+ slider caption has no letters or digits")
+            add_unique(sliders, key, QLCSlider(widget_id, caption, range_low, range_high))
         children = widget.get("children", [])
         if not isinstance(children, list):
             raise QLCWebSocketError("QLC+ widget children must be an array")
@@ -117,7 +147,12 @@ def parse_button_inventory(payload: bytes | str | Mapping[str, Any]) -> dict[str
 
     for page in payload["pages"]:
         visit(page)
-    return buttons
+    return buttons, sliders
+
+
+def parse_button_inventory(payload):
+    """Compatibility helper returning only discovered buttons."""
+    return parse_widget_inventory(payload)[0]
 
 
 class QLCWebSocketClient:
@@ -130,6 +165,7 @@ class QLCWebSocketClient:
         self.inventory_loader = inventory_loader
         self.socket = None
         self.buttons: dict[str, QLCButton] = {}
+        self.sliders: dict[str, QLCSlider] = {}
         self._lock = threading.RLock()
         self._closed = False
 
@@ -157,7 +193,7 @@ class QLCWebSocketClient:
                 if settimeout is not None:
                     settimeout(float(self.config.request_timeout_seconds))
                 loader = self.inventory_loader or self._load_inventory
-                self.buttons = parse_button_inventory(loader())
+                self.buttons, self.sliders = parse_widget_inventory(loader())
             except QLCWebSocketError:
                 self._close_socket()
                 raise
@@ -184,14 +220,6 @@ class QLCWebSocketClient:
             raise QLCWebSocketError(
                 "QLC+ buttons not found by exact caption: " + ", ".join(missing)
             )
-        unsupported = sorted(
-            caption for caption in set(captions)
-            if self.buttons[normalize_caption(caption)].action_type != 0
-        )
-        if unsupported:
-            raise QLCWebSocketError(
-                "QLC+ buttons must use Toggle Function on/off: " + ", ".join(unsupported)
-            )
 
     def _request(self, message: str, expected_prefix: str):
         if self.socket is None:
@@ -208,7 +236,7 @@ class QLCWebSocketClient:
             raise QLCWebSocketError(f"QLC+ WebSocket request failed: {exc}") from exc
         raise QLCWebSocketError(f"QLC+ did not reply to '{message}'")
 
-    def activate_button(self, caption: str, *, allowed_action_types=(0,)) -> bool:
+    def activate_button(self, caption: str) -> bool:
         if self.config.dry_run:
             logger.info("QLC+ WebSocket dry-run: activate button caption '%s'", caption)
             return True
@@ -216,21 +244,17 @@ class QLCWebSocketClient:
             button = self.buttons.get(normalize_caption(caption))
             if button is None:
                 raise QLCWebSocketError(f"QLC+ button caption '{caption}' is not in the current inventory")
-            if button.action_type not in allowed_action_types:
-                expected = (
-                    "Toggle Function on/off" if tuple(allowed_action_types) == (0,)
-                    else "Toggle Blackout" if tuple(allowed_action_types) == (2,)
-                    else "Stop All Functions" if tuple(allowed_action_types) == (3,)
-                    else f"one of action types {tuple(allowed_action_types)}"
-                )
+            if button.action_type not in (0, 1, 2, 3):
                 raise QLCWebSocketError(
-                    f"QLC+ button '{caption}' must use {expected}"
+                    f"QLC+ button '{caption}' has unsupported action type {button.action_type}"
                 )
-            # Stop All is a momentary action: QLC+'s own web UI sends one press
-            # and does not derive the command from the widget's visual state.
-            if button.action_type == 3:
+            # Flash and Stop All are momentary. Mirror the gestures used by
+            # QLC+'s own web UI instead of deriving them from visual state.
+            if button.action_type in (1, 3):
                 try:
                     self.socket.send(f"{button.widget_id}|255")
+                    if button.action_type == 1:
+                        self.socket.send(f"{button.widget_id}|0")
                 except Exception as exc:
                     raise QLCWebSocketError(
                         f"Cannot activate QLC+ button '{caption}': {exc}"
@@ -254,12 +278,38 @@ class QLCWebSocketClient:
                 raise QLCWebSocketError(f"Cannot activate QLC+ button '{caption}': {exc}") from exc
             return True
 
+    def set_slider_level(self, caption: str, level: float) -> bool:
+        try:
+            level = float(level)
+        except (TypeError, ValueError) as exc:
+            raise QLCWebSocketError("QLC+ slider level must be numeric") from exc
+        if level != level or level in (float("inf"), float("-inf")):
+            raise QLCWebSocketError("QLC+ slider level must be finite")
+        level = max(0.0, min(1.0, level))
+        if self.config.dry_run:
+            logger.info("QLC+ WebSocket dry-run: slider caption '%s' = %.4f", caption, level)
+            return True
+        with self._lock:
+            slider = self.sliders.get(normalize_caption(caption))
+            if slider is None:
+                raise QLCWebSocketError(
+                    f"QLC+ slider caption '{caption}' is not in the current inventory"
+                )
+            value = round(slider.range_low + level * (slider.range_high - slider.range_low))
+            try:
+                self.socket.send(f"{slider.widget_id}|{value}")
+            except Exception as exc:
+                raise QLCWebSocketError(
+                    f"Cannot set QLC+ slider '{caption}': {exc}"
+                ) from exc
+            return True
+
     def rediscover(self):
         if self.config.dry_run:
             return
         with self._lock:
             loader = self.inventory_loader or self._load_inventory
-            self.buttons = parse_button_inventory(loader())
+            self.buttons, self.sliders = parse_widget_inventory(loader())
 
     def _close_socket(self):
         socket, self.socket = self.socket, None
@@ -275,4 +325,5 @@ class QLCWebSocketClient:
                 return
             self._closed = True
             self.buttons.clear()
+            self.sliders.clear()
             self._close_socket()

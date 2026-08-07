@@ -36,7 +36,6 @@ class OscConfigTests(unittest.TestCase):
                         "host": "192.0.2.10",
                         "port": 7777,
                         "dry_run": True,
-                        "paths": {"blackout": "/show/blackout"},
                     }
                 ),
                 encoding="utf-8",
@@ -47,15 +46,12 @@ class OscConfigTests(unittest.TestCase):
         self.assertEqual(config.host, "192.0.2.10")
         self.assertEqual(config.port, 7777)
         self.assertTrue(config.dry_run)
-        self.assertEqual(config.blackout_path, "/show/blackout")
 
     def test_rejects_invalid_configuration(self):
         with self.assertRaisesRegex(OscConfigError, "port"):
             OscConfig.from_mapping({"port": 0})
         with self.assertRaisesRegex(OscConfigError, "dry_run"):
             OscConfig.from_mapping({"dry_run": "yes"})
-        with self.assertRaisesRegex(OscConfigError, "blackout"):
-            OscConfig.from_mapping({"paths": {"blackout": "blackout"}})
 
 
 class OscEncodingTests(unittest.TestCase):
@@ -105,7 +101,7 @@ class OscClientTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "log-filter path"):
             OscClient(OscConfig(dry_run=True), log_filter_paths=["oculizer/bass"])
 
-    def test_sends_press_release_level_and_blackout_over_udp(self):
+    def test_sends_press_release_and_level_over_udp(self):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as receiver:
             receiver.bind(("127.0.0.1", 0))
             receiver.settimeout(2.0)
@@ -113,23 +109,18 @@ class OscClientTests(unittest.TestCase):
             received = []
 
             def receive() -> None:
-                for _ in range(4):
+                for _ in range(3):
                     packet, _ = receiver.recvfrom(1024)
                     received.append(decode_single_float_message(packet))
 
             thread = threading.Thread(target=receive)
             thread.start()
             with OscClient(
-                OscConfig(
-                    host=host,
-                    port=port,
-                    blackout_path="/oculizer/system/blackout",
-                )
+                OscConfig(host=host, port=port)
             ) as client:
                 client.press("/oculizer/scenes/party")
                 client.release("/oculizer/scenes/party")
                 client.set_level("/oculizer/master", 2.0)
-                client.blackout(True)
             thread.join(timeout=2.0)
 
         self.assertFalse(thread.is_alive())
@@ -139,7 +130,6 @@ class OscClientTests(unittest.TestCase):
                 ("/oculizer/scenes/party", 1.0),
                 ("/oculizer/scenes/party", 0.0),
                 ("/oculizer/master", 1.0),
-                ("/oculizer/system/blackout", 1.0),
             ],
         )
 

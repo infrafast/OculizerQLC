@@ -7,22 +7,21 @@ from oculizer.light.scene_map import SceneMap, SceneMapError
 
 
 class SceneMapTests(unittest.TestCase):
-    def test_loads_toggle_off_and_blackout_controls(self):
+    def test_loads_push_button_routes(self):
         scene_map = SceneMap.from_mapping(
             {
                 "pulse_seconds": 0.2,
                 "unmapped": "error",
                 "scenes": {
-                    "party": {"path": "/show/party"},
-                    "off": {"action": "off"},
-                    "blackout": {"action": "blackout"},
+                    "party": {"OSCPath": "/show/party"},
+                    "off": {"OSCPath": "/blackout"},
                 },
             }
         )
 
-        self.assertEqual(scene_map.get("party").path, "/show/party")
-        self.assertEqual(scene_map.get("off").action, "off")
-        self.assertEqual(scene_map.get("blackout").action, "blackout")
+        self.assertEqual(scene_map.get("party").osc_path, "/show/party")
+        self.assertEqual(scene_map.get("off").osc_action, "pushButton")
+        self.assertEqual(scene_map.get("off").osc_path, "/blackout")
         self.assertEqual(scene_map.pulse_seconds, 0.2)
         self.assertEqual(scene_map.unmapped, "error")
 
@@ -31,7 +30,7 @@ class SceneMapTests(unittest.TestCase):
             {
                 "unmapped": "fallback",
                 "fallback_scene": "party",
-                "scenes": {"party": {"path": "/party"}},
+                "scenes": {"party": {"OSCPath": "/party"}},
             }
         )
 
@@ -42,21 +41,25 @@ class SceneMapTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "scenes.json"
             path.write_text(
-                json.dumps({"scenes": {"party": {"path": "/test"}}}),
+                json.dumps({"scenes": {"party": {"OSCPath": "/test"}}}),
                 encoding="utf-8",
             )
             scene_map = SceneMap.from_file(path)
 
-        self.assertEqual(scene_map.get("party").path, "/test")
+        self.assertEqual(scene_map.get("party").osc_path, "/test")
 
     def test_rejects_invalid_controls(self):
         invalid_maps = (
             {"pulse_seconds": -1},
             {"unmapped": "guess"},
-            {"unmapped": "fallback", "scenes": {"party": {"path": "/party"}}},
-            {"fallback_scene": "party", "scenes": {"party": {"path": "/party"}}},
-            {"scenes": {"party": {"path": "test"}}},
-            {"scenes": {"party": {"action": "unknown"}}},
+            {"unmapped": "fallback", "scenes": {"party": {"OSCPath": "/party"}}},
+            {"fallback_scene": "party", "scenes": {"party": {"OSCPath": "/party"}}},
+            {"scenes": {"party": {"OSCPath": "test"}}},
+            {"scenes": {"party": {"OSCaction": "unknown"}}},
+            {"scenes": {"off": {"OSCaction": "off", "OSCPath": "/blackout"}}},
+            {"scenes": {"party": {"OSCaction": "toggle", "OSCPath": "/party"}}},
+            {"scenes": {"party": {"path": "/legacy"}}},
+            {"scenes": {"party": {"action": "toggle", "OSCPath": "/party"}}},
         )
         for data in invalid_maps:
             with self.subTest(data=data), self.assertRaises(SceneMapError):

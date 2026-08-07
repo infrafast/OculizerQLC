@@ -14,8 +14,8 @@ class SceneMapError(ValueError):
 
 @dataclass(frozen=True)
 class SceneControl:
-    path: str | None = None
-    action: str = "toggle"
+    osc_path: str | None = None
+    osc_action: str = "pushButton"
     caption: str | None = None
 
 
@@ -62,19 +62,30 @@ class SceneMap:
                 raise SceneMapError("scene names must be non-empty strings")
             if not isinstance(raw_control, Mapping):
                 raise SceneMapError(f"scene '{name}' control must be an object")
-            action = raw_control.get("action", "toggle")
-            if action not in {"toggle", "off", "blackout"}:
-                raise SceneMapError(f"scene '{name}' has unsupported action '{action}'")
-            path = raw_control.get("path")
+            legacy_keys = sorted(set(raw_control).intersection({"action", "path"}))
+            if legacy_keys:
+                raise SceneMapError(
+                    f"scene '{name}' uses obsolete keys {', '.join(legacy_keys)}; "
+                    "use OSCaction and OSCPath"
+                )
+            osc_action = raw_control.get("OSCaction", "pushButton")
+            if osc_action != "pushButton":
+                raise SceneMapError(
+                    f"scene '{name}' has unsupported OSCaction '{osc_action}'"
+                )
+            osc_path = raw_control.get("OSCPath")
             caption = raw_control.get("caption", name)
             if not isinstance(caption, str) or not caption.strip():
                 raise SceneMapError(f"scene '{name}' caption must be a non-empty string")
-            if action == "toggle":
-                if not isinstance(path, str) or not path.startswith("/"):
-                    raise SceneMapError(f"scene '{name}' toggle path must start with '/'")
-            elif path is not None:
-                raise SceneMapError(f"scene '{name}' action '{action}' must not define a path")
-            scenes[name] = SceneControl(path=path, action=action, caption=caption)
+            if not isinstance(osc_path, str) or not osc_path.startswith("/"):
+                raise SceneMapError(
+                    f"scene '{name}' OSCaction '{osc_action}' requires OSCPath starting with '/'"
+                )
+            scenes[name] = SceneControl(
+                osc_path=osc_path,
+                osc_action=osc_action,
+                caption=caption,
+            )
 
         fallback_scene = data.get("fallback_scene")
         if unmapped == "fallback":

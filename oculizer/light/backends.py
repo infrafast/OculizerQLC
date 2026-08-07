@@ -122,12 +122,10 @@ class QLCOscBackend(LightingBackend):
         self.controls = dict(controls or {})
         self.config_path = Path(config_path) if config_path is not None else None
         self.active_scene: str | None = None
-        self.blackout_active = False
         self._closed = False
 
     def initialize(self) -> bool:
-        """Put QLC+ in a deterministic dark state before routing begins."""
-        return self.blackout(True)
+        return True
 
     def reload_scene_map(self) -> None:
         if self.config_path is None:
@@ -162,14 +160,7 @@ class QLCOscBackend(LightingBackend):
             logger.debug("QLC+ scene '%s' is already active", scene_name)
             return True
 
-        if control.action == "off":
-            success = self.blackout(True)
-        if control.action == "blackout":
-            success = self.blackout(True)
-        elif control.action == "toggle":
-            if self.blackout_active and not self.blackout(False):
-                return False
-            success = self._pulse(control.path)
+        success = self._pulse(control.osc_path)
         if success:
             self.active_scene = scene_name
         return success
@@ -181,25 +172,20 @@ class QLCOscBackend(LightingBackend):
         if control is None:
             logger.warning("Cannot deactivate unmapped QLC+ scene '%s'", scene_name)
             return False
-        if control.action == "toggle":
-            success = self._pulse(control.path)
-        elif control.action == "blackout":
-            success = self.blackout(False)
-        else:
-            success = True
+        success = self._pulse(control.osc_path)
         if success:
             self.active_scene = None
         return success
 
     def set_parameter(self, name: str, value: float) -> bool:
-        address = self.controls.get(name, name if name.startswith("/") else f"/oculizer/{name}")
-        return self.client.set_level(address, value)
+        control = self.controls.get(name)
+        if control is None:
+            logger.warning("QLC+ continuous control '%s' is not configured", name)
+            return False
+        return self.client.set_level(control.osc_path, value)
 
     def blackout(self, enabled: bool = True) -> bool:
-        success = self.client.blackout(enabled)
-        if success:
-            self.blackout_active = enabled
-        return success
+        return False
 
     def close(self) -> None:
         if self._closed:
@@ -209,19 +195,20 @@ class QLCOscBackend(LightingBackend):
 
 
 class QLCWebSocketBackend(LightingBackend):
-    """QLC+ 5 Virtual Console button backend resolved by exact caption."""
+    """QLC+ 5 Virtual Console backend resolved by normalized caption."""
 
     name = OUTPUT_QLC_WEBSOCKET
 
-    def __init__(self, client: QLCWebSocketClient, scene_map: SceneMap,
+    def __init__(self, client: QLCWebSocketClient, scene_map: SceneMap, controls=None,
                  config_path: str | Path | None = None):
         self.client = client
         self.scene_map = scene_map
+        self.controls = dict(controls or {})
         self.config_path = Path(config_path) if config_path is not None else None
         self.active_scene = None
-        self.blackout_active = False
         self._closed = False
         self._last_activation_error = None
+        self._last_parameter_errors = {}
 
     def initialize(self):
         try:
@@ -248,16 +235,8 @@ class QLCWebSocketBackend(LightingBackend):
             logger.info("QLC+ scene request '%s' resolved to fallback '%s'", requested_scene, scene_name)
         if scene_name == self.active_scene:
             return True
-        if control.action == "off":
-            allowed_action_types = (3,)
-        elif control.action == "blackout":
-            allowed_action_types = (2,)
-        else:
-            allowed_action_types = (0,)
         try:
-            success = self.client.activate_button(
-                control.caption, allowed_action_types=allowed_action_types
-            )
+            success = self.client.activate_button(control.caption)
         except QLCWebSocketError as exc:
             error = str(exc)
             if error != self._last_activation_error:
@@ -274,11 +253,23 @@ class QLCWebSocketBackend(LightingBackend):
         return True
 
     def set_parameter(self, name: str, value: float) -> bool:
-        logger.debug("QLC+ WebSocket buttons-only backend ignores parameter %s", name)
-        return False
+        control = self.controls.get(name)
+        if control is None:
+            logger.warning("QLC+ continuous control '%s' is not configured", name)
+            return False
+        try:
+            success = self.client.set_slider_level(control.caption, value)
+        except QLCWebSocketError as exc:
+            error = str(exc)
+            if self._last_parameter_errors.get(name) != error:
+                logger.error("QLC+ WebSocket continuous control '%s' failed: %s", name, error)
+                self._last_parameter_errors[name] = error
+            return False
+        if success:
+            self._last_parameter_errors.pop(name, None)
+        return success
 
     def blackout(self, enabled: bool = True) -> bool:
-        logger.debug("QLC+ WebSocket buttons-only backend has no global blackout command")
         return False
 
     def reload_scene_map(self):
@@ -287,8 +278,10 @@ class QLCWebSocketBackend(LightingBackend):
         config = QLCConfig.from_file(self.config_path)
         self.client.rediscover()
         self.scene_map = config.routing
+        self.controls = dict(config.controls)
         self.active_scene = None
         self._last_activation_error = None
+        self._last_parameter_errors.clear()
 
     def close(self):
         if self._closed:
@@ -352,6 +345,7 @@ def create_qlc_websocket_backend(
             inventory_loader=inventory_loader,
         ),
         qlc_config.routing,
+        controls=qlc_config.controls,
         config_path=config_path,
     )
     backend.initialize()

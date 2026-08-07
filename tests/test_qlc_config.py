@@ -14,15 +14,18 @@ class QLCConfigTests(unittest.TestCase):
                 json.dumps({
                     "transport": {"host": "192.0.2.10", "port": 7777, "dry_run": True},
                     "websocket": {"host": "192.0.2.11", "port": 9998, "dry_run": True},
-                    "controls": {"blackout": "/blackout", "master": "/oculizer/master", "bass": "/oculizer/bass"},
+                    "controls": {
+                        "master": {"OSCPath": "/oculizer/master", "caption": "Master"},
+                        "bass": {"OSCPath": "/oculizer/bass", "caption": "Bass"},
+                    },
                     "routing": {
                         "pulse_seconds": 0.2,
                         "scenes": {
                             "announcement": {
-                                "action": "toggle",
-                                "path": "/oculizer/scenes/announcement",
+                                "OSCaction": "pushButton",
+                                "OSCPath": "/oculizer/scenes/announcement",
                             },
-                            "off": {"action": "off"},
+                            "off": {"OSCaction": "pushButton", "OSCPath": "/blackout"},
                         },
                     },
                 }),
@@ -36,12 +39,12 @@ class QLCConfigTests(unittest.TestCase):
         self.assertEqual(config.websocket.host, "192.0.2.11")
         self.assertEqual(config.websocket.port, 9998)
         self.assertTrue(config.websocket.dry_run)
-        self.assertEqual(config.transport.blackout_path, "/blackout")
-        self.assertEqual(config.controls["master"], "/oculizer/master")
-        self.assertEqual(config.controls["bass"], "/oculizer/bass")
+        self.assertEqual(config.controls["master"].osc_path, "/oculizer/master")
+        self.assertEqual(config.controls["master"].caption, "Master")
+        self.assertEqual(config.controls["bass"].osc_path, "/oculizer/bass")
         self.assertEqual(config.routing.pulse_seconds, 0.2)
-        self.assertEqual(config.routing.get("announcement").path, "/oculizer/scenes/announcement")
-        self.assertEqual(config.routing.get("off").action, "off")
+        self.assertEqual(config.routing.get("announcement").osc_path, "/oculizer/scenes/announcement")
+        self.assertEqual(config.routing.get("off").osc_action, "pushButton")
 
     def test_rejects_invalid_sections_and_controls(self):
         invalid_configs = (
@@ -50,8 +53,9 @@ class QLCConfigTests(unittest.TestCase):
             {"routing": []},
             {"websocket": []},
             {"websocket": {"port": 70000}},
-            {"controls": {"blackout": "blackout"}},
-            {"routing": {"scenes": {"party": {"path": "party"}}}},
+            {"controls": {"master": "/legacy"}},
+            {"controls": {"master": {"OSCPath": "master"}}},
+            {"routing": {"scenes": {"party": {"OSCPath": "party"}}}},
         )
         for data in invalid_configs:
             with self.subTest(data=data), self.assertRaises(QLCConfigError):

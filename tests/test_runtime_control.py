@@ -58,17 +58,22 @@ def make_control():
 
 
 class RuntimeControlTests(unittest.TestCase):
-    def test_pause_sets_safe_state_and_tick_stops_all_updates(self):
+    def test_pause_only_suspends_prediction_and_runtime_updates(self):
         control, engine, master, frequency = make_control()
 
         status = control.set_pause()
         self.assertEqual(status["mode"], "pause")
         self.assertTrue(engine.suspended)
-        self.assertTrue(engine.backend.blackout_active)
-        master.shutdown.assert_called_once_with()
-        frequency.shutdown.assert_called_once_with()
+        self.assertFalse(engine.backend.blackout_active)
+        master.shutdown.assert_not_called()
+        frequency.shutdown.assert_not_called()
         self.assertFalse(control.tick())
         master.update.assert_not_called()
+
+        control.set_auto()
+        self.assertFalse(engine.suspended)
+        master.startup.assert_not_called()
+        frequency.startup.assert_not_called()
 
     def test_auto_and_scene_commands_share_router_state(self):
         control, engine, _master, _frequency = make_control()

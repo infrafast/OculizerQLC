@@ -20,10 +20,6 @@ class RuntimeControl:
         self.mode = "auto"
         self.lock = threading.RLock()
 
-    def _blackout(self, enabled):
-        backend = getattr(self.oculizer, "backend", None)
-        return bool(backend and backend.blackout(enabled))
-
     def step(self):
         with self.lock:
             return False if self.mode == "pause" else self.router.step()
@@ -40,13 +36,8 @@ class RuntimeControl:
 
     def set_auto(self):
         with self.lock:
-            was_paused = self.mode == "pause"
             self.mode = "auto"
             self.oculizer.set_prediction_suspended(False)
-            self._blackout(False)
-            if was_paused:
-                self.master_modulator.startup()
-                self.frequency_modulator.startup()
             if self.router.manual_override is not None:
                 self.router.clear_manual_override()
             return self.status()
@@ -55,9 +46,6 @@ class RuntimeControl:
         with self.lock:
             self.mode = "pause"
             self.oculizer.set_prediction_suspended(True)
-            self.master_modulator.shutdown()
-            self.frequency_modulator.shutdown()
-            self._blackout(True)
             return self.status()
 
     def set_scene(self, scene_name):
@@ -66,9 +54,6 @@ class RuntimeControl:
                 raise ValueError("scene requires a non-empty logical scene name")
             if self.mode == "pause":
                 self.oculizer.set_prediction_suspended(False)
-                self._blackout(False)
-                self.master_modulator.startup()
-                self.frequency_modulator.startup()
             if not self.router.set_manual_override(scene_name):
                 raise ValueError(f"unknown or unavailable scene: {scene_name}")
             self.mode = "scene"
@@ -105,7 +90,7 @@ class RuntimeControl:
                 "mode": self.mode,
                 "manual_scene": self.router.manual_override,
                 "resolved_scene": current.get("name") if isinstance(current, dict) else None,
-                "blackout": bool(getattr(backend, "blackout_active", self.mode == "pause")),
+                "blackout": bool(getattr(backend, "blackout_active", False)),
                 "audio_worker_healthy": bool(self.health_check()),
                 "dynamic_control": self.active_dynamic_control,
                 **route,

@@ -17,10 +17,16 @@ class QLCConfigError(ValueError):
 
 
 @dataclass(frozen=True)
+class QLCControl:
+    osc_path: str
+    caption: str
+
+
+@dataclass(frozen=True)
 class QLCConfig:
     transport: OscConfig
     websocket: QLCWebSocketConfig
-    controls: Mapping[str, str]
+    controls: Mapping[str, QLCControl]
     routing: SceneMap
 
     @classmethod
@@ -54,20 +60,26 @@ class QLCConfig:
             raise QLCConfigError("QLC+ configuration 'websocket' must be an object")
 
         validated_controls = {}
-        for name, path in controls.items():
+        for name, raw_control in controls.items():
             if not isinstance(name, str) or not name.strip():
                 raise QLCConfigError("QLC+ control names must be non-empty strings")
+            if not isinstance(raw_control, Mapping):
+                raise QLCConfigError(
+                    f"QLC+ control '{name}' must contain OSCPath and caption"
+                )
+            osc_path = raw_control.get("OSCPath")
+            caption = raw_control.get("caption", name)
             try:
-                build_float_message(path, 0.0)
+                build_float_message(osc_path, 0.0)
             except (TypeError, ValueError) as exc:
                 raise QLCConfigError(f"Invalid QLC+ control '{name}': {exc}") from exc
-            validated_controls[name] = path
+            if not isinstance(caption, str) or not caption.strip():
+                raise QLCConfigError(f"QLC+ control '{name}' caption must be non-empty")
+            validated_controls[name] = QLCControl(osc_path=osc_path, caption=caption)
 
-        osc_data = dict(transport)
-        osc_data["paths"] = {"blackout": validated_controls.get("blackout", OscConfig.blackout_path)}
         try:
             return cls(
-                transport=OscConfig.from_mapping(osc_data),
+                transport=OscConfig.from_mapping(transport),
                 websocket=QLCWebSocketConfig.from_mapping(websocket),
                 controls=validated_controls,
                 routing=SceneMap.from_mapping(routing),

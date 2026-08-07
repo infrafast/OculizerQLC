@@ -447,11 +447,11 @@ Embedded-system impact gate: this phase targets a Raspberry Pi 5 with 8 GB RAM. 
 
 Exit criterion: all dynamic-control profiles detect priority events at essentially the same latency; silence follows its configured RMS hysteresis without waiting for v6; a confident music-to-speech transition selects `announcement` within one to two seconds; v6 retains its four-second artistic window; calm substantially reduces ordinary activations without hiding stable candidates; and status clearly explains every detected, blocked, priority, and accepted route.
 
-### Phase 8a.2 — QLC+ 5 WebSocket button backend
+### Phase 8a.2 — QLC+ 5 WebSocket Virtual Console backend
 
-Status: **implemented — automated validation pending completion; live QLC+ 5.2.2 validation pending**
+Status: **implemented — automated validation complete; live buttons plus master/bass slider protocol validated on QLC+ 5.2.2**
 
-Objective: add a second QLC+ 5 transport selected with `--output qlc-websocket`, while retaining `--output qlc-osc` as a fully supported backend. Both transports must implement the same activation-only `LightingBackend` behavior for Virtual Console scene buttons and share scene resolution, fallback, last-command tracking, blackout/off policy, announcement routing, configuration reload, and shutdown logic. Oculizer requests only the target button activation; the QLC+ workspace owner chooses whether functions overlap by using ordinary Frames or remain mutually exclusive by using Solo Frames. This milestone does not replace OSC and must not affect prediction, audio analysis, Enttec output, or the Phase 8a local Unix control socket used by `oculizerctl.py`.
+Objective: add a second QLC+ 5 transport selected with `--output qlc-websocket`, while retaining `--output qlc-osc` as a fully supported backend. Both transports implement activation-only scene routing and the same normalized master/bass/mid/high controls. `off` is an ordinary configured scene route; neither transport owns a separate implicit blackout policy. Oculizer requests only the target button activation, while the QLC+ workspace owner chooses layering or exclusivity with Frames and Solo Frames. This milestone does not affect prediction, audio analysis, Enttec output, or the Phase 8a local Unix control socket used by `oculizerctl.py`.
 
 Protocol research gate — complete before writing transport code:
 
@@ -461,19 +461,20 @@ Protocol research gate — complete before writing transport code:
 - [x] determine from verified behavior whether a button action is a press-only command or requires a release, and test the exact sequence automatically; visible-console confirmation remains in the manual gate;
 - [x] rediscover widget IDs from the current inventory after every connection/reload; automatic reconnect is explicitly deferred and connection loss fails clearly.
 
-First implementation slice — buttons only:
+First implementation slice — buttons and normalized sliders:
 
 - [x] add `qlc-websocket` to interactive and headless output selection without changing the existing `qlc-osc` or `enttec` contracts;
 - [x] place OSC and WebSocket behind the existing `LightingBackend` boundary and share the existing logical `SceneMap` resolution;
 - [x] open one bounded WebSocket connection to the configured QLC+ endpoint and close it deterministically during normal shutdown and startup failure;
 - [x] retrieve `/vc.json` after every connection and construct an in-memory `caption -> widget` index recursively;
+- [x] discover Virtual Console sliders by normalized caption and map each normalized `0..1` control value to its advertised QLC+ range;
 - [x] store optional captions or logical routing intentions in configuration, never WebSocket widget IDs; rediscover IDs after every new connection;
 - [x] resolve a complete caption after normalizing case plus spaces/underscores/hyphens, without partial/fuzzy matching, and reject collisions after normalization;
 - [x] fail explicitly when a requested configured caption is absent rather than silently targeting another widget, while allowing an incomplete workspace to start;
-- [x] query button state, then send exactly one `<widgetID>|255` message only when inactive; never send release for a Toggle button;
+- [x] inspect every discovered button's actual QLC+ action type and emit its verified gesture: state-aware activation for Toggle/Blackout, press/release for Flash, and one press for Stop All;
 - [x] treat that protocol sequence as one activation gesture, never as a request to deactivate the previously commanded scene;
 - [x] stop explicitly toggling the previous scene during ordinary scene changes in both QLC+ transports; allow Frames to layer and Solo Frames to enforce exclusivity;
-- [x] preserve configurable `off`, `announcement`, and fallback routing; WebSocket resolves all of them to captions while OSC retains its configured action policy;
+- [x] preserve configurable `off`, `announcement`, and fallback routing; WebSocket resolves every route by caption and derives behavior from QLC+, while OSC alone consumes `OSCaction` and `OSCPath`;
 - [x] define `active_scene` for QLC+ transports as the last scene command successfully issued by Oculizer;
 - [x] avoid sending an implicit scene-deactivation or blackout command during shutdown;
 - [x] provide a WebSocket dry-run that validates configuration, logs intended captions, and opens no network connection;
@@ -483,14 +484,14 @@ First implementation slice — buttons only:
 
 Explicitly out of scope for this milestone:
 
-- sliders, XY pads, Cue Lists, direct function control, fixture/channel editing, and other advanced QLC+ WebSocket capabilities;
+- XY pads, Cue Lists, direct function control, fixture/channel editing, and other advanced QLC+ WebSocket capabilities;
 - replacement or removal of OSC;
 - changes to Enttec, audio sources, FFT, prediction models, scene-selection algorithms, or the Phase 8a Unix-domain control protocol;
 - persistent widget IDs or speculative protocol messages not verified against QLC+ 5 documentation or source.
 
 Automated validation gate — no live QLC+ dependency:
 
-- [x] test widget inventory parsing, caption lookup, unique-caption enforcement, missing captions, malformed messages, and unsupported configured button actions;
+- [x] test widget inventory parsing, caption lookup, unique-caption enforcement, missing captions, malformed messages, and all supported discovered button actions;
 - [x] test the verified button command sequence and last-command transitions with a deterministic fake WebSocket peer;
 - [x] prove ordinary scene changes emit one target activation and no previous-scene deactivation in both OSC and WebSocket intent tests;
 - [x] test `off`, `announcement`, fallback, blackout policy, clean close, and connection failure; reload is transactional and live rediscovery remains in the manual gate;
@@ -512,7 +513,9 @@ Embedded-system impact gate: measure idle connection cost, message latency, memo
 
 Exit criterion: `--output qlc-websocket` discovers Virtual Console buttons by unique caption and both QLC+ transports issue activation-only scene intentions, allowing ordinary Frames to layer functions and Solo Frames to enforce exclusivity, while special routes, fallback, reload, dry-run, shutdown, OSC/Enttec regressions, and non-persistence of widget IDs are validated.
 
-QLC+ button action policy: normal scene and announcement routes require `Toggle Function on/off` (`actionType=0`), routing action `off` requires `Stop All Functions` (`actionType=3`), and routing action `blackout` requires `Toggle Blackout` (`actionType=2`). Stop All is sent as one momentary press, matching the QLC+ 5 web UI. Persistent activation errors must be logged once per distinct error rather than on every audio update tick.
+QLC+ action policy: `OSCaction` and `OSCPath` are consumed exclusively by the OSC backend. WebSocket ignores both fields, resolves every logical route by `caption` (defaulting to the logical name), and derives the correct gesture from the actual QLC+ button action type: Toggle and Blackout are state-aware activations, Flash is a press/release, and Stop All is one momentary press. Persistent activation errors must be logged once per distinct error rather than on every audio update tick. Obsolete routing keys `action` and `path` are rejected with a migration error to prevent cross-transport ambiguity.
+
+The logical scene name `off` has no special transport action. Its shipped configuration explicitly uses `OSCaction: "pushButton"` with its configured `OSCPath`; this means one `1.0` press, the configured pulse delay, then one `0.0` release. WebSocket behavior remains fully discovered from QLC+. The former `OSCaction` values `off` and `toggle` are rejected as semantically misleading. Keep `OSCaction` explicit in the reference configuration so future gestures such as held push, multi-press, or bounded-value commands can extend the OSC schema without relying on scene-name semantics.
 
 #### 2026-08-07 — QLC+ 5.2.2 protocol research and first implementation
 
@@ -528,10 +531,10 @@ Verified target and sources:
 Implementation decisions:
 
 - use one synchronous `websocket-client` connection and bounded request timeouts; no background thread, queue, duplicate model, or audio-path work is added;
-- retrieve the language-independent `typeId`, caption, action type, and recursive widget hierarchy from `/vc.json`; reject configured non-Toggle buttons, duplicate captions, missing captions, malformed data, and invalid states;
-- query `QLC+API|getWidgetStatus|ID` before activation; treat Active and Monitoring as already running, otherwise send one `ID|255` message and no release;
+- retrieve the language-independent `typeId`, caption, action type, and recursive widget hierarchy from `/vc.json`; reject unsupported widget/action types, duplicate captions, missing captions, malformed data, and invalid states;
+- derive every button gesture from its discovered action type; query Toggle/Blackout state before activation, pulse Flash with `255` then `0`, and send one `255` press for Stop All;
 - keep numeric IDs memory-only and replace the inventory after reconnect/reload;
-- retain OSC fader support; the WebSocket milestone is deliberately buttons-only and reports unsupported continuous parameters without adding slider protocol code;
+- retain OSC fader support and route the same normalized master/bass/mid/high values to WebSocket sliders discovered by caption and current range;
 - use no automatic reconnect in this slice. The runtime reports transport failure and requires restart/reload, preventing stale IDs or an unbounded retry loop on Raspberry Pi.
 
 Manual gate remaining: enable web access in the local QLC+ 5.2.2 instance, align exact captions, validate Normal/Solo Frame behavior and visible button state, reload/restart QLC+ to prove ID rediscovery, and compare the same sequence with OSC.
@@ -542,14 +545,18 @@ Live discovery adjustment:
 - caption lookup now normalizes case and removes spaces, underscores, and hyphens while retaining complete-name matching; collisions such as `AMBIENT 1` and `ambient_1` are rejected;
 - the real QLC+ 5.2.2 connection successfully resolved and activated logical `ambient1` as widget `AMBIENT1` using the single-message protocol.
 - the operator confirmed that the `AMBIENT1` button visibly activated in the real Virtual Console.
+- live messages set the discovered `master` slider (runtime ID 3) to 111/255 and the `bass` slider (runtime ID 4) to 0/255; IDs are never persisted;
+- the current reference workspace has no exact `mid` or `high` slider, so those controls are implemented and automatically tested but await live validation after the widgets are added;
+- the historical QLC+ startup/global blackout shortcut and OSC `paths.blackout` setting were removed. Both transports route logical `off` like every other configured scene; pause and shutdown do not send master, band, scene, or blackout changes;
+- WebSocket modulation reuses the existing master/frequency values and update rates, adding no FFT, inference, worker, or queue. Repeated missing-slider errors are suppressed per control to keep embedded log volume bounded.
 
 Automated validation:
 
-- 169 tests pass across WebSocket protocol/configuration/backend behavior, normalized-caption collision handling, OSC, Enttec, automatic routing, runtime control, CLI parsing, dry-run, and shutdown;
+- 176 tests pass across WebSocket button/slider protocol, configuration/backend behavior, normalized-caption collision handling, OSC, Enttec, automatic routing, runtime control, CLI parsing, dry-run, and shutdown;
 - interactive, headless, and standalone help expose `qlc-websocket` plus generic `--qlc-host`, `--qlc-port`, and `--qlc-dry-run` options while retaining the OSC aliases;
 - a repository-config dry-run activates `ambient1`, `announcement`, and `off` as caption intentions without opening a socket;
 - compilation, JSON validation, and whitespace checks pass;
-- authenticated web access, automatic reconnect, sliders, and advanced widgets remain explicitly deferred.
+- authenticated web access, automatic reconnect, and advanced widgets remain explicitly deferred.
 
 ### Phase 8b — Raspberry Pi 5 production target
 
@@ -595,7 +602,7 @@ The service has three mutually exclusive operator modes:
 
 - `auto`: clear any manual override, clear the paused state, and resume routing from fresh audio;
 - `scene <name>`: enter manual override and activate the requested logical scene through the normal configured fallback and QLC+ mapping path;
-- `pause`: suspend prediction routing, discard queued prediction audio, send safe zero values for continuous modulations, and assert blackout. Returning to `auto` must clear blackout and require fresh audio state so a stale prediction cannot flash a scene.
+- `pause`: suspend prediction routing, discard queued prediction audio, and stop automatic routing/modulation updates without changing any QLC+ scene, blackout state, master, or frequency control. Returning to `auto` must resume from fresh audio state so a stale prediction cannot flash a scene.
 
 `status` must report at least the operator mode, requested manual scene if any, resolved active scene, blackout state, whether the audio worker is healthy, and the active dynamic-control profile with its resolved cache and internal transition-policy diagnostics. Commands must return a clear success or error response and must not silently accept an unknown scene, an unmapped scene, or an unknown profile.
 
@@ -935,7 +942,7 @@ Remaining work: evaluate v5 cluster distribution on the reference WAV corpus and
 Delivered behavior:
 
 - added one bounded, owner-only Unix-domain control socket shared by the interactive and headless runtimes, with stale-socket recovery and active-owner protection;
-- added `oculizerctl` commands for status, automatic operation, pause/blackout, forced scenes, atomic live limits, preset discovery, and preset application;
+- added `oculizerctl` commands for status, automatic operation, prediction-only pause, forced scenes, atomic live limits, preset discovery, and preset application;
 - centralized operator state in `RuntimeControl`, so terminal keys, external commands, and the future service integration use the same scene-routing and safety paths;
 - added configurable `responsive`, `normal`, `calm`, and `reset` presets, live prediction-cache resizing, atomic policy revisions, and stale interactive-editor conflict detection;
 - made the interactive header follow externally changed mode and transition values without a restart;
@@ -1125,8 +1132,8 @@ Decision:
 
 - retain the existing interactive QLC+ workflow while adding service-safe control as a separate interface;
 - use a local Unix-domain socket and acknowledged CLI commands instead of encoding scene choices as POSIX signals;
-- define `auto`, forced `scene`, and safety-oriented `pause` as the initial service modes;
-- make pause assert blackout and safe continuous values, and make auto resume from fresh audio state;
+- define `auto`, forced `scene`, and prediction-only `pause` as the initial service modes;
+- make pause leave all lighting state untouched and make auto resume from fresh audio state;
 - keep all commands on the existing automatic router and scene-command path so interactive and headless control share state semantics.
 
 Validated:
@@ -1426,7 +1433,7 @@ Validated:
 
 Known integration boundary:
 
-- the original reference workspace provided only `/test`; the current default fallback is `ambient1` at `/oculizer/scenes/ambient1`, while `off` deactivates the tracked scene and asserts blackout;
+- the original reference workspace provided only `/test`; the current default fallback is `ambient1` at `/oculizer/scenes/ambient1`, while `off` follows its own configured OSC path like an ordinary scene intent;
 - QLC+ toggle state is assumed to be off at application startup because OSC feedback is deferred to the state/robustness phase.
 
 Remaining validation:
@@ -1547,7 +1554,7 @@ Live-validation correction:
 Implemented:
 
 - changed the configured blackout OSC address to `/blackout`;
-- made logical `off` deactivate the last tracked toggle and then assert blackout;
+- initially made logical `off` assert blackout; this historical policy was later superseded by the transport-neutral configured-path/caption behavior documented in Phase 8a.2;
 - made the next ordinary scene clear blackout before activating its QLC+ control;
 - tracked blackout state locally to avoid leaving QLC+ blacked out after music resumes.
 
@@ -1864,7 +1871,7 @@ Implemented:
 - expanded `config/qlc_config.json` to every unique logical scene name emitted by the v4 mapping, now 48 after canonical-name normalization;
 - derived every toggle address consistently as `/oculizer/scenes/<scene-name>` while preserving the special `off` and `announcement` routes;
 - marked the 17 names shared by v4 and the approved v6 mapping with the temporary metadata field `"implemented": false` for manual QLC+ widget tracking;
-- intentionally left `implemented` outside runtime behavior: the scene-map parser ignores unknown metadata and routing remains determined only by `action` and `path`;
+- intentionally left `implemented` outside runtime behavior: the scene-map parser ignores unknown metadata; OSC routing is determined by `OSCaction` and `OSCPath`, while WebSocket routing is determined by caption and discovered QLC+ type;
 - normalized the historical `disodream` and `full` identifiers in the subsequent scene-consistency audit.
 
 Validation:

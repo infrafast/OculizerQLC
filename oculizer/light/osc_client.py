@@ -55,22 +55,16 @@ class OscConfig:
     host: str = "127.0.0.1"
     port: int = 7700
     dry_run: bool = False
-    blackout_path: str = "/oculizer/system/blackout"
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "OscConfig":
         if not isinstance(data, Mapping):
             raise OscConfigError("OSC configuration must be a JSON object")
 
-        paths = data.get("paths", {})
-        if not isinstance(paths, Mapping):
-            raise OscConfigError("OSC configuration 'paths' must be an object")
-
         config = cls(
             host=data.get("host", cls.host),
             port=data.get("port", cls.port),
             dry_run=data.get("dry_run", cls.dry_run),
-            blackout_path=paths.get("blackout", cls.blackout_path),
         )
         config.validate()
         return config
@@ -98,10 +92,6 @@ class OscConfig:
             raise OscConfigError("OSC port must be between 1 and 65535")
         if not isinstance(self.dry_run, bool):
             raise OscConfigError("OSC dry_run must be a boolean")
-        try:
-            build_float_message(self.blackout_path, 0.0)
-        except ValueError as exc:
-            raise OscConfigError(f"Invalid blackout OSC path: {exc}") from exc
 
 
 class OscClient:
@@ -167,9 +157,6 @@ class OscClient:
 
     def set_level(self, address: str, value: float) -> bool:
         return self.send(address, value)
-
-    def blackout(self, enabled: bool = True) -> bool:
-        return self.send(self.config.blackout_path, 1.0 if enabled else 0.0)
 
     def close(self) -> None:
         with self._lock:

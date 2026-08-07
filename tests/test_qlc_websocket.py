@@ -6,6 +6,7 @@ from oculizer.light.qlc_websocket import (
     QLCWebSocketConfig,
     QLCWebSocketError,
     parse_button_inventory,
+    parse_widget_inventory,
 )
 
 
@@ -32,12 +33,13 @@ class FakeSocket:
 
 
 class InventoryTests(unittest.TestCase):
-    def test_parses_nested_toggle_buttons_and_ignores_other_widgets(self):
-        buttons = parse_button_inventory(inventory(
+    def test_parses_nested_buttons_and_sliders(self):
+        buttons, sliders = parse_widget_inventory(inventory(
             {"id": 2, "type": "Button", "caption": "Party", "actionType": 0},
-            {"id": 3, "type": "Slider", "caption": "Master"},
+            {"id": 3, "type": "Slider", "caption": "Master", "rangeLow": 0, "rangeHigh": 255},
         ))
         self.assertEqual(buttons["party"].widget_id, 2)
+        self.assertEqual(sliders["master"].widget_id, 3)
 
     def test_rejects_duplicates_and_malformed_json(self):
         cases = (
@@ -113,7 +115,7 @@ class ClientTests(unittest.TestCase):
         )
         client.connect()
 
-        self.assertTrue(client.activate_button("off", allowed_action_types=(2,)))
+        self.assertTrue(client.activate_button("off"))
         self.assertEqual(socket.sent, ["QLC+API|getWidgetStatus|5", "5|255"])
 
     def test_stop_all_button_is_sent_as_one_momentary_press(self):
@@ -126,8 +128,48 @@ class ClientTests(unittest.TestCase):
         )
         client.connect()
 
-        self.assertTrue(client.activate_button("off", allowed_action_types=(3,)))
+        self.assertTrue(client.activate_button("off"))
         self.assertEqual(socket.sent, ["6|255"])
+
+    def test_type_agnostic_off_adapts_to_flash_button(self):
+        socket = FakeSocket()
+        client = QLCWebSocketClient(
+            QLCWebSocketConfig(), websocket_factory=Mock(return_value=socket),
+            inventory_loader=lambda: inventory(
+                {"id": 7, "type": "Button", "caption": "Off", "actionType": 1}
+            ),
+        )
+        client.connect()
+
+        self.assertTrue(client.activate_button("off"))
+        self.assertEqual(socket.sent, ["7|255", "7|0"])
+
+    def test_slider_maps_normalized_level_to_discovered_range(self):
+        socket = FakeSocket()
+        client = QLCWebSocketClient(
+            QLCWebSocketConfig(), websocket_factory=Mock(return_value=socket),
+            inventory_loader=lambda: inventory(
+                {"id": 3, "typeId": 2, "caption": "MASTER", "rangeLow": 10, "rangeHigh": 210}
+            ),
+        )
+        client.connect()
+
+        self.assertTrue(client.set_slider_level("master", 0.5))
+        self.assertTrue(client.set_slider_level("master", 2.0))
+        self.assertEqual(socket.sent, ["3|110", "3|210"])
+
+    def test_slider_rejects_missing_caption_and_invalid_range(self):
+        client = QLCWebSocketClient(
+            QLCWebSocketConfig(), websocket_factory=Mock(return_value=FakeSocket()),
+            inventory_loader=lambda: inventory(),
+        )
+        client.connect()
+        with self.assertRaisesRegex(QLCWebSocketError, "not in the current inventory"):
+            client.set_slider_level("master", 0.5)
+        with self.assertRaisesRegex(QLCWebSocketError, "range"):
+            parse_widget_inventory(inventory(
+                {"id": 3, "typeId": 2, "caption": "master", "rangeLow": 255, "rangeHigh": 0}
+            ))
 
     def test_dry_run_opens_no_socket(self):
         factory = Mock(side_effect=AssertionError("must not connect"))
@@ -157,7 +199,7 @@ class ClientTests(unittest.TestCase):
         with self.assertRaisesRegex(QLCWebSocketError, "not found"):
             client.validate_captions(["Party"])
 
-    def test_configured_non_toggle_button_fails_explicitly(self):
+    def test_caption_validation_accepts_any_supported_button_action(self):
         client = QLCWebSocketClient(
             QLCWebSocketConfig(), websocket_factory=Mock(return_value=FakeSocket()),
             inventory_loader=lambda: inventory(
@@ -165,8 +207,7 @@ class ClientTests(unittest.TestCase):
             ),
         )
         client.connect()
-        with self.assertRaisesRegex(QLCWebSocketError, "Toggle Function"):
-            client.validate_captions(["Flash"])
+        client.validate_captions(["Flash"])
 
 
 if __name__ == "__main__":

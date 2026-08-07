@@ -84,7 +84,7 @@ class WavFileAudioSourceTests(unittest.TestCase):
             write_wav(path, [1000, 2000])
             qlc_config = Path(directory) / "qlc.json"
             qlc_config.write_text(
-                '{"transport":{"dry_run":true},"routing":{"scenes":{"ambient1":{"path":"/ambient"}}}}',
+                '{"transport":{"dry_run":true},"routing":{"scenes":{"ambient1":{"OSCPath":"/ambient"}}}}',
                 encoding="utf-8",
             )
             with (
