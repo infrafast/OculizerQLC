@@ -9,6 +9,7 @@ from typing import Any, Mapping
 
 from oculizer.light.osc_client import OscConfig, OscConfigError, build_float_message
 from oculizer.light.scene_map import SceneMap, SceneMapError
+from oculizer.light.qlc_websocket import QLCWebSocketConfig
 
 
 class QLCConfigError(ValueError):
@@ -18,6 +19,7 @@ class QLCConfigError(ValueError):
 @dataclass(frozen=True)
 class QLCConfig:
     transport: OscConfig
+    websocket: QLCWebSocketConfig
     controls: Mapping[str, str]
     routing: SceneMap
 
@@ -40,6 +42,7 @@ class QLCConfig:
 
         transport = data.get("transport", {})
         controls = data.get("controls", {})
+        websocket = data.get("websocket", {})
         routing = data.get("routing", {})
         if not isinstance(transport, Mapping):
             raise QLCConfigError("QLC+ configuration 'transport' must be an object")
@@ -47,6 +50,8 @@ class QLCConfig:
             raise QLCConfigError("QLC+ configuration 'controls' must be an object")
         if not isinstance(routing, Mapping):
             raise QLCConfigError("QLC+ configuration 'routing' must be an object")
+        if not isinstance(websocket, Mapping):
+            raise QLCConfigError("QLC+ configuration 'websocket' must be an object")
 
         validated_controls = {}
         for name, path in controls.items():
@@ -63,8 +68,9 @@ class QLCConfig:
         try:
             return cls(
                 transport=OscConfig.from_mapping(osc_data),
+                websocket=QLCWebSocketConfig.from_mapping(websocket),
                 controls=validated_controls,
                 routing=SceneMap.from_mapping(routing),
             )
-        except (OscConfigError, SceneMapError) as exc:
+        except (OscConfigError, SceneMapError, ValueError) as exc:
             raise QLCConfigError(str(exc)) from exc

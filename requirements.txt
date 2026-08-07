@@ -22,6 +22,7 @@ torchvision==0.26.0
 # Lighting control
 pyserial>=3.5
 PyDMXControl
+websocket-client>=1.8.0,<2.0.0
 
 # Terminal UI
 windows-curses>=2.3.0; sys_platform == 'win32'

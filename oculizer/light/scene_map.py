@@ -16,6 +16,7 @@ class SceneMapError(ValueError):
 class SceneControl:
     path: str | None = None
     action: str = "toggle"
+    caption: str | None = None
 
 
 @dataclass(frozen=True)
@@ -65,12 +66,15 @@ class SceneMap:
             if action not in {"toggle", "off", "blackout"}:
                 raise SceneMapError(f"scene '{name}' has unsupported action '{action}'")
             path = raw_control.get("path")
+            caption = raw_control.get("caption", name)
+            if not isinstance(caption, str) or not caption.strip():
+                raise SceneMapError(f"scene '{name}' caption must be a non-empty string")
             if action == "toggle":
                 if not isinstance(path, str) or not path.startswith("/"):
                     raise SceneMapError(f"scene '{name}' toggle path must start with '/'")
             elif path is not None:
                 raise SceneMapError(f"scene '{name}' action '{action}' must not define a path")
-            scenes[name] = SceneControl(path=path, action=action)
+            scenes[name] = SceneControl(path=path, action=action, caption=caption)
 
         fallback_scene = data.get("fallback_scene")
         if unmapped == "fallback":

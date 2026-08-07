@@ -30,7 +30,9 @@ from oculizer.light.backends import (
     EnttecBackend,
     OUTPUT_ENTTEC,
     OUTPUT_QLC_OSC,
+    OUTPUT_QLC_WEBSOCKET,
     create_qlc_osc_backend,
+    create_qlc_websocket_backend,
 )
 
 logger = logging.getLogger(__name__)
@@ -95,8 +97,6 @@ class Oculizer(threading.Thread):
         if test_mode:
             self.dmx_controller, self.controller_dict = None, {}
             self.backend = DisabledBackend()
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info("Test mode: lighting output disabled")
         elif output == OUTPUT_QLC_OSC:
             if qlc_config_path is None:
@@ -110,10 +110,25 @@ class Oculizer(threading.Thread):
                 log_filter_paths=osc_log_filters,
             )
             self.dmx_controller, self.controller_dict = None, {}
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(
                 "QLC+ OSC output initialized for %s:%d%s",
+                self.backend.client.config.host,
+                self.backend.client.config.port,
+                " (dry-run)" if self.backend.client.config.dry_run else "",
+            )
+        elif output == OUTPUT_QLC_WEBSOCKET:
+            if qlc_config_path is None:
+                current_dir = Path(__file__).resolve().parent
+                qlc_config_path = current_dir.parent.parent / 'config' / 'qlc_config.json'
+            self.backend = create_qlc_websocket_backend(
+                qlc_config_path,
+                host=osc_host,
+                port=osc_port,
+                dry_run=osc_dry_run,
+            )
+            self.dmx_controller, self.controller_dict = None, {}
+            logger.info(
+                "QLC+ WebSocket output initialized for %s:%d%s",
                 self.backend.client.config.host,
                 self.backend.client.config.port,
                 " (dry-run)" if self.backend.client.config.dry_run else "",
@@ -1405,7 +1420,7 @@ class Oculizer(threading.Thread):
 
     def restrict_scenes_to_backend(self):
         """Apply a hardware-independent QLC+ scene catalog when applicable."""
-        if self.output != OUTPUT_QLC_OSC:
+        if self.output not in (OUTPUT_QLC_OSC, OUTPUT_QLC_WEBSOCKET):
             return
         self.scene_manager.scenes = {
             name: self.scene_manager.scenes[name]
@@ -1421,7 +1436,7 @@ class Oculizer(threading.Thread):
     def reload_scene_configuration(self):
         """Reload scene JSON and the QLC+ logical map without curses coupling."""
         self.scene_manager.reload_scenes()
-        if self.output == OUTPUT_QLC_OSC:
+        if self.output in (OUTPUT_QLC_OSC, OUTPUT_QLC_WEBSOCKET):
             self.backend.reload_scene_map()
             self.restrict_scenes_to_backend()
 

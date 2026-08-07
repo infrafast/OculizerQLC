@@ -319,6 +319,32 @@ Override the OSC destination with `--osc-host HOST` and `--osc-port PORT`.
 
 `config/qlc_config.json` contains every logical scene emitted by predictors v4 and v6 and derives each OSC address as `/oculizer/scenes/<scene-name>`. All 30 v6 scenes carry a temporary `"implemented": false` marker so the operator can track QLC+ widget creation. Oculizer deliberately ignores this marker; change it manually as the QLC+ project progresses. Predictor mappings and artistic scene filenames use the same canonical identifiers; historical aliases and misspellings have been normalized.
 
+### QLC+ 5 WebSocket buttons
+
+The optional buttons-only WebSocket backend targets the verified QLC+ `5.2.2` Web API. Start QLC+ with web access enabled; its default endpoint is port `9999`:
+
+```bash
+qlcplus -w -wp 9999 /path/to/workspace.qxw
+```
+
+Then start Oculizer with:
+
+```bash
+python oculize.py --output qlc-websocket --qlc-config config/qlc_config.json --input-device blackhole
+```
+
+The backend retrieves `/vc.json` after connecting to `/qlcplusWS`, recursively discovers Virtual Console buttons, and resolves each requested logical scene by a normalized caption. Matching ignores letter case and the common separators space, `_`, and `-`, so `white_fairies`, `WHITE FAIRIES`, and `White-Fairies` are equivalent. No partial or fuzzy match is used. Captions present in QLC+ must remain unique after normalization; ambiguous pairs fail explicitly. A scene uses its logical name as the default caption, or can declare `"caption": "Exact QLC+ label"` beside its OSC `path` when the wording truly differs. Regular scenes and announcements must use **Toggle Function on/off** buttons. A route configured with `"action": "off"` must target a **Stop All Functions** button; `"action": "blackout"` targets a **Toggle Blackout** button. Missing or action-incompatible widgets fail when requested, so a partially built QLC+ workspace can still start while its matrix is populated incrementally. Put mutually exclusive scene buttons in a QLC+ Solo Frame; Oculizer activates the requested button and does not toggle the previous one off.
+
+Use a configured button for `off` when using WebSocket. The existing `action: "off"` remains OSC's blackout policy, while WebSocket resolves the same entry by its caption. `announcement`, fallback resolution, and ordinary scenes follow the same rule.
+
+Dry-run validates configuration and logs intended captions without opening a network connection:
+
+```bash
+python oculize.py --output qlc-websocket --qlc-config config/qlc_config.json --qlc-dry-run --input-device blackhole
+```
+
+The first WebSocket milestone intentionally supports buttons only. Grand Master and bass/mid/high faders continue to require `qlc-osc`; WebSocket slider support is deferred. Connection or protocol failure is reported explicitly, and automatic reconnect plus authenticated (`-wa`) web access are not yet implemented. QLC+ web access is disabled by default, uses `ws://` rather than encrypted `wss://`, and should remain bound to the local host or a trusted network. See the official [QLC+ Web Interface](https://docs.qlcplus.org/v5/advanced/web-interface) and [Web API](https://docs.qlcplus.org/v5/advanced/web-interface/web-api) documentation.
+
 ### Real-time audio controls
 
 In addition to selecting scenes, Oculizer can continuously send four normalized values from `0` to `1` for use inside QLC+:

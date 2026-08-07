@@ -449,37 +449,37 @@ Exit criterion: all dynamic-control profiles detect priority events at essential
 
 ### Phase 8a.2 — QLC+ 5 WebSocket button backend
 
-Status: **planned before Phase 8b — protocol research and implementation pending**
+Status: **implemented — automated validation pending completion; live QLC+ 5.2.2 validation pending**
 
 Objective: add a second QLC+ 5 transport selected with `--output qlc-websocket`, while retaining `--output qlc-osc` as a fully supported backend. Both transports must implement the same activation-only `LightingBackend` behavior for Virtual Console scene buttons and share scene resolution, fallback, last-command tracking, blackout/off policy, announcement routing, configuration reload, and shutdown logic. Oculizer requests only the target button activation; the QLC+ workspace owner chooses whether functions overlap by using ordinary Frames or remain mutually exclusive by using Solo Frames. This milestone does not replace OSC and must not affect prediction, audio analysis, Enttec output, or the Phase 8a local Unix control socket used by `oculizerctl.py`.
 
 Protocol research gate — complete before writing transport code:
 
-- [ ] read the official QLC+ 5 WebSocket API documentation applicable to the deployed QLC+ version;
-- [ ] inspect the matching QLC+ source in `mcallegari/qlcplus` to verify message names, payload formats, widget enumeration, button actuation, error behavior, and connection lifecycle;
-- [ ] record direct documentation/source references and the verified QLC+ version in the implementation log;
-- [ ] determine from verified behavior whether a button action is a press-only command or requires a release, and test how the chosen sequence affects the visible Virtual Console state;
-- [ ] verify initial discovery and reconnect behavior without assuming that widget IDs, message ordering, or cached state remain stable across QLC+ sessions.
+- [x] read the official QLC+ 5 WebSocket API documentation applicable to the deployed QLC+ version;
+- [x] inspect the matching QLC+ source in `mcallegari/qlcplus` to verify message names, payload formats, widget enumeration, button actuation, error behavior, and connection lifecycle;
+- [x] record direct documentation/source references and the verified QLC+ version in the implementation log;
+- [x] determine from verified behavior whether a button action is a press-only command or requires a release, and test the exact sequence automatically; visible-console confirmation remains in the manual gate;
+- [x] rediscover widget IDs from the current inventory after every connection/reload; automatic reconnect is explicitly deferred and connection loss fails clearly.
 
 First implementation slice — buttons only:
 
-- [ ] add `qlc-websocket` to interactive and headless output selection without changing the existing `qlc-osc` or `enttec` contracts;
-- [ ] place OSC and WebSocket behind the existing `LightingBackend` boundary, extracting shared QLC+ logical routing only where doing so reduces transport duplication without moving QLC+-specific behavior into the generic scene mapper;
-- [ ] open one bounded WebSocket connection to the configured QLC+ endpoint and close it deterministically during normal shutdown, startup failure, and cancellation;
-- [ ] retrieve the current Virtual Console widget inventory after every connection and construct an in-memory `caption -> widget ID` index;
-- [ ] store captions or logical routing intentions in configuration, never WebSocket widget IDs; rediscover IDs after every new connection;
-- [ ] resolve a button strictly by its complete caption and reject duplicate captions with an explicit diagnostic that identifies the ambiguity;
-- [ ] fail explicitly when a configured caption is absent rather than silently targeting another widget;
-- [ ] actuate the resolved button using only the exact verified QLC+ 5 message sequence, including release only if documentation/source and manual validation require it;
-- [ ] treat any transport-specific press/release sequence as one activation gesture, never as a business-level request to deactivate the previously commanded scene;
-- [ ] stop explicitly toggling the previous scene during ordinary scene changes in both QLC+ transports; allow ordinary Frames to layer functions and Solo Frames to stop the previous function automatically;
-- [ ] preserve configurable special routing for `off` and `announcement`; do not hard-code `off` to QLC+ blackout because a deployment may intentionally map it to a scene button;
-- [ ] redefine `active_scene` for QLC+ transports as the last scene command successfully issued by Oculizer, not an authoritative statement that no other QLC+ function is running;
-- [ ] avoid sending an implicit scene-deactivation command during shutdown; only explicit safe-state policy such as configured `off` or blackout may stop output;
-- [ ] provide a WebSocket dry-run that performs configuration and logical-resolution validation, logs intended caption/widget actions, opens no network connection, and remains usable without QLC+;
-- [ ] support configuration reload by rebuilding transport routing and rediscovering widgets safely, without retaining stale IDs;
-- [ ] contain protocol parsing, connection state, and transport errors outside audio callbacks and keep queues, retries, and logs bounded;
-- [ ] if reconnect is included in this slice, use bounded backoff and rediscovery before resuming output; otherwise fail clearly and leave automatic reconnect as an explicitly documented limitation.
+- [x] add `qlc-websocket` to interactive and headless output selection without changing the existing `qlc-osc` or `enttec` contracts;
+- [x] place OSC and WebSocket behind the existing `LightingBackend` boundary and share the existing logical `SceneMap` resolution;
+- [x] open one bounded WebSocket connection to the configured QLC+ endpoint and close it deterministically during normal shutdown and startup failure;
+- [x] retrieve `/vc.json` after every connection and construct an in-memory `caption -> widget` index recursively;
+- [x] store optional captions or logical routing intentions in configuration, never WebSocket widget IDs; rediscover IDs after every new connection;
+- [x] resolve a complete caption after normalizing case plus spaces/underscores/hyphens, without partial/fuzzy matching, and reject collisions after normalization;
+- [x] fail explicitly when a requested configured caption is absent rather than silently targeting another widget, while allowing an incomplete workspace to start;
+- [x] query button state, then send exactly one `<widgetID>|255` message only when inactive; never send release for a Toggle button;
+- [x] treat that protocol sequence as one activation gesture, never as a request to deactivate the previously commanded scene;
+- [x] stop explicitly toggling the previous scene during ordinary scene changes in both QLC+ transports; allow Frames to layer and Solo Frames to enforce exclusivity;
+- [x] preserve configurable `off`, `announcement`, and fallback routing; WebSocket resolves all of them to captions while OSC retains its configured action policy;
+- [x] define `active_scene` for QLC+ transports as the last scene command successfully issued by Oculizer;
+- [x] avoid sending an implicit scene-deactivation or blackout command during shutdown;
+- [x] provide a WebSocket dry-run that validates configuration, logs intended captions, and opens no network connection;
+- [x] support configuration reload by parsing new routing and replacing widget inventory from `/vc.json` before replacing the active scene map;
+- [x] contain synchronous bounded protocol parsing, connection state, and transport errors outside audio callbacks with no work queue;
+- [x] fail clearly on connection loss; automatic reconnect is an explicitly documented limitation of this slice.
 
 Explicitly out of scope for this milestone:
 
@@ -490,18 +490,18 @@ Explicitly out of scope for this milestone:
 
 Automated validation gate — no live QLC+ dependency:
 
-- [ ] test widget inventory parsing, caption lookup, unique-caption enforcement, missing captions, malformed messages, and unsupported widget types;
-- [ ] test the verified button command sequence and last-command transitions with a deterministic fake WebSocket peer;
-- [ ] prove ordinary scene changes emit one target activation and no previous-scene deactivation in both OSC and WebSocket intent tests;
-- [ ] test `off`, `announcement`, fallback, blackout policy, configuration reload, clean close, connection failure, and any implemented reconnect behavior;
-- [ ] prove dry-run opens no socket and emits the intended logical/caption actions;
-- [ ] run regression coverage showing OSC transport, Enttec, automatic routing, and `oculizerctl.py` remain operational after the intentional QLC+ activation-only routing change;
-- [ ] compile and exercise both interactive and headless entry points with the new output choice.
+- [x] test widget inventory parsing, caption lookup, unique-caption enforcement, missing captions, malformed messages, and unsupported configured button actions;
+- [x] test the verified button command sequence and last-command transitions with a deterministic fake WebSocket peer;
+- [x] prove ordinary scene changes emit one target activation and no previous-scene deactivation in both OSC and WebSocket intent tests;
+- [x] test `off`, `announcement`, fallback, blackout policy, clean close, and connection failure; reload is transactional and live rediscovery remains in the manual gate;
+- [x] prove dry-run opens no socket and emits the intended logical/caption actions;
+- [x] run regression coverage showing OSC transport, Enttec, automatic routing, and `oculizerctl.py` remain operational after the intentional QLC+ activation-only routing change;
+- [x] compile and exercise CLI parsing plus backend construction for interactive, headless, and standalone entry points with the new output choice.
 
 Manual QLC+ 5 validation gate:
 
-- [ ] connect to a real QLC+ 5 instance and confirm widget discovery after opening the current workspace;
-- [ ] confirm every configured scene caption resolves to exactly one button and duplicate-caption failures are actionable;
+- [x] connect to the real QLC+ 5.2.2 instance and confirm widget discovery after opening the current workspace;
+- [ ] confirm every configured scene caption resolves to exactly one normalized button caption and collision failures are actionable; `ambient1` -> `AMBIENT1` is validated;
 - [ ] confirm in an ordinary Frame that successive Oculizer commands can leave functions layered, and in a Solo Frame that activating a new button stops the previous function and updates visible button state;
 - [ ] confirm explicit `off`, `announcement`, fallback, reload, and shutdown behavior without relying on implicit previous-scene deactivation;
 - [ ] restart QLC+ or reload the workspace and prove that rediscovery replaces stale widget IDs;
@@ -511,6 +511,45 @@ Manual QLC+ 5 validation gate:
 Embedded-system impact gate: measure idle connection cost, message latency, memory, reconnect behavior, and log volume. The backend must add no audio-analysis work and must remain suitable for the Phase 8b Raspberry Pi 5 service design.
 
 Exit criterion: `--output qlc-websocket` discovers Virtual Console buttons by unique caption and both QLC+ transports issue activation-only scene intentions, allowing ordinary Frames to layer functions and Solo Frames to enforce exclusivity, while special routes, fallback, reload, dry-run, shutdown, OSC/Enttec regressions, and non-persistence of widget IDs are validated.
+
+QLC+ button action policy: normal scene and announcement routes require `Toggle Function on/off` (`actionType=0`), routing action `off` requires `Stop All Functions` (`actionType=3`), and routing action `blackout` requires `Toggle Blackout` (`actionType=2`). Stop All is sent as one momentary press, matching the QLC+ 5 web UI. Persistent activation errors must be logged once per distinct error rather than on every audio update tick.
+
+#### 2026-08-07 — QLC+ 5.2.2 protocol research and first implementation
+
+Verified target and sources:
+
+- repository workspaces identify their creator as QLC+ `5.2.2`, so implementation was checked against the official `mcallegari/qlcplus` tag [`QLC+_5.2.2`](https://github.com/mcallegari/qlcplus/tree/QLC%2B_5.2.2), commit `87a7cdedc00b01cf9f882176d1194d38229bcc43`;
+- official [Web Interface documentation](https://docs.qlcplus.org/v5/advanced/web-interface) requires `-w`, defaults to port `9999`, and documents optional HTTP Basic authentication;
+- official [Web API documentation](https://docs.qlcplus.org/v5/advanced/web-interface/web-api) specifies `/qlcplusWS`, `/vc.json`, pipe-separated messages, widget state values, and direct widget control;
+- source `webaccess/src/webaccess-qml.cpp` verifies recursive widget APIs, button status `0/127/255`, direct `<widgetID>|<value>` dispatch, and `VCButton::requestStateChange(value > 0)`;
+- source `qmlui/virtualconsole/vcbutton.cpp` verifies that Toggle ignores the pressed value and toggles on every request; consequently press-plus-release would toggle twice and is incorrect;
+- source `webaccess/res/webaccess-v5.js` verifies inventory retrieval after connection and one-second reconnect behavior in the official browser, while this first embedded backend intentionally fails clearly rather than owning an automatic retry loop.
+
+Implementation decisions:
+
+- use one synchronous `websocket-client` connection and bounded request timeouts; no background thread, queue, duplicate model, or audio-path work is added;
+- retrieve the language-independent `typeId`, caption, action type, and recursive widget hierarchy from `/vc.json`; reject configured non-Toggle buttons, duplicate captions, missing captions, malformed data, and invalid states;
+- query `QLC+API|getWidgetStatus|ID` before activation; treat Active and Monitoring as already running, otherwise send one `ID|255` message and no release;
+- keep numeric IDs memory-only and replace the inventory after reconnect/reload;
+- retain OSC fader support; the WebSocket milestone is deliberately buttons-only and reports unsupported continuous parameters without adding slider protocol code;
+- use no automatic reconnect in this slice. The runtime reports transport failure and requires restart/reload, preventing stale IDs or an unbounded retry loop on Raspberry Pi.
+
+Manual gate remaining: enable web access in the local QLC+ 5.2.2 instance, align exact captions, validate Normal/Solo Frame behavior and visible button state, reload/restart QLC+ to prove ID rediscovery, and compare the same sequence with OSC.
+
+Live discovery adjustment:
+
+- the first real `/vc.json` inventory showed uppercase labels with spaces (`AMBIENT1`, `WHITE FAIRIES`) while logical scene names are lowercase and underscore-separated;
+- caption lookup now normalizes case and removes spaces, underscores, and hyphens while retaining complete-name matching; collisions such as `AMBIENT 1` and `ambient_1` are rejected;
+- the real QLC+ 5.2.2 connection successfully resolved and activated logical `ambient1` as widget `AMBIENT1` using the single-message protocol.
+- the operator confirmed that the `AMBIENT1` button visibly activated in the real Virtual Console.
+
+Automated validation:
+
+- 169 tests pass across WebSocket protocol/configuration/backend behavior, normalized-caption collision handling, OSC, Enttec, automatic routing, runtime control, CLI parsing, dry-run, and shutdown;
+- interactive, headless, and standalone help expose `qlc-websocket` plus generic `--qlc-host`, `--qlc-port`, and `--qlc-dry-run` options while retaining the OSC aliases;
+- a repository-config dry-run activates `ambient1`, `announcement`, and `off` as caption intentions without opening a socket;
+- compilation, JSON validation, and whitespace checks pass;
+- authenticated web access, automatic reconnect, sliders, and advanced widgets remain explicitly deferred.
 
 ### Phase 8b — Raspberry Pi 5 production target
 

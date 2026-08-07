@@ -7,7 +7,14 @@ from unittest.mock import Mock, patch
 from oculizer.light.backends import (
     EnttecBackend,
     QLCOscBackend,
+    QLCWebSocketBackend,
     create_qlc_osc_backend,
+    create_qlc_websocket_backend,
+)
+from oculizer.light.qlc_websocket import (
+    QLCWebSocketConfig,
+    QLCWebSocketClient,
+    QLCWebSocketError,
 )
 from oculizer.light.control import Oculizer
 from oculizer.light.scene_map import SceneMap
@@ -52,10 +59,10 @@ class QLCOscBackendTests(unittest.TestCase):
         backend.close()
 
         client.set_level.assert_called_once_with("/show/master", 0.5)
-        self.assertEqual(client.blackout.call_args_list, [unittest.mock.call(False), unittest.mock.call(True)])
+        self.assertEqual(client.blackout.call_args_list, [unittest.mock.call(False)])
         client.close.assert_called_once_with()
 
-    def test_initialize_and_close_enforce_safe_blackout_and_deactivate_scene(self):
+    def test_initialize_blackouts_but_close_emits_no_lighting_command(self):
         client = Mock()
         client.press.return_value = True
         client.release.return_value = True
@@ -67,12 +74,12 @@ class QLCOscBackendTests(unittest.TestCase):
         backend.close()
         backend.close()
 
-        self.assertIsNone(backend.active_scene)
-        self.assertEqual(client.blackout.call_args_list, [unittest.mock.call(True), unittest.mock.call(False), unittest.mock.call(True)])
-        self.assertEqual(client.release.call_count, 2)  # Activation and shutdown toggle pulses.
+        self.assertEqual(backend.active_scene, "party")
+        self.assertEqual(client.blackout.call_args_list, [unittest.mock.call(True), unittest.mock.call(False)])
+        self.assertEqual(client.release.call_count, 1)
         client.close.assert_called_once_with()
 
-    def test_scene_transition_pulses_previous_then_next_and_deduplicates(self):
+    def test_scene_transition_activates_only_target_and_deduplicates(self):
         client = Mock()
         client.press.return_value = True
         client.release.return_value = True
@@ -85,8 +92,6 @@ class QLCOscBackendTests(unittest.TestCase):
         self.assertEqual(
             client.method_calls,
             [
-                unittest.mock.call.press("/party"),
-                unittest.mock.call.release("/party"),
                 unittest.mock.call.press("/party"),
                 unittest.mock.call.release("/party"),
                 unittest.mock.call.press("/chill"),
@@ -106,7 +111,7 @@ class QLCOscBackendTests(unittest.TestCase):
         self.assertFalse(backend.activate_scene("unknown"))
         self.assertEqual(backend.active_scene, "party")
         self.assertTrue(backend.activate_scene("off"))
-        self.assertIsNone(backend.active_scene)
+        self.assertEqual(backend.active_scene, "off")
         client.blackout.assert_called_once_with(True)
 
         self.assertTrue(backend.activate_scene("party"))
@@ -134,6 +139,64 @@ class QLCOscBackendTests(unittest.TestCase):
         self.assertEqual(backend.client.config.port, 9000)
         self.assertTrue(backend.client.config.dry_run)
         self.assertIsNone(backend.client._socket)
+        backend.close()
+
+
+class QLCWebSocketBackendTests(unittest.TestCase):
+    def test_activation_only_uses_exact_configured_caption(self):
+        scene_map = SceneMap.from_mapping({"scenes": {
+            "party": {"path": "/party", "caption": "Party Button"},
+            "off": {"action": "off", "caption": "Safe Off"},
+            "announcement": {"path": "/announcement", "caption": "Speech"},
+        }, "unmapped": "fallback", "fallback_scene": "party"})
+        client = Mock()
+        client.activate_button.return_value = True
+        backend = QLCWebSocketBackend(client, scene_map)
+
+        self.assertTrue(backend.activate_scene("party"))
+        self.assertTrue(backend.activate_scene("party"))
+        self.assertTrue(backend.activate_scene("off"))
+        self.assertTrue(backend.activate_scene("announcement"))
+        self.assertTrue(backend.activate_scene("unknown"))
+        backend.close()
+
+        self.assertEqual(client.activate_button.call_args_list, [
+            unittest.mock.call("Party Button", allowed_action_types=(0,)),
+            unittest.mock.call("Safe Off", allowed_action_types=(3,)),
+            unittest.mock.call("Speech", allowed_action_types=(0,)),
+            unittest.mock.call("Party Button", allowed_action_types=(0,)),
+        ])
+        self.assertEqual(backend.active_scene, "party")
+        client.close.assert_called_once_with()
+
+    def test_repeated_activation_error_is_logged_only_once(self):
+        scene_map = SceneMap.from_mapping({"scenes": {
+            "off": {"action": "off", "caption": "off"},
+        }})
+        client = Mock()
+        client.activate_button.side_effect = QLCWebSocketError("wrong action")
+        backend = QLCWebSocketBackend(client, scene_map)
+
+        with self.assertLogs("oculizer.light.backends", level="ERROR") as logs:
+            self.assertFalse(backend.activate_scene("off"))
+            self.assertFalse(backend.activate_scene("off"))
+
+        self.assertEqual(len(logs.records), 1)
+
+    def test_factory_dry_run_opens_no_network_connection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "qlc.json"
+            path.write_text(json.dumps({
+                "websocket": {"dry_run": True},
+                "routing": {"scenes": {
+                    "party": {"path": "/party", "caption": "Party Button"}
+                }},
+            }))
+            factory = Mock(side_effect=AssertionError("must not connect"))
+            backend = create_qlc_websocket_backend(path, websocket_factory=factory)
+
+        self.assertTrue(backend.activate_scene("party"))
+        factory.assert_not_called()
         backend.close()
 
 
@@ -184,6 +247,27 @@ class OculizerBackendSelectionTests(unittest.TestCase):
         controller.stop()
         controller.join(timeout=1.0)
         self.assertFalse(controller.is_alive())
+
+    def test_qlc_websocket_dry_run_never_opens_enttec_or_audio(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / "qlc_config.json"
+            config_path.write_text(json.dumps({
+                "websocket": {"dry_run": True},
+                "routing": {"scenes": {"party": {"path": "/party"}}},
+            }))
+            with (
+                patch.object(Oculizer, "_get_audio_device_idx", side_effect=AssertionError("audio")),
+                patch.object(Oculizer, "_load_profile", side_effect=AssertionError("profile")),
+                patch.object(Oculizer, "_load_controller", side_effect=AssertionError("enttec")),
+            ):
+                controller = Oculizer(
+                    None, Mock(), output="qlc-websocket",
+                    qlc_config_path=config_path,
+                )
+
+        self.assertEqual(controller.backend.name, "qlc-websocket")
+        self.assertFalse(controller.audio_processing_enabled)
+        controller.backend.close()
 
 
 if __name__ == "__main__":

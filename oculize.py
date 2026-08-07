@@ -237,7 +237,7 @@ class AudioOculizerController:
             filter_dmx=filter_dmx,
             fast_detection_config=fast_detection_config,
         )
-        if output == 'qlc-osc':
+        if output in ('qlc-osc', 'qlc-websocket'):
             self.oculizer.restrict_scenes_to_backend()
         self.scene_router = AutomaticSceneRouter(
             self.oculizer,
@@ -985,12 +985,12 @@ Scene Cache Size:
                       help='Lighting output backend (default: enttec)')
     parser.add_argument('--qlc-config', default=None,
                       help='Unified QLC+ configuration (default: config/qlc_config.json)')
-    parser.add_argument('--osc-host', default=None,
-                      help='Override the QLC+ OSC destination host')
-    parser.add_argument('--osc-port', type=int, default=None,
-                      help='Override the QLC+ OSC destination port')
-    parser.add_argument('--osc-dry-run', action='store_true', default=None,
-                      help='Log OSC messages without sending UDP packets')
+    parser.add_argument('--qlc-host', '--osc-host', dest='osc_host', default=None,
+                      help='Override the selected QLC+ transport host')
+    parser.add_argument('--qlc-port', '--osc-port', dest='osc_port', type=int, default=None,
+                      help='Override the selected QLC+ transport port')
+    parser.add_argument('--qlc-dry-run', '--osc-dry-run', dest='osc_dry_run', action='store_true', default=None,
+                      help='Validate and log QLC+ intentions without network output')
     parser.add_argument('--dmx-dry-run', action='store_true',
                       help='Render Enttec DMX frames through a rate-limited virtual controller')
     parser.add_argument('--filter-dmx', '--filter-DMX', action='store_true',
@@ -1041,6 +1041,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
     setup_colors()
     initialize_screen(stdscr)
     lighting_detail = "Lighting: QLC+ OSC" if output == 'qlc-osc' else (
+        "Lighting: QLC+ WebSocket" if output == 'qlc-websocket' else
         "Lighting: virtual Enttec DMX" if dmx_dry_run else "Lighting: Enttec DMX"
     )
     audio_detail = (

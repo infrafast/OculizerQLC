@@ -48,12 +48,12 @@ def parse_args():
                       help='Lighting output backend (default: enttec)')
     parser.add_argument('--qlc-config', default=None,
                       help='Unified QLC+ configuration (default: config/qlc_config.json)')
-    parser.add_argument('--osc-host', default=None,
-                      help='Override the QLC+ OSC destination host')
-    parser.add_argument('--osc-port', type=int, default=None,
-                      help='Override the QLC+ OSC destination port')
-    parser.add_argument('--osc-dry-run', action='store_true', default=None,
-                      help='Log OSC messages without sending UDP packets')
+    parser.add_argument('--qlc-host', '--osc-host', dest='osc_host', default=None,
+                      help='Override the selected QLC+ transport host')
+    parser.add_argument('--qlc-port', '--osc-port', dest='osc_port', type=int, default=None,
+                      help='Override the selected QLC+ transport port')
+    parser.add_argument('--qlc-dry-run', '--osc-dry-run', dest='osc_dry_run', action='store_true', default=None,
+                      help='Validate and log QLC+ intentions without network output')
     parser.add_argument('--dmx-dry-run', action='store_true',
                       help='Render Enttec DMX frames through a rate-limited virtual controller')
     parser.add_argument('--filter-dmx', '--filter-DMX', action='store_true',
@@ -358,7 +358,7 @@ def main(stdscr, profile, input_device, average_dual_channels, output, qlc_confi
         filter_dmx=filter_dmx,
     )
 
-    if output == 'qlc-osc':
+    if output in ('qlc-osc', 'qlc-websocket'):
         light_controller.restrict_scenes_to_backend()
     light_controller.start()
     

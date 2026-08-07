@@ -12,14 +12,16 @@ from typing import Any, Mapping
 from oculizer.light.osc_client import OscClient
 from oculizer.light.qlc_config import QLCConfig
 from oculizer.light.scene_map import SceneMap
+from oculizer.light.qlc_websocket import QLCWebSocketClient, QLCWebSocketError
 
 
 logger = logging.getLogger(__name__)
 
 OUTPUT_ENTTEC = "enttec"
 OUTPUT_QLC_OSC = "qlc-osc"
+OUTPUT_QLC_WEBSOCKET = "qlc-websocket"
 OUTPUT_DISABLED = "disabled"
-OUTPUT_CHOICES = (OUTPUT_ENTTEC, OUTPUT_QLC_OSC)
+OUTPUT_CHOICES = (OUTPUT_ENTTEC, OUTPUT_QLC_OSC, OUTPUT_QLC_WEBSOCKET)
 
 
 class LightingBackend(ABC):
@@ -160,15 +162,11 @@ class QLCOscBackend(LightingBackend):
             logger.debug("QLC+ scene '%s' is already active", scene_name)
             return True
 
-        if self.active_scene is not None and not self.deactivate_scene(self.active_scene):
-            return False
-
         if control.action == "off":
-            self.active_scene = None
-            return self.blackout(True)
+            success = self.blackout(True)
         if control.action == "blackout":
             success = self.blackout(True)
-        else:
+        elif control.action == "toggle":
             if self.blackout_active and not self.blackout(False):
                 return False
             success = self._pulse(control.path)
@@ -207,9 +205,95 @@ class QLCOscBackend(LightingBackend):
         if self._closed:
             return
         self._closed = True
-        if self.active_scene is not None:
-            self.deactivate_scene(self.active_scene)
-        self.blackout(True)
+        self.client.close()
+
+
+class QLCWebSocketBackend(LightingBackend):
+    """QLC+ 5 Virtual Console button backend resolved by exact caption."""
+
+    name = OUTPUT_QLC_WEBSOCKET
+
+    def __init__(self, client: QLCWebSocketClient, scene_map: SceneMap,
+                 config_path: str | Path | None = None):
+        self.client = client
+        self.scene_map = scene_map
+        self.config_path = Path(config_path) if config_path is not None else None
+        self.active_scene = None
+        self.blackout_active = False
+        self._closed = False
+        self._last_activation_error = None
+
+    def initialize(self):
+        try:
+            self.client.connect()
+        except Exception:
+            self.client.close()
+            raise
+        return True
+
+    def resolve_scene(self, scene_name: str) -> str | None:
+        return self.scene_map.resolve(scene_name)
+
+    def activate_scene(self, scene_name: str) -> bool:
+        requested_scene = scene_name
+        scene_name = self.resolve_scene(scene_name)
+        control = self.scene_map.get(scene_name) if scene_name is not None else None
+        if control is None:
+            message = f"QLC+ scene '{requested_scene}' has no WebSocket mapping"
+            if self.scene_map.unmapped == "error":
+                raise KeyError(message)
+            logger.warning(message)
+            return False
+        if requested_scene != scene_name:
+            logger.info("QLC+ scene request '%s' resolved to fallback '%s'", requested_scene, scene_name)
+        if scene_name == self.active_scene:
+            return True
+        if control.action == "off":
+            allowed_action_types = (3,)
+        elif control.action == "blackout":
+            allowed_action_types = (2,)
+        else:
+            allowed_action_types = (0,)
+        try:
+            success = self.client.activate_button(
+                control.caption, allowed_action_types=allowed_action_types
+            )
+        except QLCWebSocketError as exc:
+            error = str(exc)
+            if error != self._last_activation_error:
+                logger.error("QLC+ WebSocket scene activation failed: %s", error)
+                self._last_activation_error = error
+            return False
+        if success:
+            self._last_activation_error = None
+            self.active_scene = scene_name
+        return success
+
+    def deactivate_scene(self, scene_name: str) -> bool:
+        # Activation-only contract: exclusivity belongs to a QLC+ Solo Frame.
+        return True
+
+    def set_parameter(self, name: str, value: float) -> bool:
+        logger.debug("QLC+ WebSocket buttons-only backend ignores parameter %s", name)
+        return False
+
+    def blackout(self, enabled: bool = True) -> bool:
+        logger.debug("QLC+ WebSocket buttons-only backend has no global blackout command")
+        return False
+
+    def reload_scene_map(self):
+        if self.config_path is None:
+            return
+        config = QLCConfig.from_file(self.config_path)
+        self.client.rediscover()
+        self.scene_map = config.routing
+        self.active_scene = None
+        self._last_activation_error = None
+
+    def close(self):
+        if self._closed:
+            return
+        self._closed = True
         self.client.close()
 
 
@@ -238,6 +322,36 @@ def create_qlc_osc_backend(
         OscClient(config, log_filter_paths=log_filter_paths),
         qlc_config.routing,
         controls=qlc_config.controls,
+        config_path=config_path,
+    )
+    backend.initialize()
+    return backend
+
+
+def create_qlc_websocket_backend(
+    config_path: str | Path,
+    *, host: str | None = None, port: int | None = None,
+    dry_run: bool | None = None, websocket_factory=None, inventory_loader=None,
+) -> QLCWebSocketBackend:
+    qlc_config = QLCConfig.from_file(config_path)
+    config = qlc_config.websocket
+    overrides = {}
+    if host is not None:
+        overrides["host"] = host
+    if port is not None:
+        overrides["port"] = port
+    if dry_run is not None:
+        overrides["dry_run"] = dry_run
+    if overrides:
+        config = replace(config, **overrides)
+        config.validate()
+    backend = QLCWebSocketBackend(
+        QLCWebSocketClient(
+            config,
+            websocket_factory=websocket_factory,
+            inventory_loader=inventory_loader,
+        ),
+        qlc_config.routing,
         config_path=config_path,
     )
     backend.initialize()

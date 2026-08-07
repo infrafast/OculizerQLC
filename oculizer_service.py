@@ -45,9 +45,9 @@ def parse_args():
     parser.add_argument("--control-socket", default=default_control_socket_path(), help="Unix runtime control socket path")
     parser.add_argument("--no-control-socket", action="store_true", help="Disable the local runtime control socket")
     parser.add_argument("--qlc-config", default=None, help="Unified QLC+ configuration (default: config/qlc_config.json)")
-    parser.add_argument("--osc-host", default=None)
-    parser.add_argument("--osc-port", type=int, default=None)
-    parser.add_argument("--osc-dry-run", action="store_true", default=None)
+    parser.add_argument("--qlc-host", "--osc-host", dest="osc_host", default=None)
+    parser.add_argument("--qlc-port", "--osc-port", dest="osc_port", type=int, default=None)
+    parser.add_argument("--qlc-dry-run", "--osc-dry-run", dest="osc_dry_run", action="store_true", default=None)
     parser.add_argument(
         "--dmx-dry-run",
         action="store_true",

@@ -4,6 +4,14 @@
     "port": 7700,
     "dry_run": false
   },
+  "websocket": {
+    "host": "127.0.0.1",
+    "port": 9999,
+    "path": "/qlcplusWS",
+    "dry_run": false,
+    "connect_timeout_seconds": 2.0,
+    "request_timeout_seconds": 2.0
+  },
   "controls": {
     "blackout": "/blackout",
     "master": "/oculizer/master",
