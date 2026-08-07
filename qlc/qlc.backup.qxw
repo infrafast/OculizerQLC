@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Workspace>
-<Workspace xmlns="http://www.qlcplus.org/Workspace" CurrentWindow="VC">
+<Workspace xmlns="http://www.qlcplus.org/Workspace" CurrentWindow="FIXANDFUNC">
  <Creator>
   <Name>Q Light Controller Plus</Name>
   <Version>5.2.2</Version>
@@ -318,6 +318,9 @@
   <ChannelsGroup ID="14" Name="GREEN" Value="0">2,4,2,7,2,11,2,15,2,19,2,23,2,27,2,31,2,35,3,7,3,11,3,15,3,19,3,23,3,27,3,31,3,35,7,4,7,7,7,11,7,15,7,19,7,23,7,27,7,31,7,35,8,2,8,7,8,11,8,15,8,19,8,23,8,27,8,31,8,35,9,1,9,7,9,13,9,19,10,1,10,7,10,13,10,19</ChannelsGroup>
   <ChannelsGroup ID="15" Name="BLUE" Value="0">2,4,2,8,2,12,2,16,2,20,2,24,2,28,2,32,2,36,3,4,3,8,3,12,3,16,3,20,3,24,3,28,3,32,3,36,7,4,7,8,7,12,7,16,7,20,7,24,7,28,7,32,7,36,8,2,8,8,8,12,8,16,8,20,8,24,8,28,8,32,8,36,9,3,9,10,9,17,10,0,10,3,10,10,10,17</ChannelsGroup>
   <ChannelsGroup ID="16" Name="Ledbar Top Right RED" Value="0">7,4,7,6,7,10,7,14,7,18,7,22,7,26,7,30,7,34</ChannelsGroup>
+  <ChannelsGroup ID="17" Name="FX_STROBE" Value="0">0,6,1,6,2,5,3,5,7,5,8,3,9,32,9,33,9,34,9,35,10,32,10,33,10,34,10,35</ChannelsGroup>
+  <ChannelsGroup ID="18" Name="FX_SPEED" Value="0">0,4,1,4,2,1,2,3,3,1,3,3,7,1,7,3,8,1,8,5</ChannelsGroup>
+  <ChannelsGroup ID="19" Name="FX_BUILTIN_EFFECT" Value="0">0,11,1,11,2,2,3,2,7,2,8,4</ChannelsGroup>
   <Palette ID="0" Type="Dimmer" Name="dimmer on" Value="255"/>
   <Function ID="0" Type="Scene" Name="New Scene" Hidden="True">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
@@ -335,22 +338,9 @@
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,0,8,0,9,0</FixtureVal>
   </Function>
-  <Function ID="4" Type="Sequence" Name="Mini LEFT strobe" Path="FX/Sequences" BoundScene="0">
+  <Function ID="5" Type="Scene" Name="SPECIAL_OFF" Path="Specials">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-  </Function>
-  <Function ID="5" Type="Scene" Name="yellow tmp strobe for test">
-   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-   <FixtureVal ID="0">0,0,1,0,2,0,3,0,4,0,5,255,6,1,7,255,8,255,9,0,10,0,11,0,12,0</FixtureVal>
-   <FixtureVal ID="1">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0</FixtureVal>
-   <FixtureVal ID="2">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
-   <FixtureVal ID="3">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
-   <FixtureVal ID="7">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
-   <FixtureVal ID="8">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
-   <FixtureVal ID="9">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0</FixtureVal>
-   <FixtureVal ID="10">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0</FixtureVal>
+   <FixtureVal ID="0">0,51,1,0,2,0,3,0,4,0,5,255,6,0,7,255,8,255,9,0,10,0,11,0,12,0</FixtureVal>
   </Function>
   <Function ID="7" Type="Scene" Name="all" Hidden="True" Path="Legacy">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
@@ -360,8 +350,16 @@
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,0,8,0,9,0</FixtureVal>
   </Function>
-  <Function ID="10" Type="Scene" Name="BASE_00_PLACEHOLDER" Path="Bases">
+  <Function ID="10" Type="Scene" Name="BASE_00_NEUTRALISE_FIXTURES" Path="Bases">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="0">4,0,6,0,11,0</FixtureVal>
+   <FixtureVal ID="1">4,0,6,0,11,0</FixtureVal>
+   <FixtureVal ID="2">1,0,2,0,3,0,5,0</FixtureVal>
+   <FixtureVal ID="3">1,0,2,0,3,0,5,0</FixtureVal>
+   <FixtureVal ID="7">1,0,2,0,3,0,5,0</FixtureVal>
+   <FixtureVal ID="8">1,0,3,0,4,0,5,0</FixtureVal>
+   <FixtureVal ID="9">32,0,33,0,34,0,35,0</FixtureVal>
+   <FixtureVal ID="10">32,0,33,0,34,0,35,0</FixtureVal>
   </Function>
   <Function ID="11" Type="Scene" Name="BASE_10_RGB_ALL" Path="Bases">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
@@ -803,7 +801,6 @@
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="1000" FadeOut="0">5</Step>
   </Function>
   <Function ID="72" Type="Chaser" Name="SPECIAL_QUASAR" Path="Specials">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
@@ -1701,7 +1698,7 @@
      <Appearance>
       <BackgroundColor>4281532502</BackgroundColor>
      </Appearance>
-     <WindowState Visible="True" X="2" Y="52" Width="1179" Height="392"/>
+     <WindowState Visible="True" X="0" Y="51" Width="1185" Height="395"/>
      <AllowResize>True</AllowResize>
      <ShowHeader>False</ShowHeader>
      <ShowEnableButton>True</ShowEnableButton>
@@ -1721,6 +1718,14 @@
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
       <Function ID="77"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="DISCODANCE" ID="25">
+      <WindowState Visible="True" X="945" Y="240" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4292225064</BackgroundColor>
+      </Appearance>
+      <Function ID="96"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="ELECTRIC" ID="28">
@@ -1807,13 +1812,13 @@
       <Action>Toggle</Action>
      </Button>
      <Slider Caption="master" ID="3" WidgetStyle="Slider" InvertedAppearance="false">
-      <WindowState Visible="True" X="0" Y="0" Width="85" Height="171"/>
+      <WindowState Visible="True" X="7" Y="8" Width="84" Height="172"/>
       <Appearance>
        <BackgroundColor>4282664004</BackgroundColor>
       </Appearance>
       <Input ID="0" Universe="0" Channel="30161"/>
       <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
-      <Level LowLimit="0" HighLimit="255" Value="255"/>
+      <Level LowLimit="0" HighLimit="255" Value="0"/>
      </Slider>
      <Button Caption="RIGHTROUND" ID="49">
       <WindowState Visible="True" X="1065" Y="120" Width="112" Height="54"/>
@@ -1873,7 +1878,7 @@
       <Action>Toggle</Action>
      </Button>
      <Slider Caption="bass" ID="4" WidgetStyle="Slider" InvertedAppearance="false">
-      <WindowState Visible="True" X="0" Y="223" Width="85" Height="171"/>
+      <WindowState Visible="True" X="7" Y="207" Width="84" Height="180"/>
       <Appearance>
        <BackgroundColor>4282664004</BackgroundColor>
       </Appearance>
@@ -2113,14 +2118,6 @@
       <Function ID="91"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="DISCODANCE" ID="25">
-      <WindowState Visible="True" X="945" Y="240" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4292225064</BackgroundColor>
-      </Appearance>
-      <Function ID="96"/>
-      <Action>Toggle</Action>
-     </Button>
      <Button Caption="BASS HOPPER BLUE" ID="9">
       <WindowState Visible="True" X="103" Y="292" Width="112" Height="54"/>
       <Appearance>
@@ -2222,11 +2219,11 @@
      </Button>
     </Frame>
     <Button Caption="off" ID="0">
-     <WindowState Visible="True" X="1041" Y="0" Width="112" Height="54"/>
+     <WindowState Visible="True" X="1116" Y="0" Width="68" Height="51"/>
      <Appearance>
       <BackgroundColor>4282664004</BackgroundColor>
      </Appearance>
-     <Function ID="102"/>
+     <Function ID="5"/>
      <Action>Toggle</Action>
      <Input ID="0" Universe="0" Channel="36806"/>
     </Button>
@@ -2272,7 +2269,7 @@
     <Collapsed>False</Collapsed>
     <Disabled>False</Disabled>
     <Button Caption="CALM" ID="144">
-     <WindowState Visible="True" X="0" Y="137" Width="85" Height="51"/>
+     <WindowState Visible="True" X="0" Y="128" Width="84" Height="57"/>
      <Appearance>
       <BackgroundColor>4282664004</BackgroundColor>
      </Appearance>
@@ -2280,7 +2277,7 @@
      <Action>Toggle</Action>
     </Button>
     <Button Caption="RESPONSIVE" ID="142">
-     <WindowState Visible="True" X="0" Y="0" Width="85" Height="68"/>
+     <WindowState Visible="True" X="0" Y="0" Width="84" Height="68"/>
      <Appearance>
       <BackgroundColor>4282664004</BackgroundColor>
      </Appearance>
@@ -2288,7 +2285,7 @@
      <Action>Toggle</Action>
     </Button>
     <Button Caption="NORMAL" ID="143">
-     <WindowState Visible="True" X="0" Y="68" Width="85" Height="68"/>
+     <WindowState Visible="True" X="2" Y="70" Width="81" Height="55"/>
      <Appearance>
       <BackgroundColor>4282664004</BackgroundColor>
      </Appearance>

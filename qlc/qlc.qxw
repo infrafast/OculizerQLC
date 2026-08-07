@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Workspace>
-<Workspace xmlns="http://www.qlcplus.org/Workspace" CurrentWindow="VC">
+<Workspace xmlns="http://www.qlcplus.org/Workspace" CurrentWindow="FIXANDFUNC">
  <Creator>
   <Name>Q Light Controller Plus</Name>
   <Version>5.2.2</Version>
@@ -338,12 +338,6 @@
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,0,8,0,9,0</FixtureVal>
   </Function>
-  <Function ID="4" Type="Sequence" Name="Mini LEFT strobe" Path="FX/Sequences" BoundScene="0">
-   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-  </Function>
   <Function ID="5" Type="Scene" Name="SPECIAL_OFF" Path="Specials">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">0,51,1,0,2,0,3,0,4,0,5,255,6,0,7,255,8,255,9,0,10,0,11,0,12,0</FixtureVal>
@@ -367,7 +361,7 @@
    <FixtureVal ID="9">32,0,33,0,34,0,35,0</FixtureVal>
    <FixtureVal ID="10">32,0,33,0,34,0,35,0</FixtureVal>
   </Function>
-  <Function ID="11" Type="Scene" Name="BASE_10_RGB_ALL" Path="Bases">
+  <Function ID="11" Type="Scene" Name="BASE_10_DIMMER_ALL" Path="Bases/Dimmer_On">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">5,255</FixtureVal>
    <FixtureVal ID="1">5,255</FixtureVal>
@@ -376,52 +370,37 @@
    <FixtureVal ID="7">4,255</FixtureVal>
    <FixtureVal ID="8">2,255</FixtureVal>
   </Function>
-  <Function ID="12" Type="Scene" Name="BASE_11_RGB_LEFT" Path="Bases">
+  <Function ID="12" Type="Scene" Name="BASE_11_DIMMER_LEFT" Path="Bases/Dimmer_On">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">5,255</FixtureVal>
    <FixtureVal ID="3">4,255</FixtureVal>
    <FixtureVal ID="8">2,255</FixtureVal>
   </Function>
-  <Function ID="13" Type="Scene" Name="BASE_12_RGB_RIGHT" Path="Bases">
+  <Function ID="13" Type="Scene" Name="BASE_12_DIMMER_RIGHT" Path="Bases/Dimmer_On">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="1">5,255</FixtureVal>
    <FixtureVal ID="2">4,255</FixtureVal>
    <FixtureVal ID="7">4,255</FixtureVal>
   </Function>
-  <Function ID="14" Type="Scene" Name="BASE_20_MULTIFX_PAR" Path="Bases">
+  <Function ID="16" Type="Scene" Name="BASE_30_DIMMER_LEDBAR_LEFT" Path="Bases/Dimmer_On">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-   <FixtureVal ID="9">3,255,9,255,15,255,21,255</FixtureVal>
-   <FixtureVal ID="10">3,255,9,255,15,255,21,255</FixtureVal>
+   <FixtureVal ID="3">4,255</FixtureVal>
+   <FixtureVal ID="8">2,255</FixtureVal>
   </Function>
-  <Function ID="15" Type="Scene" Name="BASE_21_MULTIFX_BEAM" Path="Bases">
+  <Function ID="17" Type="Scene" Name="BASE_31_DIMMER_LEDBAR_RIGHT" Path="Bases/Dimmer_On">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-   <FixtureVal ID="9">24,255,25,255,26,255,28,255,29,255,30,255</FixtureVal>
-   <FixtureVal ID="10">24,255,25,255,26,255,28,255,29,255,30,255</FixtureVal>
+   <FixtureVal ID="7">4,255</FixtureVal>
+   <FixtureVal ID="2">4,255</FixtureVal>
   </Function>
-  <Function ID="16" Type="Scene" Name="BASE_30_LEDBAR_LEFT" Path="Bases">
-   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-  </Function>
-  <Function ID="17" Type="Scene" Name="BASE_31_LEDBAR_RIGHT" Path="Bases">
+  <Function ID="19" Type="Scene" Name="BASE_41_STROBE_ON" Path="Bases">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
   </Function>
-  <Function ID="18" Type="Scene" Name="BASE_40_LASER" Path="Bases">
-   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-  </Function>
-  <Function ID="19" Type="Scene" Name="BASE_41_STROBE" Path="Bases">
-   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-  </Function>
-  <Function ID="20" Type="Scene" Name="BASE_42_PINSPOT" Path="Bases">
-   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-  </Function>
-  <Function ID="21" Type="Scene" Name="BASE_50_MOVING_HEADS" Path="Bases">
+  <Function ID="21" Type="Scene" Name="BASE_50_DIMMER_MOVING_HEADS" Path="Bases/Dimmer_On">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">5,255</FixtureVal>
    <FixtureVal ID="1">5,255</FixtureVal>
   </Function>
-  <Function ID="22" Type="Scene" Name="BASE_60_ALL_LIGHTS" Path="Bases">
-   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
-  </Function>
-  <Function ID="23" Type="Scene" Name="COLOR_00_NEUTRAL" Path="Colors">
+  <Function ID="23" Type="Scene" Name="COLOR_00_NEUTRAL" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,255,9,255</FixtureVal>
    <FixtureVal ID="1">7,255,8,255,9,255</FixtureVal>
@@ -432,7 +411,7 @@
    <FixtureVal ID="9">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,255,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,255</FixtureVal>
    <FixtureVal ID="10">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,255,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,255</FixtureVal>
   </Function>
-  <Function ID="24" Type="Scene" Name="COLOR_BLUE" Path="Colors">
+  <Function ID="24" Type="Scene" Name="COLOR_BLUE" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,0,8,0,9,255</FixtureVal>
    <FixtureVal ID="1">7,0,8,0,9,255</FixtureVal>
@@ -443,7 +422,7 @@
    <FixtureVal ID="9">0,0,1,0,2,255,3,0,6,0,7,0,8,255,9,0,12,0,13,0,14,255,15,0,18,0,19,0,20,255,21,0</FixtureVal>
    <FixtureVal ID="10">0,0,1,0,2,255,3,0,6,0,7,0,8,255,9,0,12,0,13,0,14,255,15,0,18,0,19,0,20,255,21,0</FixtureVal>
   </Function>
-  <Function ID="25" Type="Scene" Name="COLOR_PINK" Path="Colors">
+  <Function ID="25" Type="Scene" Name="COLOR_PINK" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,0,9,128</FixtureVal>
    <FixtureVal ID="1">7,255,8,0,9,128</FixtureVal>
@@ -454,7 +433,7 @@
    <FixtureVal ID="9">0,255,1,0,2,128,3,0,6,255,7,0,8,128,9,0,12,255,13,0,14,128,15,0,18,255,19,0,20,128,21,0</FixtureVal>
    <FixtureVal ID="10">0,255,1,0,2,128,3,0,6,255,7,0,8,128,9,0,12,255,13,0,14,128,15,0,18,255,19,0,20,128,21,0</FixtureVal>
   </Function>
-  <Function ID="26" Type="Scene" Name="COLOR_PURPLE" Path="Colors">
+  <Function ID="26" Type="Scene" Name="COLOR_PURPLE" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,128,8,0,9,255</FixtureVal>
    <FixtureVal ID="1">7,128,8,0,9,255</FixtureVal>
@@ -465,7 +444,7 @@
    <FixtureVal ID="9">0,128,1,0,2,255,3,0,6,128,7,0,8,255,9,0,12,128,13,0,14,255,15,0,18,128,19,0,20,255,21,0</FixtureVal>
    <FixtureVal ID="10">0,128,1,0,2,255,3,0,6,128,7,0,8,255,9,0,12,128,13,0,14,255,15,0,18,128,19,0,20,255,21,0</FixtureVal>
   </Function>
-  <Function ID="27" Type="Scene" Name="COLOR_RED" Path="Colors">
+  <Function ID="27" Type="Scene" Name="COLOR_RED" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,0,9,0</FixtureVal>
    <FixtureVal ID="1">7,255,8,0,9,0</FixtureVal>
@@ -476,7 +455,7 @@
    <FixtureVal ID="9">0,255,1,0,2,0,3,0,6,255,7,0,8,0,9,0,12,255,13,0,14,0,15,0,18,255,19,0,20,0,21,0</FixtureVal>
    <FixtureVal ID="10">0,255,1,0,2,0,3,0,6,255,7,0,8,0,9,0,12,255,13,0,14,0,15,0,18,255,19,0,20,0,21,0</FixtureVal>
   </Function>
-  <Function ID="28" Type="Scene" Name="COLOR_GREEN" Path="Colors">
+  <Function ID="28" Type="Scene" Name="COLOR_GREEN" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,0,8,255,9,0</FixtureVal>
    <FixtureVal ID="1">7,0,8,255,9,0</FixtureVal>
@@ -487,7 +466,7 @@
    <FixtureVal ID="9">0,0,1,255,2,0,3,0,6,0,7,255,8,0,9,0,12,0,13,255,14,0,15,0,18,0,19,255,20,0,21,0</FixtureVal>
    <FixtureVal ID="10">0,0,1,255,2,0,3,0,6,0,7,255,8,0,9,0,12,0,13,255,14,0,15,0,18,0,19,255,20,0,21,0</FixtureVal>
   </Function>
-  <Function ID="29" Type="Scene" Name="COLOR_WHITE" Path="Colors">
+  <Function ID="29" Type="Scene" Name="COLOR_WHITE" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,255,9,255</FixtureVal>
    <FixtureVal ID="1">7,255,8,255,9,255</FixtureVal>
@@ -498,7 +477,7 @@
    <FixtureVal ID="9">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,255,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,255</FixtureVal>
    <FixtureVal ID="10">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,255,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,255</FixtureVal>
   </Function>
-  <Function ID="30" Type="Scene" Name="COLOR_RAINBOW" Path="Colors">
+  <Function ID="30" Type="Scene" Name="COLOR_RAINBOW" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,0,9,0</FixtureVal>
    <FixtureVal ID="1">7,255,8,60,9,0</FixtureVal>
@@ -509,7 +488,7 @@
    <FixtureVal ID="9">0,255,1,0,2,0,3,0,6,255,7,60,8,0,9,0,12,255,13,255,14,0,15,0,18,0,19,255,20,0,21,0</FixtureVal>
    <FixtureVal ID="10">0,255,1,0,2,0,3,0,6,255,7,60,8,0,9,0,12,255,13,255,14,0,15,0,18,0,19,255,20,0,21,0</FixtureVal>
   </Function>
-  <Function ID="31" Type="Scene" Name="COLOR_AMBER" Path="Colors">
+  <Function ID="31" Type="Scene" Name="COLOR_AMBER" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,120,9,0</FixtureVal>
    <FixtureVal ID="1">7,255,8,120,9,0</FixtureVal>
@@ -520,7 +499,7 @@
    <FixtureVal ID="9">0,255,1,120,2,0,3,0,6,255,7,120,8,0,9,0,12,255,13,120,14,0,15,0,18,255,19,120,20,0,21,0</FixtureVal>
    <FixtureVal ID="10">0,255,1,120,2,0,3,0,6,255,7,120,8,0,9,0,12,255,13,120,14,0,15,0,18,255,19,120,20,0,21,0</FixtureVal>
   </Function>
-  <Function ID="32" Type="Scene" Name="COLOR_BLUE_PURPLE" Path="Colors">
+  <Function ID="32" Type="Scene" Name="COLOR_BLUE_PURPLE" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,0,8,0,9,255</FixtureVal>
    <FixtureVal ID="1">7,128,8,0,9,255</FixtureVal>
@@ -531,7 +510,7 @@
    <FixtureVal ID="9">0,0,1,0,2,255,3,0,6,128,7,0,8,255,9,0,12,0,13,0,14,255,15,0,18,128,19,0,20,255,21,0</FixtureVal>
    <FixtureVal ID="10">0,0,1,0,2,255,3,0,6,128,7,0,8,255,9,0,12,0,13,0,14,255,15,0,18,128,19,0,20,255,21,0</FixtureVal>
   </Function>
-  <Function ID="33" Type="Scene" Name="COLOR_PINK_PURPLE" Path="Colors">
+  <Function ID="33" Type="Scene" Name="COLOR_PINK_PURPLE" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,0,9,128</FixtureVal>
    <FixtureVal ID="1">7,128,8,0,9,255</FixtureVal>
@@ -542,7 +521,7 @@
    <FixtureVal ID="9">0,255,1,0,2,128,3,0,6,128,7,0,8,255,9,0,12,255,13,0,14,128,15,0,18,128,19,0,20,255,21,0</FixtureVal>
    <FixtureVal ID="10">0,255,1,0,2,128,3,0,6,128,7,0,8,255,9,0,12,255,13,0,14,128,15,0,18,128,19,0,20,255,21,0</FixtureVal>
   </Function>
-  <Function ID="34" Type="Scene" Name="COLOR_RED_ORANGE" Path="Colors">
+  <Function ID="34" Type="Scene" Name="COLOR_RED_ORANGE" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,0,9,0</FixtureVal>
    <FixtureVal ID="1">7,255,8,60,9,0</FixtureVal>
@@ -553,7 +532,7 @@
    <FixtureVal ID="9">0,255,1,0,2,0,3,0,6,255,7,60,8,0,9,0,12,255,13,0,14,0,15,0,18,255,19,60,20,0,21,0</FixtureVal>
    <FixtureVal ID="10">0,255,1,0,2,0,3,0,6,255,7,60,8,0,9,0,12,255,13,0,14,0,15,0,18,255,19,60,20,0,21,0</FixtureVal>
   </Function>
-  <Function ID="35" Type="Scene" Name="COLOR_WHITE_BLACK" Path="Colors">
+  <Function ID="35" Type="Scene" Name="COLOR_WHITE_BLACK" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,255,9,255</FixtureVal>
    <FixtureVal ID="1">7,0,8,0,9,0</FixtureVal>
@@ -564,7 +543,7 @@
    <FixtureVal ID="9">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,0,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,0</FixtureVal>
    <FixtureVal ID="10">0,0,1,0,2,0,3,255,6,0,7,0,8,0,9,0,12,0,13,0,14,0,15,255,18,0,19,0,20,0,21,0</FixtureVal>
   </Function>
-  <Function ID="36" Type="Scene" Name="COLOR_BLUE_BLACK" Path="Colors">
+  <Function ID="36" Type="Scene" Name="COLOR_BLUE_BLACK" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,0,8,0,9,255</FixtureVal>
    <FixtureVal ID="1">7,0,8,0,9,0</FixtureVal>
@@ -575,7 +554,7 @@
    <FixtureVal ID="9">0,0,1,0,2,255,3,0,6,0,7,0,8,0,9,0,12,0,13,0,14,255,15,0,18,0,19,0,20,0,21,0</FixtureVal>
    <FixtureVal ID="10">0,0,1,0,2,255,3,0,6,0,7,0,8,0,9,0,12,0,13,0,14,255,15,0,18,0,19,0,20,0,21,0</FixtureVal>
   </Function>
-  <Function ID="37" Type="Scene" Name="COLOR_RGB" Path="Colors">
+  <Function ID="37" Type="Scene" Name="COLOR_RGB" Path="Bases/Colors">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <FixtureVal ID="0">7,255,8,0,9,0</FixtureVal>
    <FixtureVal ID="1">7,0,8,255,9,0</FixtureVal>
@@ -586,13 +565,13 @@
    <FixtureVal ID="9">0,255,1,0,2,0,3,0,6,0,7,255,8,0,9,0,12,0,13,0,14,255,15,0,18,255,19,0,20,0,21,0</FixtureVal>
    <FixtureVal ID="10">0,255,1,0,2,0,3,0,6,0,7,255,8,0,9,0,12,0,13,0,14,255,15,0,18,255,19,0,20,0,21,0</FixtureVal>
   </Function>
-  <Function ID="38" Type="Chaser" Name="FX_PULSE" Path="FX/Chasers">
+  <Function ID="38" Type="Chaser" Name="FX_PULSE" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="39" Type="Chaser" Name="FX_BASS_PULSE" Path="FX/Chasers">
+  <Function ID="39" Type="Chaser" Name="FX_BASS_PULSE" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
@@ -600,597 +579,552 @@
    <Step Number="0" FadeIn="0" Hold="250" FadeOut="0">138</Step>
    <Step Number="1" FadeIn="0" Hold="250" FadeOut="0">139</Step>
   </Function>
-  <Function ID="40" Type="Chaser" Name="FX_FLICKER" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="41" Type="Chaser" Name="FX_ECHO" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="42" Type="Chaser" Name="FX_RISER" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="43" Type="Chaser" Name="FX_SPEEDRACER" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="44" Type="Chaser" Name="FX_HOPPER" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="1000" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="45" Type="Chaser" Name="FX_WAVE" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="46" Type="Chaser" Name="FX_PRANCE" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="47" Type="Chaser" Name="FX_RIGHTROUND" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="48" Type="Chaser" Name="FX_BLOOP" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="49" Type="Chaser" Name="FX_SPLATTER" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="50" Type="Chaser" Name="FX_SUSTAIN" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="51" Type="Chaser" Name="FX_HYPNO" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="1000" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="52" Type="Chaser" Name="FX_DISCO" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="53" Type="Chaser" Name="FX_DISCODANCE" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="54" Type="Chaser" Name="FX_DISCODREAM" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="55" Type="Chaser" Name="FX_DISCOBRAIN" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="56" Type="Chaser" Name="FX_TRANCE" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="57" Type="Chaser" Name="FX_FAIRIES" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="58" Type="Chaser" Name="FX_GOOSEBUMPS" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="59" Type="Chaser" Name="FX_SWAMP" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="60" Type="Chaser" Name="FX_TEMPLE" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="61" Type="Chaser" Name="FX_VINTAGE" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="62" Type="Chaser" Name="FX_WHISPERS" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="63" Type="Chaser" Name="FX_SEXY" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">154</Step>
-  </Function>
-  <Function ID="64" Type="Chaser" Name="FX_ELECTRIC" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="65" Type="Chaser" Name="FX_ORB_RACER" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="1000" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="66" Type="Chaser" Name="FX_SEQUENCE_COSMIC" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">153</Step>
-  </Function>
-  <Function ID="67" Type="Chaser" Name="FX_SEQUENCE_FIRE" Path="FX/Chasers">
-   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
-   <Direction>Forward</Direction>
-   <RunOrder>Loop</RunOrder>
-   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
-   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0">152</Step>
-  </Function>
-  <Function ID="70" Type="Chaser" Name="SPECIAL_LASER_STROBE" Path="Specials">
+  <Function ID="40" Type="Chaser" Name="FX_FLICKER" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="71" Type="Chaser" Name="SPECIAL_FULLSTROBE" Path="Specials">
+  <Function ID="41" Type="Chaser" Name="FX_ECHO" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="72" Type="Chaser" Name="SPECIAL_QUASAR" Path="Specials">
+  <Function ID="42" Type="Chaser" Name="FX_RISER" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="73" Type="Chaser" Name="SPECIAL_SUPERNOVA" Path="Specials">
+  <Function ID="43" Type="Chaser" Name="FX_SPEEDRACER" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="74" Type="Chaser" Name="SPECIAL_BRAINBLASTER" Path="Specials">
+  <Function ID="44" Type="Chaser" Name="FX_HOPPER" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="75" Type="Chaser" Name="SPECIAL_HELL" Path="Specials">
+  <Function ID="45" Type="Chaser" Name="FX_WAVE" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="76" Type="Chaser" Name="SPECIAL_DISCOLASER" Path="Specials">
+  <Function ID="46" Type="Chaser" Name="FX_PRANCE" Path="Scenes/Chasers">
    <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
    <Direction>Forward</Direction>
    <RunOrder>Loop</RunOrder>
    <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
   </Function>
-  <Function ID="77" Type="Collection" Name="SCN_RGB" Path="Scenes">
+  <Function ID="47" Type="Chaser" Name="FX_RIGHTROUND" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="48" Type="Chaser" Name="FX_BLOOP" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="49" Type="Chaser" Name="FX_SPLATTER" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="50" Type="Chaser" Name="FX_SUSTAIN" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="51" Type="Chaser" Name="FX_HYPNO" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="52" Type="Chaser" Name="FX_DISCO" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="53" Type="Chaser" Name="FX_DISCODANCE" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="54" Type="Chaser" Name="FX_DISCODREAM" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="55" Type="Chaser" Name="FX_DISCOBRAIN" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="56" Type="Chaser" Name="FX_TRANCE" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="57" Type="Chaser" Name="FX_FAIRIES" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="58" Type="Chaser" Name="FX_GOOSEBUMPS" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="59" Type="Chaser" Name="FX_SWAMP" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="60" Type="Chaser" Name="FX_TEMPLE" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="61" Type="Chaser" Name="FX_VINTAGE" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="62" Type="Chaser" Name="FX_WHISPERS" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="63" Type="Chaser" Name="FX_SEXY" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="64" Type="Chaser" Name="FX_ELECTRIC" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="65" Type="Chaser" Name="FX_ORB_RACER" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="66" Type="Chaser" Name="FX_SEQUENCE_COSMIC" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="67" Type="Chaser" Name="FX_SEQUENCE_FIRE" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="70" Type="Chaser" Name="FX_LASER_STROBE" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="71" Type="Chaser" Name="FX_FULLSTROBE" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="72" Type="Chaser" Name="FX_QUASAR" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="73" Type="Chaser" Name="FX_SUPERNOVA" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="74" Type="Chaser" Name="FX_BRAINBLASTER" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="75" Type="Chaser" Name="FX_HELL" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="76" Type="Chaser" Name="FX_DISCOLASER" Path="Scenes/Chasers">
+   <Speed FadeIn="0" FadeOut="0" Duration="1000"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+  </Function>
+  <Function ID="77" Type="Collection" Name="SCN_RGB" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">22</Step>
-   <Step Number="2">37</Step>
+   <Step Number="1">37</Step>
   </Function>
-  <Function ID="78" Type="Collection" Name="SCN_ambient1" Path="Scenes">
+  <Function ID="78" Type="Collection" Name="SCN_ambient1" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">22</Step>
-   <Step Number="2">29</Step>
+   <Step Number="1">29</Step>
   </Function>
-  <Function ID="79" Type="Collection" Name="SCN_ambient2" Path="Scenes">
+  <Function ID="79" Type="Collection" Name="SCN_ambient2" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
   </Function>
-  <Function ID="80" Type="Collection" Name="SCN_bass_hopper_blue" Path="Scenes">
+  <Function ID="80" Type="Collection" Name="SCN_bass_hopper_blue" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">24</Step>
    <Step Number="3">44</Step>
   </Function>
-  <Function ID="81" Type="Collection" Name="SCN_bass_hopper_pink" Path="Scenes">
+  <Function ID="81" Type="Collection" Name="SCN_bass_hopper_pink" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">25</Step>
    <Step Number="3">44</Step>
   </Function>
-  <Function ID="82" Type="Collection" Name="SCN_bass_hopper_rainbow" Path="Scenes">
+  <Function ID="82" Type="Collection" Name="SCN_bass_hopper_rainbow" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">30</Step>
    <Step Number="3">44</Step>
   </Function>
-  <Function ID="83" Type="Collection" Name="SCN_bloop" Path="Scenes">
+  <Function ID="83" Type="Collection" Name="SCN_bloop" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">48</Step>
   </Function>
-  <Function ID="84" Type="Collection" Name="SCN_blue_bass_pulse" Path="Scenes">
+  <Function ID="84" Type="Collection" Name="SCN_blue_bass_pulse" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">155</Step>
-   <Step Number="2">24</Step>
-   <Step Number="3">39</Step>
+   <Step Number="1">24</Step>
+   <Step Number="2">39</Step>
   </Function>
-  <Function ID="85" Type="Collection" Name="SCN_blue_bass_racer" Path="Scenes">
+  <Function ID="85" Type="Collection" Name="SCN_blue_bass_racer" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">24</Step>
    <Step Number="3">43</Step>
   </Function>
-  <Function ID="86" Type="Collection" Name="SCN_blue_flicker" Path="Scenes">
+  <Function ID="86" Type="Collection" Name="SCN_blue_flicker" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">24</Step>
    <Step Number="3">40</Step>
   </Function>
-  <Function ID="87" Type="Collection" Name="SCN_blue_pulse" Path="Scenes">
+  <Function ID="87" Type="Collection" Name="SCN_blue_pulse" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">155</Step>
-   <Step Number="2">24</Step>
-   <Step Number="3">38</Step>
+   <Step Number="1">24</Step>
+   <Step Number="2">38</Step>
   </Function>
-  <Function ID="88" Type="Collection" Name="SCN_blue_riser" Path="Scenes">
+  <Function ID="88" Type="Collection" Name="SCN_blue_riser" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">24</Step>
    <Step Number="3">42</Step>
   </Function>
-  <Function ID="89" Type="Collection" Name="SCN_blue_speedracer" Path="Scenes">
+  <Function ID="89" Type="Collection" Name="SCN_blue_speedracer" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">24</Step>
    <Step Number="3">43</Step>
   </Function>
-  <Function ID="90" Type="Collection" Name="SCN_brainblaster" Path="Scenes">
+  <Function ID="90" Type="Collection" Name="SCN_brainblaster" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">22</Step>
-   <Step Number="2">23</Step>
-   <Step Number="3">74</Step>
+   <Step Number="1">23</Step>
+   <Step Number="2">74</Step>
   </Function>
-  <Function ID="91" Type="Collection" Name="SCN_chill_blue" Path="Scenes">
+  <Function ID="91" Type="Collection" Name="SCN_chill_blue" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">24</Step>
   </Function>
-  <Function ID="92" Type="Collection" Name="SCN_chill_pink" Path="Scenes">
+  <Function ID="92" Type="Collection" Name="SCN_chill_pink" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">33</Step>
   </Function>
-  <Function ID="93" Type="Collection" Name="SCN_chill_red" Path="Scenes">
+  <Function ID="93" Type="Collection" Name="SCN_chill_red" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">27</Step>
   </Function>
-  <Function ID="94" Type="Collection" Name="SCN_disco" Path="Scenes">
+  <Function ID="94" Type="Collection" Name="SCN_disco" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">52</Step>
   </Function>
-  <Function ID="95" Type="Collection" Name="SCN_discobrain" Path="Scenes">
+  <Function ID="95" Type="Collection" Name="SCN_discobrain" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">55</Step>
   </Function>
-  <Function ID="96" Type="Collection" Name="SCN_discodance" Path="Scenes">
+  <Function ID="96" Type="Collection" Name="SCN_discodance" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">53</Step>
   </Function>
-  <Function ID="97" Type="Collection" Name="SCN_discodream" Path="Scenes">
+  <Function ID="97" Type="Collection" Name="SCN_discodream" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">54</Step>
   </Function>
-  <Function ID="98" Type="Collection" Name="SCN_discolaser" Path="Scenes">
+  <Function ID="98" Type="Collection" Name="SCN_discolaser" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">18</Step>
-   <Step Number="2">23</Step>
-   <Step Number="3">76</Step>
+   <Step Number="1">23</Step>
+   <Step Number="2">76</Step>
   </Function>
-  <Function ID="99" Type="Collection" Name="SCN_electric" Path="Scenes">
+  <Function ID="99" Type="Collection" Name="SCN_electric" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">64</Step>
   </Function>
-  <Function ID="100" Type="Collection" Name="SCN_fairies" Path="Scenes">
+  <Function ID="100" Type="Collection" Name="SCN_fairies" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">57</Step>
   </Function>
-  <Function ID="101" Type="Collection" Name="SCN_flicker" Path="Scenes">
+  <Function ID="101" Type="Collection" Name="SCN_flicker" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">40</Step>
   </Function>
-  <Function ID="102" Type="Collection" Name="SCN_fullstrobe" Path="Scenes">
+  <Function ID="102" Type="Collection" Name="SCN_fullstrobe" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">19</Step>
    <Step Number="2">23</Step>
    <Step Number="3">71</Step>
   </Function>
-  <Function ID="103" Type="Collection" Name="SCN_goosebumps" Path="Scenes">
+  <Function ID="103" Type="Collection" Name="SCN_goosebumps" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">58</Step>
   </Function>
-  <Function ID="104" Type="Collection" Name="SCN_green_bass_pulse" Path="Scenes">
+  <Function ID="104" Type="Collection" Name="SCN_green_bass_pulse" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">155</Step>
-   <Step Number="2">28</Step>
-   <Step Number="3">39</Step>
+   <Step Number="1">28</Step>
+   <Step Number="2">39</Step>
   </Function>
-  <Function ID="105" Type="Collection" Name="SCN_green_speedracer" Path="Scenes">
+  <Function ID="105" Type="Collection" Name="SCN_green_speedracer" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">28</Step>
    <Step Number="3">43</Step>
   </Function>
-  <Function ID="106" Type="Collection" Name="SCN_hell" Path="Scenes">
+  <Function ID="106" Type="Collection" Name="SCN_hell" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">22</Step>
-   <Step Number="2">34</Step>
-   <Step Number="3">75</Step>
+   <Step Number="1">34</Step>
+   <Step Number="2">75</Step>
   </Function>
-  <Function ID="107" Type="Collection" Name="SCN_hypno" Path="Scenes">
+  <Function ID="107" Type="Collection" Name="SCN_hypno" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">51</Step>
   </Function>
-  <Function ID="108" Type="Collection" Name="SCN_laser_strobe" Path="Scenes">
+  <Function ID="108" Type="Collection" Name="SCN_laser_strobe" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">18</Step>
-   <Step Number="2">23</Step>
-   <Step Number="3">70</Step>
+   <Step Number="1">23</Step>
+   <Step Number="2">70</Step>
   </Function>
-  <Function ID="109" Type="Collection" Name="SCN_orb_racer" Path="Scenes">
+  <Function ID="109" Type="Collection" Name="SCN_orb_racer" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">16</Step>
-   <Step Number="2">23</Step>
-   <Step Number="3">65</Step>
+   <Step Number="1">23</Step>
+   <Step Number="2">65</Step>
   </Function>
-  <Function ID="110" Type="Collection" Name="SCN_party" Path="Scenes">
+  <Function ID="110" Type="Collection" Name="SCN_party" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">22</Step>
-   <Step Number="2">23</Step>
+   <Step Number="1">23</Step>
   </Function>
-  <Function ID="111" Type="Collection" Name="SCN_pink_speedracer" Path="Scenes">
+  <Function ID="111" Type="Collection" Name="SCN_pink_speedracer" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">25</Step>
    <Step Number="3">43</Step>
   </Function>
-  <Function ID="112" Type="Collection" Name="SCN_prance" Path="Scenes">
+  <Function ID="112" Type="Collection" Name="SCN_prance" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">46</Step>
   </Function>
-  <Function ID="113" Type="Collection" Name="SCN_quasar" Path="Scenes">
+  <Function ID="113" Type="Collection" Name="SCN_quasar" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">22</Step>
-   <Step Number="2">23</Step>
-   <Step Number="3">72</Step>
+   <Step Number="1">23</Step>
+   <Step Number="2">72</Step>
   </Function>
-  <Function ID="114" Type="Collection" Name="SCN_rainbow_pulse" Path="Scenes">
+  <Function ID="114" Type="Collection" Name="SCN_rainbow_pulse" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">155</Step>
-   <Step Number="2">30</Step>
-   <Step Number="3">38</Step>
+   <Step Number="1">30</Step>
+   <Step Number="2">38</Step>
   </Function>
-  <Function ID="115" Type="Collection" Name="SCN_red_bass_pulse" Path="Scenes">
+  <Function ID="115" Type="Collection" Name="SCN_red_bass_pulse" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">155</Step>
-   <Step Number="2">27</Step>
-   <Step Number="3">39</Step>
+   <Step Number="1">27</Step>
+   <Step Number="2">39</Step>
   </Function>
-  <Function ID="116" Type="Collection" Name="SCN_red_echo" Path="Scenes">
+  <Function ID="116" Type="Collection" Name="SCN_red_echo" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">27</Step>
    <Step Number="3">41</Step>
   </Function>
-  <Function ID="117" Type="Collection" Name="SCN_red_flicker" Path="Scenes">
+  <Function ID="117" Type="Collection" Name="SCN_red_flicker" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">27</Step>
    <Step Number="3">40</Step>
   </Function>
-  <Function ID="118" Type="Collection" Name="SCN_red_pulse" Path="Scenes">
+  <Function ID="118" Type="Collection" Name="SCN_red_pulse" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">155</Step>
-   <Step Number="2">27</Step>
-   <Step Number="3">38</Step>
+   <Step Number="1">27</Step>
+   <Step Number="2">38</Step>
   </Function>
-  <Function ID="119" Type="Collection" Name="SCN_red_speedracer" Path="Scenes">
+  <Function ID="119" Type="Collection" Name="SCN_red_speedracer" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">27</Step>
    <Step Number="3">43</Step>
   </Function>
-  <Function ID="120" Type="Collection" Name="SCN_rightround" Path="Scenes">
+  <Function ID="120" Type="Collection" Name="SCN_rightround" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">47</Step>
   </Function>
-  <Function ID="121" Type="Collection" Name="SCN_sexy" Path="Scenes">
+  <Function ID="121" Type="Collection" Name="SCN_sexy" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">33</Step>
    <Step Number="3">63</Step>
   </Function>
-  <Function ID="122" Type="Collection" Name="SCN_sequence_cosmic" Path="Scenes">
+  <Function ID="122" Type="Collection" Name="SCN_sequence_cosmic" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">66</Step>
   </Function>
-  <Function ID="123" Type="Collection" Name="SCN_sequence_fire" Path="Scenes">
+  <Function ID="123" Type="Collection" Name="SCN_sequence_fire" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">34</Step>
    <Step Number="3">67</Step>
   </Function>
-  <Function ID="124" Type="Collection" Name="SCN_splatter" Path="Scenes">
+  <Function ID="124" Type="Collection" Name="SCN_splatter" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">49</Step>
   </Function>
-  <Function ID="125" Type="Collection" Name="SCN_sustain" Path="Scenes">
+  <Function ID="125" Type="Collection" Name="SCN_sustain" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">50</Step>
   </Function>
-  <Function ID="126" Type="Collection" Name="SCN_supernova" Path="Scenes">
+  <Function ID="126" Type="Collection" Name="SCN_supernova" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">22</Step>
-   <Step Number="2">23</Step>
-   <Step Number="3">73</Step>
+   <Step Number="1">23</Step>
+   <Step Number="2">73</Step>
   </Function>
-  <Function ID="127" Type="Collection" Name="SCN_swamp" Path="Scenes">
+  <Function ID="127" Type="Collection" Name="SCN_swamp" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">59</Step>
   </Function>
-  <Function ID="128" Type="Collection" Name="SCN_temple" Path="Scenes">
+  <Function ID="128" Type="Collection" Name="SCN_temple" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">60</Step>
   </Function>
-  <Function ID="129" Type="Collection" Name="SCN_trance" Path="Scenes">
+  <Function ID="129" Type="Collection" Name="SCN_trance" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">56</Step>
   </Function>
-  <Function ID="130" Type="Collection" Name="SCN_vintage" Path="Scenes">
+  <Function ID="130" Type="Collection" Name="SCN_vintage" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">61</Step>
   </Function>
-  <Function ID="131" Type="Collection" Name="SCN_wave" Path="Scenes">
+  <Function ID="131" Type="Collection" Name="SCN_wave" Path="Scenes/Collections">
    <Step Number="0">10</Step>
-   <Step Number="1">22</Step>
-   <Step Number="2">23</Step>
-   <Step Number="3">45</Step>
+   <Step Number="1">23</Step>
+   <Step Number="2">45</Step>
   </Function>
-  <Function ID="132" Type="Collection" Name="SCN_whispers" Path="Scenes">
+  <Function ID="132" Type="Collection" Name="SCN_whispers" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">23</Step>
    <Step Number="3">62</Step>
   </Function>
-  <Function ID="133" Type="Collection" Name="SCN_white_echo" Path="Scenes">
+  <Function ID="133" Type="Collection" Name="SCN_white_echo" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">29</Step>
    <Step Number="3">41</Step>
   </Function>
-  <Function ID="134" Type="Collection" Name="SCN_white_fairies" Path="Scenes">
+  <Function ID="134" Type="Collection" Name="SCN_white_fairies" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">29</Step>
   </Function>
-  <Function ID="135" Type="Collection" Name="SCN_white_flicker" Path="Scenes">
+  <Function ID="135" Type="Collection" Name="SCN_white_flicker" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">29</Step>
    <Step Number="3">40</Step>
   </Function>
-  <Function ID="136" Type="Collection" Name="SCN_white_riser" Path="Scenes">
+  <Function ID="136" Type="Collection" Name="SCN_white_riser" Path="Scenes/Collections">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">29</Step>
    <Step Number="3">42</Step>
   </Function>
-  <Function ID="137" Type="Collection" Name="SCN_white_speedracer" Path="Scenes">
+  <Function ID="137" Type="Collection" Name="SCN_white_speedracer" Path="Scenes/Chasers">
    <Step Number="0">10</Step>
    <Step Number="1">11</Step>
    <Step Number="2">29</Step>
@@ -1202,7 +1136,7 @@
   <Function ID="139" Type="Scene" Name="PULSE_DIMMER_OFF" Path="FX/Pulse Components">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
   </Function>
-  <Function ID="140" Type="EFX" Name="EFX_BEAT_FAST_CIRCLE" Path="Beat/Fast">
+  <Function ID="140" Type="EFX" Name="EFX_BEAT_FAST_CIRCLE" Path="Motion/Fast">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1231,7 +1165,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="141" Type="EFX" Name="EFX_BEAT_FAST_SWEEP" Path="Beat/Fast">
+  <Function ID="141" Type="EFX" Name="EFX_BEAT_FAST_SWEEP" Path="Motion/Fast">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1260,7 +1194,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="142" Type="EFX" Name="EFX_BEAT_FAST_ZIGZAG" Path="Beat/Fast">
+  <Function ID="142" Type="EFX" Name="EFX_BEAT_FAST_ZIGZAG" Path="Motion/Fast">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1289,7 +1223,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="143" Type="EFX" Name="EFX_BEAT_FAST_DIMMER" Path="Beat/Fast">
+  <Function ID="143" Type="EFX" Name="EFX_BEAT_FAST_DIMMER" Path="Motion/Fast">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1318,7 +1252,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="144" Type="EFX" Name="EFX_BEAT_MEDIUM_WAVE" Path="Beat/Medium">
+  <Function ID="144" Type="EFX" Name="EFX_BEAT_MEDIUM_WAVE" Path="Motion/Medium">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1347,7 +1281,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="145" Type="EFX" Name="EFX_BEAT_MEDIUM_PRANCE" Path="Beat/Medium">
+  <Function ID="145" Type="EFX" Name="EFX_BEAT_MEDIUM_PRANCE" Path="Motion/Medium">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1376,7 +1310,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="146" Type="EFX" Name="EFX_BEAT_MEDIUM_ROTATION" Path="Beat/Medium">
+  <Function ID="146" Type="EFX" Name="EFX_BEAT_MEDIUM_ROTATION" Path="Motion/Medium">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1405,7 +1339,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="147" Type="EFX" Name="EFX_BEAT_MEDIUM_DIMMER" Path="Beat/Medium">
+  <Function ID="147" Type="EFX" Name="EFX_BEAT_MEDIUM_DIMMER" Path="Motion/Medium">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1434,7 +1368,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="148" Type="EFX" Name="EFX_BEAT_SLOW_WAVE" Path="Beat/Slow">
+  <Function ID="148" Type="EFX" Name="EFX_BEAT_SLOW_WAVE" Path="Motion/Slow">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1463,7 +1397,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="149" Type="EFX" Name="EFX_BEAT_SLOW_CIRCLE" Path="Beat/Slow">
+  <Function ID="149" Type="EFX" Name="EFX_BEAT_SLOW_CIRCLE" Path="Motion/Slow">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1492,7 +1426,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="150" Type="EFX" Name="EFX_BEAT_SLOW_BREATHE" Path="Beat/Slow">
+  <Function ID="150" Type="EFX" Name="EFX_BEAT_SLOW_BREATHE" Path="Motion/Slow">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1521,7 +1455,7 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="151" Type="EFX" Name="EFX_BEAT_SLOW_DRIFT" Path="Beat/Slow">
+  <Function ID="151" Type="EFX" Name="EFX_BEAT_SLOW_DRIFT" Path="Motion/Slow">
    <Fixture>
     <ID>0</ID>
     <Head>0</Head>
@@ -1550,25 +1484,6 @@
     <Phase>0</Phase>
    </Axis>
   </Function>
-  <Function ID="152" Type="Collection" Name="MOTION_FAST" Path="Motion">
-   <Step Number="0">140</Step>
-   <Step Number="1">141</Step>
-   <Step Number="2">142</Step>
-   <Step Number="3">143</Step>
-  </Function>
-  <Function ID="153" Type="Collection" Name="MOTION_MEDIUM" Path="Motion">
-   <Step Number="0">144</Step>
-   <Step Number="1">145</Step>
-   <Step Number="2">146</Step>
-   <Step Number="3">147</Step>
-  </Function>
-  <Function ID="154" Type="Collection" Name="MOTION_SLOW" Path="Motion">
-   <Step Number="0">148</Step>
-   <Step Number="1">149</Step>
-   <Step Number="2">150</Step>
-   <Step Number="3">151</Step>
-  </Function>
-  <Function ID="155" Type="Collection" Name="MOTION_BASS" Path="Motion"/>
   <Function ID="156" Type="Script" Name="SCRIPT_OCULIZER_PRESET_RESPONSIVE" Path="Scripts/Oculizer" Version="2">
    <Speed FadeIn="0" FadeOut="0" Duration="0"/>
    <Direction>Forward</Direction>
@@ -1662,6 +1577,921 @@
    <FixtureVal ID="7">0,20</FixtureVal>
    <FixtureVal ID="8">0,225</FixtureVal>
   </Function>
+  <Function ID="168" Type="Scene" Name="SEQBASE_U2_INTRO_A" Hidden="True" Path="FX/Sequences/Support Scenes">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <ChannelGroupsVal>12,0,11,0,10,0,9,0,3,0,2,0,1,0,0,0</ChannelGroupsVal>
+   <FixtureVal ID="3">0,0,2,0,4,0,5,0,10,0</FixtureVal>
+   <FixtureVal ID="2">0,0,2,0,4,0,5,0,10,0</FixtureVal>
+   <FixtureVal ID="8">0,0,2,0,4,0,5,0,10,0</FixtureVal>
+   <FixtureVal ID="7">0,0,2,0,4,0,5,0,10,0</FixtureVal>
+   <FixtureVal ID="9">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0</FixtureVal>
+   <FixtureVal ID="10">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0</FixtureVal>
+   <FixtureVal ID="1">0,0,2,0,4,0,5,0,10,0</FixtureVal>
+   <FixtureVal ID="0">0,0,2,0,4,0,5,0,10,0</FixtureVal>
+  </Function>
+  <Function ID="169" Type="Scene" Name="SEQBASE_LEDBAR_SUNSET" Hidden="True" Path="FX/Sequences/Support Scenes">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="3">6,0,7,0,8,0,10,0,11,0,12,0,14,0,15,0,16,0,18,0,19,0,20,0,22,0,23,0,24,0,26,0,27,0,28,0,30,0,31,0,32,0,34,0,35,0,36,0</FixtureVal>
+   <FixtureVal ID="2">6,0,7,0,8,0,10,0,11,0,12,0,14,0,15,0,16,0,18,0,19,0,20,0,22,0,23,0,24,0,26,0,27,0,28,0,30,0,31,0,32,0,34,0,35,0,36,0</FixtureVal>
+  </Function>
+  <Function ID="170" Type="Scene" Name="SEQBASE_COLOR_YELLOW_LEFT_RIGHT_TOP_BOTTOM" Hidden="True" Path="FX/Sequences/Support Scenes">
+   <Speed FadeIn="0" FadeOut="0" Duration="0"/>
+   <FixtureVal ID="3">2,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="2">2,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0,36,0,37,0</FixtureVal>
+   <FixtureVal ID="10">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0</FixtureVal>
+   <FixtureVal ID="9">0,0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,23,0,24,0,25,0,26,0,27,0,28,0,29,0,30,0,31,0,32,0,33,0,34,0,35,0</FixtureVal>
+  </Function>
+  <Function ID="171" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_FLASH_LEFT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294967167</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="direction" Value="Left"/>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="172" Type="RGBMatrix" Name="MATRIX_LEDBAR_SLOW_RGB_TRANSITION" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="350"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>4</FixtureGroup>
+   <Property Name="color2Index" Value="Red"/>
+   <Property Name="color3Index" Value="Green"/>
+   <Property Name="color4Index" Value="Blue"/>
+   <Property Name="color5Index" Value="OFF"/>
+   <Property Name="presetSize" Value="20"/>
+   <Property Name="ramp" Value="30"/>
+   <Property Name="stepsize" Value="3"/>
+  </Function>
+  <Function ID="173" Type="RGBMatrix" Name="MATRIX_MULTIFX_ORANGE_UP" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="258"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294945280</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="174" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_RED_WHITE_SPECTRUM" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="30"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4294901764</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+  </Function>
+  <Function ID="175" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_LEFT_RIGHT_BOUNCE_YELLOW_BLUE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="200"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294967040</Color>
+   <Color Index="1">4283782655</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="color1Index" Value="Yellow"/>
+   <Property Name="color2Index" Value="Blue"/>
+   <Property Name="color3Index" Value="Black"/>
+   <Property Name="color4Index" Value="Black"/>
+   <Property Name="color5Index" Value="Black"/>
+   <Property Name="presetCollision" Value="Yes"/>
+   <Property Name="presetNumber" Value="3"/>
+   <Property Name="presetSize" Value="5"/>
+  </Function>
+  <Function ID="176" Type="Sequence" Name="SEQ_U2_INTRO_A" Path="FX/Sequences" BoundScene="168">
+   <Speed FadeIn="0" FadeOut="0" Duration="580"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+   <Step Number="0" FadeIn="0" Hold="580" FadeOut="0" Note="ledbar top" Values="102">0:2,127,4,100,5,255,10,255:1:2,128,4,100,5,255,10,255:2:0,127:3:0,120:7:0,128,4,255:8:0,128,2,255:9:3,255,9,255:10:0,255,3,255,9,255</Step>
+   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0" Note="ledbar left" Values="102">0:2,127,4,100,5,255,10,255:1:2,128,4,100,5,255,10,255:2:0,187,2,70:3:0,187,2,70:7:0,187,2,70:8:0,187,2,70:9:15,255,21,255:10:15,255,21,255</Step>
+   <Step Number="2" FadeIn="0" Hold="580" FadeOut="0" Note="MultiFX PAR" Values="104">0:2,127,4,100,5,255,10,255:1:2,127,4,100,5,255,10,255:2:0,127:3:0,127:9:3,255,9,255,15,255,21,255:10:3,255,9,255,15,255,21,255,0,255,4,255</Step>
+   <Step Number="3" FadeIn="0" Hold="580" FadeOut="0" Note="ledbar right" Values="102">2:0,127,4,255:3:0,120</Step>
+  </Function>
+  <Function ID="177" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_LEFT_RIGHT_BOUNCE_RED_WHITE_MEDIUM_SPEED" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="200"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="color2Index" Value="Red"/>
+   <Property Name="color3Index" Value="Green"/>
+   <Property Name="color4Index" Value="Black"/>
+   <Property Name="color5Index" Value="Red"/>
+   <Property Name="presetCollision" Value="Yes"/>
+   <Property Name="presetNumber" Value="2"/>
+   <Property Name="presetSize" Value="5"/>
+  </Function>
+  <Function ID="178" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_PARASITE_ELECTRIQUES" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="3000" Duration="200"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294967295</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="50"/>
+  </Function>
+  <Function ID="179" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_RED_GREEN_SPECTRUM_LEFT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="43"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4278255360</Color>
+   <Color Index="1">4294901760</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>0</FixtureGroup>
+  </Function>
+  <Function ID="180" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_RED_GREEN_SPECTRUM_RIGHT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="43"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278255360</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>1</FixtureGroup>
+  </Function>
+  <Function ID="181" Type="RGBMatrix" Name="MATRIX_LEDBAR_VUMETRE_LEFT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="51"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278255360</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>5</FixtureGroup>
+  </Function>
+  <Function ID="182" Type="Sequence" Name="SEQ_LEDBAR_SUNSET" Path="FX/Sequences" BoundScene="169">
+   <Speed FadeIn="0" FadeOut="0" Duration="100"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="PerStep"/>
+   <Step Number="0" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,255,10,255,11,255,14,255,15,255,18,255,19,255,22,255,23,255,26,255,27,255,30,255,31,255,34,255,35,255:3:6,255,7,255,10,255,11,255,14,255,15,255,18,255,19,255,22,255,23,255,26,255,27,255,30,255,31,255,34,255,35,255</Step>
+   <Step Number="1" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,235,10,255,11,235,14,255,15,235,18,255,19,235,22,255,23,235,26,255,27,235,30,255,31,235,34,255,35,235:3:6,255,7,235,10,255,11,235,14,255,15,235,18,255,19,235,22,255,23,235,26,255,27,235,30,255,31,235,34,255,35,235</Step>
+   <Step Number="2" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,215,10,255,11,215,14,255,15,215,18,255,19,215,22,255,23,215,26,255,27,215,30,255,31,215,34,255,35,215:3:6,255,7,215,10,255,11,215,14,255,15,215,18,255,19,215,22,255,23,215,26,255,27,215,30,255,31,215,34,255,35,215</Step>
+   <Step Number="3" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,196,10,255,11,196,14,255,15,196,18,255,19,196,22,255,23,196,26,255,27,196,30,255,31,196,34,255,35,196:3:6,255,7,196,10,255,11,196,14,255,15,196,18,255,19,196,22,255,23,196,26,255,27,196,30,255,31,196,34,255,35,196</Step>
+   <Step Number="4" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,176,10,255,11,176,14,255,15,176,18,255,19,176,22,255,23,176,26,255,27,176,30,255,31,176,34,255,35,176:3:6,255,7,176,10,255,11,176,14,255,15,176,18,255,19,176,22,255,23,176,26,255,27,176,30,255,31,176,34,255,35,176</Step>
+   <Step Number="5" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,156,10,255,11,156,14,255,15,156,18,255,19,156,22,255,23,156,26,255,27,156,30,255,31,156,34,255,35,156:3:6,255,7,156,10,255,11,156,14,255,15,156,18,255,19,156,22,255,23,156,26,255,27,156,30,255,31,156,34,255,35,156</Step>
+   <Step Number="6" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,137,10,255,11,137,14,255,15,137,18,255,19,137,22,255,23,137,26,255,27,137,30,255,31,137,34,255,35,137:3:6,255,7,137,10,255,11,137,14,255,15,137,18,255,19,137,22,255,23,137,26,255,27,137,30,255,31,137,34,255,35,137</Step>
+   <Step Number="7" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,117,10,255,11,117,14,255,15,117,18,255,19,117,22,255,23,117,26,255,27,117,30,255,31,117,34,255,35,117:3:6,255,7,117,10,255,11,117,14,255,15,117,18,255,19,117,22,255,23,117,26,255,27,117,30,255,31,117,34,255,35,117</Step>
+   <Step Number="8" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,98,10,255,11,98,14,255,15,98,18,255,19,98,22,255,23,98,26,255,27,98,30,255,31,98,34,255,35,98:3:6,255,7,98,10,255,11,98,14,255,15,98,18,255,19,98,22,255,23,98,26,255,27,98,30,255,31,98,34,255,35,98</Step>
+   <Step Number="9" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,78,10,255,11,78,14,255,15,78,18,255,19,78,22,255,23,78,26,255,27,78,30,255,31,78,34,255,35,78:3:6,255,7,78,10,255,11,78,14,255,15,78,18,255,19,78,22,255,23,78,26,255,27,78,30,255,31,78,34,255,35,78</Step>
+   <Step Number="10" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,58,10,255,11,58,14,255,15,58,18,255,19,58,22,255,23,58,26,255,27,58,30,255,31,58,34,255,35,58:3:6,255,7,58,10,255,11,58,14,255,15,58,18,255,19,58,22,255,23,58,26,255,27,58,30,255,31,58,34,255,35,58</Step>
+   <Step Number="11" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,39,10,255,11,39,14,255,15,39,18,255,19,39,22,255,23,39,26,255,27,39,30,255,31,39,34,255,35,39:3:6,255,7,39,10,255,11,39,14,255,15,39,18,255,19,39,22,255,23,39,26,255,27,39,30,255,31,39,34,255,35,39</Step>
+   <Step Number="12" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,19,10,255,11,19,14,255,15,19,18,255,19,19,22,255,23,19,26,255,27,19,30,255,31,19,34,255,35,19:3:6,255,7,19,10,255,11,19,14,255,15,19,18,255,19,19,22,255,23,19,26,255,27,19,30,255,31,19,34,255,35,19</Step>
+   <Step Number="13" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,10,255,14,255,18,255,22,255,26,255,30,255,34,255:3:6,255,10,255,14,255,18,255,22,255,26,255,30,255,34,255</Step>
+   <Step Number="14" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,19,10,255,11,19,14,255,15,19,18,255,19,19,22,255,23,19,26,255,27,19,30,255,31,19,34,255,35,19:3:6,255,7,19,10,255,11,19,14,255,15,19,18,255,19,19,22,255,23,19,26,255,27,19,30,255,31,19,34,255,35,19</Step>
+   <Step Number="15" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,39,10,255,11,39,14,255,15,39,18,255,19,39,22,255,23,39,26,255,27,39,30,255,31,39,34,255,35,39:3:6,255,7,39,10,255,11,39,14,255,15,39,18,255,19,39,22,255,23,39,26,255,27,39,30,255,31,39,34,255,35,39</Step>
+   <Step Number="16" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,58,10,255,11,58,14,255,15,58,18,255,19,58,22,255,23,58,26,255,27,58,30,255,31,58,34,255,35,58:3:6,255,7,58,10,255,11,58,14,255,15,58,18,255,19,58,22,255,23,58,26,255,27,58,30,255,31,58,34,255,35,58</Step>
+   <Step Number="17" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,78,10,255,11,78,14,255,15,78,18,255,19,78,22,255,23,78,26,255,27,78,30,255,31,78,34,255,35,78:3:6,255,7,78,10,255,11,78,14,255,15,78,18,255,19,78,22,255,23,78,26,255,27,78,30,255,31,78,34,255,35,78</Step>
+   <Step Number="18" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,98,10,255,11,98,14,255,15,98,18,255,19,98,22,255,23,98,26,255,27,98,30,255,31,98,34,255,35,98:3:6,255,7,98,10,255,11,98,14,255,15,98,18,255,19,98,22,255,23,98,26,255,27,98,30,255,31,98,34,255,35,98</Step>
+   <Step Number="19" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,117,10,255,11,117,14,255,15,117,18,255,19,117,22,255,23,117,26,255,27,117,30,255,31,117,34,255,35,117:3:6,255,7,117,10,255,11,117,14,255,15,117,18,255,19,117,22,255,23,117,26,255,27,117,30,255,31,117,34,255,35,117</Step>
+   <Step Number="20" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,137,10,255,11,137,14,255,15,137,18,255,19,137,22,255,23,137,26,255,27,137,30,255,31,137,34,255,35,137:3:6,255,7,137,10,255,11,137,14,255,15,137,18,255,19,137,22,255,23,137,26,255,27,137,30,255,31,137,34,255,35,137</Step>
+   <Step Number="21" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,156,10,255,11,156,14,255,15,156,18,255,19,156,22,255,23,156,26,255,27,156,30,255,31,156,34,255,35,156:3:6,255,7,156,10,255,11,156,14,255,15,156,18,255,19,156,22,255,23,156,26,255,27,156,30,255,31,156,34,255,35,156</Step>
+   <Step Number="22" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,176,10,255,11,176,14,255,15,176,18,255,19,176,22,255,23,176,26,255,27,176,30,255,31,176,34,255,35,176:3:6,255,7,176,10,255,11,176,14,255,15,176,18,255,19,176,22,255,23,176,26,255,27,176,30,255,31,176,34,255,35,176</Step>
+   <Step Number="23" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,196,10,255,11,196,14,255,15,196,18,255,19,196,22,255,23,196,26,255,27,196,30,255,31,196,34,255,35,196:3:6,255,7,196,10,255,11,196,14,255,15,196,18,255,19,196,22,255,23,196,26,255,27,196,30,255,31,196,34,255,35,196</Step>
+   <Step Number="24" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,215,10,255,11,215,14,255,15,215,18,255,19,215,22,255,23,215,26,255,27,215,30,255,31,215,34,255,35,215:3:6,255,7,215,10,255,11,215,14,255,15,215,18,255,19,215,22,255,23,215,26,255,27,215,30,255,31,215,34,255,35,215</Step>
+   <Step Number="25" FadeIn="0" Hold="100" FadeOut="0" Values="48">2:6,255,7,235,10,255,11,235,14,255,15,235,18,255,19,235,22,255,23,235,26,255,27,235,30,255,31,235,34,255,35,235:3:6,255,7,235,10,255,11,235,14,255,15,235,18,255,19,235,22,255,23,235,26,255,27,235,30,255,31,235,34,255,35,235</Step>
+  </Function>
+  <Function ID="183" Type="RGBMatrix" Name="MATRIX_LEDBAR_LEFT_RIGHT_BOUNCE_RED_WHITE_MEDIUM_SPEED" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="200"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+   <Property Name="color2Index" Value="Red"/>
+   <Property Name="color3Index" Value="White"/>
+   <Property Name="color4Index" Value="Black"/>
+   <Property Name="color5Index" Value="Orange"/>
+   <Property Name="presetCollision" Value="No"/>
+   <Property Name="presetNumber" Value="4"/>
+   <Property Name="presetSize" Value="12"/>
+  </Function>
+  <Function ID="184" Type="RGBMatrix" Name="MATRIX_LEDBAR_LEFT_FLASHUP" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294967040</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>2</FixtureGroup>
+   <Property Name="direction" Value="Left"/>
+   <Property Name="orientation" Value="Horizontal"/>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="185" Type="RGBMatrix" Name="MATRIX_LEDBAR_RIGHT_FLASHDOWN" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294967040</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>3</FixtureGroup>
+   <Property Name="direction" Value="Right"/>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="186" Type="RGBMatrix" Name="MATRIX_LEDBAR_PARASITES_ELECTRIQUES" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Snow or Bubbles</Algorithm>
+   <Color Index="0">4278190335</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+   <Property Name="presetflakes" Value="100"/>
+   <Property Name="reverse" Value="Yes"/>
+   <Property Name="windchill" Value="Yes"/>
+  </Function>
+  <Function ID="187" Type="RGBMatrix" Name="MATRIX_LEDBAR_SLOW_RAINBOW" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="999"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Gradient</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>4</FixtureGroup>
+   <Property Name="orientation" Value="Vertical"/>
+   <Property Name="presetSize" Value="10"/>
+  </Function>
+  <Function ID="188" Type="RGBMatrix" Name="MATRIX_LEDBAR_BUBBLE_HARD_WHITE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="100"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Snow or Bubbles</Algorithm>
+   <Color Index="0">4294967295</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+   <Property Name="multiColor" Value="No"/>
+   <Property Name="presetflakes" Value="150"/>
+   <Property Name="reverse" Value="Yes"/>
+   <Property Name="windchill" Value="Yes"/>
+  </Function>
+  <Function ID="189" Type="RGBMatrix" Name="MATRIX_LEDBAR_LEFT_FILL_FROM_CENTER_ORANGE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="350"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Fill Unfill Squares From Center</Algorithm>
+   <Color Index="0">4294945280</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>2</FixtureGroup>
+  </Function>
+  <Function ID="190" Type="RGBMatrix" Name="MATRIX_LEDBAR_RIGHT_FILL_FROM_CENTER_ROUGE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="350"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Fill Unfill Squares From Center</Algorithm>
+   <Color Index="0">4294901764</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>3</FixtureGroup>
+  </Function>
+  <Function ID="191" Type="RGBMatrix" Name="MATRIX_LEDBAR_VUMETRE_RIGHT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278255360</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>6</FixtureGroup>
+  </Function>
+  <Function ID="192" Type="Sequence" Name="SEQ_COLOR_YELLOW_LEFT_RIGHT_TOP_BOTTOM" Path="FX/Sequences" BoundScene="170">
+   <Speed FadeIn="0" FadeOut="0" Duration="476"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <SpeedModes FadeIn="Default" FadeOut="Default" Duration="Common"/>
+   <Step Number="0" FadeIn="0" Hold="0" FadeOut="0" Note="ledbar color yellow left top" Values="126">2:4,255:3:4,255,6,255,7,255,10,255,11,255,14,255,15,255:10:0,255,1,255,6,255,7,255</Step>
+   <Step Number="1" FadeIn="0" Hold="0" FadeOut="0" Note="ledbar color yellow right top" Values="126">2:4,255,6,255,7,255,10,255,11,255,14,255,15,255:3:4,255:10:14,255,20,255</Step>
+   <Step Number="2" FadeIn="0" Hold="0" FadeOut="0" Note="ledbar color yellow right bottom" Values="126">2:4,255,11,1,26,255,27,254,30,255,31,255,34,255,35,255:3:4,255,11,1:9:0,255,1,255,6,255,7,255</Step>
+   <Step Number="3" FadeIn="0" Hold="0" FadeOut="0" Note="ledbar color yellow left bottom" Values="126">2:4,255,11,1:3:4,255,11,1,26,255,27,254,30,255,31,255,34,255,35,255:9:14,255,20,255</Step>
+  </Function>
+  <Function ID="193" Type="RGBMatrix" Name="MATRIX_LEDBAR_BUBBLE_HARD_YELLOW" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Snow or Bubbles</Algorithm>
+   <Color Index="0">4294967167</Color>
+   <Color Index="1">4294967040</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>4</FixtureGroup>
+   <Property Name="presetflakes" Value="10"/>
+   <Property Name="reverse" Value="Yes"/>
+  </Function>
+  <Function ID="194" Type="RGBMatrix" Name="MATRIX_LEDBAR_BUBBLE_HARD_BLUE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="150"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Snow or Bubbles</Algorithm>
+   <Color Index="0">4278233855</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+   <Property Name="multiColor" Value="No"/>
+   <Property Name="presetflakes" Value="150"/>
+   <Property Name="reverse" Value="Yes"/>
+   <Property Name="windchill" Value="Yes"/>
+  </Function>
+  <Function ID="195" Type="RGBMatrix" Name="MATRIX_LEDBAR_LEFT_RIGHT_BOUNCE_YELLOW_BLUE_MEDIUM" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="200"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294967040</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+   <Property Name="color1Index" Value="Yellow"/>
+   <Property Name="color2Index" Value="Blue"/>
+   <Property Name="color3Index" Value="Green"/>
+   <Property Name="color4Index" Value="Blue"/>
+   <Property Name="color5Index" Value="Orange"/>
+   <Property Name="presetCollision" Value="No"/>
+   <Property Name="presetNumber" Value="2"/>
+   <Property Name="presetSize" Value="16"/>
+  </Function>
+  <Function ID="196" Type="RGBMatrix" Name="MATRIX_LEDBAR_FAST_RAINBOW" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="100"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Gradient</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>4</FixtureGroup>
+   <Property Name="orientation" Value="Vertical"/>
+   <Property Name="presetSize" Value="16"/>
+  </Function>
+  <Function ID="197" Type="RGBMatrix" Name="MATRIX_LEDBAR_LEFT_ORANGE_UP" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="258"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294945280</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>2</FixtureGroup>
+   <Property Name="direction" Value="Right"/>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="198" Type="RGBMatrix" Name="MATRIX_LEDBAR_RIGHT_ORANGE_DOWN" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="258"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294945280</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>3</FixtureGroup>
+   <Property Name="direction" Value="Left"/>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="199" Type="RGBMatrix" Name="MATRIX_LEDBAR_RED_WHITE_SPECTRUM_LEFT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="30"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4294901764</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>5</FixtureGroup>
+  </Function>
+  <Function ID="200" Type="RGBMatrix" Name="MATRIX_20" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="20"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4294901764</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>6</FixtureGroup>
+  </Function>
+  <Function ID="201" Type="RGBMatrix" Name="MATRIX_LEDBAR_SLOW_RED_WHITE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="350"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278255360</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>4</FixtureGroup>
+  </Function>
+  <Function ID="202" Type="RGBMatrix" Name="MATRIX_LEDBAR_MAGENTA_FALL_RIGHT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="811"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Vertical fall</Algorithm>
+   <Color Index="0">4289353215</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>6</FixtureGroup>
+  </Function>
+  <Function ID="203" Type="RGBMatrix" Name="MATRIX_LEDBAR_MAGENTA_FALL_LEFT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="811"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Vertical fall</Algorithm>
+   <Color Index="0">4289353215</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>5</FixtureGroup>
+  </Function>
+  <Function ID="204" Type="RGBMatrix" Name="MATRIX_LEDBAR_MAGENTA_RANDOM" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="1408"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Snow or Bubbles</Algorithm>
+   <Color Index="0">4287768063</Color>
+   <Color Index="1">4294945535</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>4</FixtureGroup>
+   <Property Name="presetflakes" Value="17"/>
+  </Function>
+  <Function ID="205" Type="RGBMatrix" Name="MATRIX_LEDBAR_MAGENTA_GRADIANT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="500"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Plasma</Algorithm>
+   <Color Index="0">4294902015</Color>
+   <Color Index="1">4294945535</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4294967295</Color>
+   <Color Index="4">4294967295</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>4</FixtureGroup>
+   <Property Name="presetIndex" Value="User Defined"/>
+   <Property Name="presetSize" Value="3"/>
+   <Property Name="ramp" Value="30"/>
+   <Property Name="stepsize" Value="20"/>
+  </Function>
+  <Function ID="206" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_SLOW_BLUE_WAVE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="300"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+   <Property Name="color2Index" Value="Blue"/>
+   <Property Name="color3Index" Value="Dim Blue"/>
+   <Property Name="color4Index" Value="Blue"/>
+   <Property Name="color5Index" Value="White"/>
+   <Property Name="presetSize" Value="2"/>
+   <Property Name="ramp" Value="19"/>
+   <Property Name="stepsize" Value="10"/>
+  </Function>
+  <Function ID="207" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_LEFT_FLASHRIGHT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294967040</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+   <Property Name="direction" Value="Left"/>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="208" Type="RGBMatrix" Name="MATRIX_LEDBAR_PARASITES_ELECTRIQUES_SLOW" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="600"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Snow or Bubbles</Algorithm>
+   <Color Index="0">4278190335</Color>
+   <Color Index="1">4294967167</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+   <Property Name="presetflakes" Value="255"/>
+   <Property Name="reverse" Value="Yes"/>
+   <Property Name="windchill" Value="Yes"/>
+  </Function>
+  <Function ID="209" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_SLOW_WHITE_YELLOW_WAVE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="300"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+   <Property Name="color2Index" Value="White"/>
+   <Property Name="color3Index" Value="Yellow"/>
+   <Property Name="color4Index" Value="Yellow"/>
+   <Property Name="color5Index" Value="Yellow"/>
+   <Property Name="presetSize" Value="16"/>
+   <Property Name="ramp" Value="30"/>
+   <Property Name="stepsize" Value="31"/>
+  </Function>
+  <Function ID="210" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_SLOW_RAINBOW" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="200"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Gradient</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+   <Property Name="orientation" Value="Horizontal"/>
+   <Property Name="presetSize" Value="40"/>
+  </Function>
+  <Function ID="211" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_SLOW_RED_WHITE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="350"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+   <Property Name="color2Index" Value="Red"/>
+   <Property Name="color3Index" Value="OFF"/>
+   <Property Name="color4Index" Value="OFF"/>
+   <Property Name="color5Index" Value="OFF"/>
+   <Property Name="presetSize" Value="5"/>
+   <Property Name="ramp" Value="20"/>
+   <Property Name="stepsize" Value="30"/>
+  </Function>
+  <Function ID="212" Type="RGBMatrix" Name="MATRIX_LEDBAR_RED_WHITE_SPECTRUM_TOP" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="30"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4294901764</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+  </Function>
+  <Function ID="213" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_SLOW_MAGENTA" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="200"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Plasma</Algorithm>
+   <Color Index="0">4294902015</Color>
+   <Color Index="1">4294945535</Color>
+   <Color Index="2">4294967295</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+   <Property Name="presetIndex" Value="User Defined"/>
+   <Property Name="presetSize" Value="5"/>
+   <Property Name="ramp" Value="20"/>
+   <Property Name="stepsize" Value="25"/>
+  </Function>
+  <Function ID="214" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_ORANGE_SHIFT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="258"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294945280</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="215" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_FILL_FROM_CENTER_ROUGE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="350"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Fill Unfill Squares From Center</Algorithm>
+   <Color Index="0">4294901764</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+  </Function>
+  <Function ID="216" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_SUNSET" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="100"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Gradient</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+   <Property Name="orientation" Value="Radial"/>
+   <Property Name="presetIndex" Value="Sunset"/>
+   <Property Name="presetSize" Value="30"/>
+  </Function>
+  <Function ID="217" Type="RGBMatrix" Name="MATRIX_LEDBAR_TOP_VUMETRE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="80"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Audio"/>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278255360</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>9</FixtureGroup>
+  </Function>
+  <Function ID="218" Type="RGBMatrix" Name="MATRIX_MULTIFX_FLASH_LEFT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="200"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Waves</Algorithm>
+   <Color Index="0">4294967167</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="direction" Value="Left"/>
+   <Property Name="tailfade" Value="Yes"/>
+   <Property Name="taillength" Value="100"/>
+  </Function>
+  <Function ID="219" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_SLOW_FIRE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="999"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Gradient</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="orientation" Value="Horizontal"/>
+   <Property Name="presetIndex" Value="Sunset"/>
+   <Property Name="presetSize" Value="6"/>
+  </Function>
+  <Function ID="220" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_FAST_RAINBOW" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="100"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Gradient</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="orientation" Value="Horizontal"/>
+   <Property Name="presetSize" Value="16"/>
+  </Function>
+  <Function ID="221" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_MAGENTA_GRADIANT" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="100"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Plasma</Algorithm>
+   <Color Index="0">4294902015</Color>
+   <Color Index="1">4294945535</Color>
+   <Color Index="2">4294967295</Color>
+   <Color Index="3">4294902015</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="presetIndex" Value="User Defined"/>
+   <Property Name="presetSize" Value="3"/>
+   <Property Name="ramp" Value="10"/>
+   <Property Name="stepsize" Value="9"/>
+  </Function>
+  <Function ID="222" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_PARASITES_ELECTRIQUES" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Snow or Bubbles</Algorithm>
+   <Color Index="0">4278190335</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="presetflakes" Value="50"/>
+   <Property Name="reverse" Value="No"/>
+   <Property Name="windchill" Value="Yes"/>
+  </Function>
+  <Function ID="223" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_SLOW_RAINBOW" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="800"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Gradient</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="presetSize" Value="10"/>
+  </Function>
+  <Function ID="224" Type="RGBMatrix" Name="MATRIX_MULTIFX_PAR_SLOW_BLUE_WAVE" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="0" Duration="300"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Stripes</Algorithm>
+   <Color Index="0">4294901760</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>11</FixtureGroup>
+   <Property Name="color2Index" Value="Blue"/>
+   <Property Name="color3Index" Value="Dim Blue"/>
+   <Property Name="color4Index" Value="Blue"/>
+   <Property Name="color5Index" Value="OFF"/>
+   <Property Name="presetSize" Value="8"/>
+   <Property Name="ramp" Value="19"/>
+   <Property Name="stepsize" Value="21"/>
+  </Function>
+  <Function ID="225" Type="RGBMatrix" Name="MATRIX_PORTAL_STREET_DYNAMIC" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="3000" Duration="50"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Vertical fall</Algorithm>
+   <Color Index="0">4294967295</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+  </Function>
+  <Function ID="226" Type="RGBMatrix" Name="MATRIX_PORTAL_STREET_SLOW" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="3000" Duration="500"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Opposite</Algorithm>
+   <Color Index="0">4294967295</Color>
+   <Color Index="1">4294967295</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+  </Function>
+  <Function ID="227" Type="RGBMatrix" Name="MATRIX_PORTAL_STREET_MEDIUM" Path="FX/Matrixes">
+   <Speed FadeIn="0" FadeOut="3000" Duration="300"/>
+   <Direction>Forward</Direction>
+   <RunOrder>Loop</RunOrder>
+   <Algorithm Type="Script">Fill Unfill From Center</Algorithm>
+   <Color Index="0">4294967295</Color>
+   <Color Index="1">4278190080</Color>
+   <Color Index="2">4278190080</Color>
+   <Color Index="3">4278190080</Color>
+   <Color Index="4">4278190080</Color>
+   <ControlMode>RGB</ControlMode>
+   <FixtureGroup>10</FixtureGroup>
+  </Function>
   <Monitor DisplayMode="0" ShowLabels="0">
    <Font>Arial,12,-1,5,400,0,0,0,0,0,0,0,0,0,0,1</Font>
    <ChannelStyle>0</ChannelStyle>
@@ -1710,28 +2540,45 @@
      <ShowEnableButton>True</ShowEnableButton>
      <Collapsed>False</Collapsed>
      <Disabled>False</Disabled>
-     <Button Caption="WHITE FLICKER" ID="64">
-      <WindowState Visible="True" X="584" Y="171" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="135"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="RGB" ID="2">
-      <WindowState Visible="True" X="103" Y="120" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="77"/>
-      <Action>Toggle</Action>
-     </Button>
      <Button Caption="DISCODANCE" ID="25">
       <WindowState Visible="True" X="945" Y="240" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4292225064</BackgroundColor>
       </Appearance>
       <Function ID="96"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="CHILL BLUE" ID="20">
+      <WindowState Visible="True" X="704" Y="51" Width="112" Height="54"/>
+      <Appearance>
+       <ForegroundColor>4278190080</ForegroundColor>
+       <BackgroundColor>4287548134</BackgroundColor>
+      </Appearance>
+      <Function ID="91"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="RIGHTROUND" ID="49">
+      <WindowState Visible="True" X="1065" Y="120" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="120"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="PRANCE" ID="41">
+      <WindowState Visible="True" X="223" Y="171" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="112"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="BRAINBLASTER" ID="19">
+      <WindowState Visible="True" X="704" Y="240" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="90"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="ELECTRIC" ID="28">
@@ -1742,12 +2589,28 @@
       <Function ID="99"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="PRANCE" ID="41">
-      <WindowState Visible="True" X="223" Y="171" Width="112" Height="54"/>
+     <Button Caption="BLUE SPEEDRACER" ID="18">
+      <WindowState Visible="True" X="584" Y="240" Width="112" Height="54"/>
       <Appearance>
        <BackgroundColor>4286611584</BackgroundColor>
       </Appearance>
-      <Function ID="112"/>
+      <Function ID="89"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="RGB" ID="2">
+      <WindowState Visible="True" X="103" Y="120" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="77"/>
+      <Action>Toggle</Action>
+     </Button>
+     <Button Caption="WHITE FLICKER" ID="64">
+      <WindowState Visible="True" X="584" Y="171" Width="112" Height="54"/>
+      <Appearance>
+       <BackgroundColor>4286611584</BackgroundColor>
+      </Appearance>
+      <Function ID="135"/>
       <Action>Toggle</Action>
      </Button>
      <Button Caption="RED FLICKER" ID="46">
@@ -1824,16 +2687,8 @@
       </Appearance>
       <Input ID="0" Universe="0" Channel="30161"/>
       <SliderMode ValueDisplayStyle="Percentage">Submaster</SliderMode>
-      <Level LowLimit="0" HighLimit="255" Value="0"/>
+      <Level LowLimit="0" HighLimit="255" Value="255"/>
      </Slider>
-     <Button Caption="RIGHTROUND" ID="49">
-      <WindowState Visible="True" X="1065" Y="120" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="120"/>
-      <Action>Toggle</Action>
-     </Button>
      <Button Caption="SUSTAIN" ID="54">
       <WindowState Visible="True" X="945" Y="0" Width="112" Height="54"/>
       <Appearance>
@@ -1890,7 +2745,7 @@
       </Appearance>
       <Input ID="0" Universe="0" Channel="32968"/>
       <SliderMode ValueDisplayStyle="Percentage">Adjust</SliderMode>
-      <Level LowLimit="0" HighLimit="255" Value="0"/>
+      <Level LowLimit="0" HighLimit="255" Value="255"/>
      </Slider>
      <Button Caption="BLOOP" ID="12">
       <WindowState Visible="True" X="103" Y="171" Width="112" Height="54"/>
@@ -2099,31 +2954,6 @@
       <Function ID="118"/>
       <Action>Toggle</Action>
      </Button>
-     <Button Caption="BLUE SPEEDRACER" ID="18">
-      <WindowState Visible="True" X="584" Y="240" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="89"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="BRAINBLASTER" ID="19">
-      <WindowState Visible="True" X="704" Y="240" Width="112" Height="54"/>
-      <Appearance>
-       <BackgroundColor>4286611584</BackgroundColor>
-      </Appearance>
-      <Function ID="90"/>
-      <Action>Toggle</Action>
-     </Button>
-     <Button Caption="CHILL BLUE" ID="20">
-      <WindowState Visible="True" X="704" Y="51" Width="112" Height="54"/>
-      <Appearance>
-       <ForegroundColor>4278190080</ForegroundColor>
-       <BackgroundColor>4287548134</BackgroundColor>
-      </Appearance>
-      <Function ID="91"/>
-      <Action>Toggle</Action>
-     </Button>
      <Button Caption="BASS HOPPER BLUE" ID="9">
       <WindowState Visible="True" X="103" Y="292" Width="112" Height="54"/>
       <Appearance>
@@ -2223,6 +3053,28 @@
       <Function ID="84"/>
       <Action>Toggle</Action>
      </Button>
+     <SpeedDial Caption="BEAT" ID="138">
+      <WindowState Visible="True" X="1082" Y="17" Width="85" Height="85"/>
+      <Appearance>
+       <BackgroundColor>4282664004</BackgroundColor>
+      </Appearance>
+      <Visibility>2</Visibility>
+      <Time>510</Time>
+      <ResetFactorOnDialChange>True</ResetFactorOnDialChange>
+      <AbsoluteValue Minimum="100" Maximum="7500"/>
+      <Function FadeIn="0" FadeOut="0" Duration="6">140</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="6">141</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="6">142</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="6">143</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="8">144</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="8">145</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="8">146</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="8">147</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="10">148</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="10">149</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="10">150</Function>
+      <Function FadeIn="0" FadeOut="0" Duration="10">151</Function>
+     </SpeedDial>
     </Frame>
     <Button Caption="off" ID="0">
      <WindowState Visible="True" X="1116" Y="0" Width="68" Height="51"/>
@@ -2244,7 +3096,7 @@
     </Button>
    </SoloFrame>
    <SoloFrame Caption="Oculizer control" ID="145">
-    <WindowState Visible="True" X="0" Y="206" Width="85" Height="137"/>
+    <WindowState Visible="True" X="0" Y="189" Width="85" Height="137"/>
     <AllowResize>True</AllowResize>
     <ShowHeader>False</ShowHeader>
     <ShowEnableButton>False</ShowEnableButton>
@@ -2299,28 +3151,14 @@
      <Action>Toggle</Action>
     </Button>
    </SoloFrame>
-   <SpeedDial Caption="BEAT" ID="138">
-    <WindowState Visible="True" X="0" Y="360" Width="85" Height="85"/>
+   <Slider Caption="Slider 6" ID="5" WidgetStyle="Slider" InvertedAppearance="false">
+    <WindowState Visible="True" X="0" Y="343" Width="85" Height="257"/>
     <Appearance>
      <BackgroundColor>4282664004</BackgroundColor>
     </Appearance>
-    <Visibility>2</Visibility>
-    <Time>510</Time>
-    <ResetFactorOnDialChange>True</ResetFactorOnDialChange>
-    <AbsoluteValue Minimum="100" Maximum="7500"/>
-    <Function FadeIn="0" FadeOut="0" Duration="6">140</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="6">141</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="6">142</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="6">143</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="8">144</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="8">145</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="8">146</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="8">147</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="10">148</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="10">149</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="10">150</Function>
-    <Function FadeIn="0" FadeOut="0" Duration="10">151</Function>
-   </SpeedDial>
+    <SliderMode ValueDisplayStyle="Percentage">GrandMaster</SliderMode>
+    <Level LowLimit="0" HighLimit="255" Value="255"/>
+   </Slider>
   </Frame>
   <Frame Caption="Sub screen" ID="1">
    <Appearance>
