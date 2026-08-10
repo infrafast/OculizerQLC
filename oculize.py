@@ -914,12 +914,20 @@ def parse_args():
         default_single_stream = True
         default_prediction_channels = '1'
         default_profile = 'rockville'
-    else:
-        # Windows/Linux defaults
+    elif platform.system() == 'Windows':
+        # Historical Windows dual-stream defaults.
         default_input_device = 'scarlett'
         default_prediction_device = 'cable_output'
         default_single_stream = False
         default_prediction_channels = None  # Auto-detect
+        default_profile = 'garage2025'
+    else:
+        # Linux/Raspberry Pi defaults to the operating system input through
+        # one stream. A separate prediction device remains opt-in.
+        default_input_device = 'default'
+        default_prediction_device = None
+        default_single_stream = True
+        default_prediction_channels = None
         default_profile = 'garage2025'
     
     parser = argparse.ArgumentParser(
@@ -961,8 +969,11 @@ Scene Cache Size:
                       help='Loop a local PCM WAV file in real time instead of opening an audio device')
     parser.add_argument('--prediction-device', type=str, default=None,
                       help=f'Device for scene prediction in dual-stream mode (default: {default_prediction_device} if dual-stream, otherwise None). Can be a device name (cable_output, scarlett, etc.) or device index number.')
-    parser.add_argument('--single-stream', action='store_true', default=default_single_stream,
-                      help=f'Use single audio stream for both FFT and prediction (default: {not default_single_stream})')
+    stream_group = parser.add_mutually_exclusive_group()
+    stream_group.add_argument('--single-stream', dest='stream_mode', action='store_const', const='single',
+                      help=f'Use one audio stream for FFT and prediction (platform default: {default_single_stream})')
+    stream_group.add_argument('--dual-stream', dest='stream_mode', action='store_const', const='dual',
+                      help='Use separate FFT and prediction input streams')
     from oculizer.scene_predictors import list_available_versions
     parser.add_argument('--predictor-version', '--predictor', type=str, default='v6',
                         choices=list_available_versions(),
@@ -1002,12 +1013,18 @@ Scene Cache Size:
     parser.add_argument('--list-devices', action='store_true',
                       help='List available audio devices and exit')
     args = parser.parse_args()
+    args.single_stream_explicit = args.stream_mode == 'single'
+    args.single_stream = default_single_stream if args.stream_mode is None else args.stream_mode == 'single'
     try:
         config = load_runtime_config(args.config)
     except ValueError as exc:
         parser.error(str(exc))
     if args.input_device is None:
         args.input_device = configured_audio_input(config)
+    # Keep the platform default with the parsed arguments. Runtime startup is
+    # outside parse_args(), so relying on this function's local variable caused
+    # a NameError whenever Linux selected its historical dual-stream default.
+    args.default_prediction_device = default_prediction_device
     args.silence_config = configured_silence(config)
     args.speech_config = configured_speech(config)
     args.prediction_config = configured_prediction(config)
@@ -1150,14 +1167,14 @@ if __name__ == "__main__":
             
             # If user explicitly provided a prediction device, enable dual-stream
             # (unless they explicitly requested single-stream)
-            if args.prediction_device is not None and not args.single_stream:
+            if args.prediction_device is not None and not args.single_stream_explicit:
                 dual_stream = True
                 logging.info(f"Enabling dual-stream mode (prediction device explicitly specified: '{args.prediction_device}')")
         
         # Convert prediction_device to int if it's a numeric string
         # Apply default prediction device if dual-stream is enabled and no device was specified
         if dual_stream and args.prediction_device is None:
-            prediction_device = default_prediction_device
+            prediction_device = args.default_prediction_device
             logging.info(f"Using default prediction device for dual-stream mode: {prediction_device}")
         else:
             prediction_device = args.prediction_device

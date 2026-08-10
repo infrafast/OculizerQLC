@@ -625,6 +625,12 @@ Final criterion: a cold Raspberry Pi restart reaches an operational lighting sys
 
 Local validation: the complete test suite passes on macOS Python 3.11, shell syntax and Python compilation pass, JSON remains valid, and the working tree passes whitespace checks. Target validation is still required for Python 3.13 ARM64 wheels, NumPy 2 compatibility with saved scikit-learn artefacts, connectivity to the independently managed QLC+ instance, audio-device selection, systemd lifecycle, and resource behavior. Do not mark the installation or service checklist items complete until those checks pass on the Raspberry Pi.
 
+Raspberry Pi interactive-start correction:
+
+- fixed `oculize.py` referencing the function-local `default_prediction_device` after argument parsing;
+- retain the platform prediction default on the parsed namespace so Windows dual-stream compatibility no longer depends on an inaccessible local variable;
+- make Linux/Raspberry Pi use one OS-default input stream unless the operator explicitly configures a separate prediction device, matching the production audio policy and avoiding the obsolete `cable_output` assumption.
+
 ### Shared runtime control contract (Phase 8a)
 
 Interactive operation remains supported independently of the production service. Running `oculize.py --output qlc-osc` keeps automatic prediction active and allows the operator to enter the integrated scene selector with `Ctrl+T`. Selecting a scene enables the existing manual override, and leaving the override returns routing to automatic prediction. The standalone `toggle.py --output qlc-osc` remains a manual-only controller and must not be run concurrently with the service because both processes would maintain independent QLC+ toggle state.

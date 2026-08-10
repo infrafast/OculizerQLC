@@ -36,6 +36,35 @@ class SceneCacheCliTests(unittest.TestCase):
         with patch("sys.argv", ["oculize.py", "--scene-cache-size", "4"]):
             self.assertEqual(oculize.parse_args().scene_cache_size, 4)
 
+    def test_linux_uses_one_default_os_audio_stream(self):
+        with patch("oculize.platform.system", return_value="Linux"), \
+                patch("sys.argv", ["oculize.py", "--output", "qlc-osc", "--input-device", "default"]):
+            args = oculize.parse_args()
+        self.assertTrue(args.single_stream)
+        self.assertIsNone(args.default_prediction_device)
+        self.assertEqual(args.input_device, "default")
+
+    def test_windows_keeps_its_prediction_device_available_after_parsing(self):
+        with patch("oculize.platform.system", return_value="Windows"), \
+                patch("sys.argv", ["oculize.py"]):
+            args = oculize.parse_args()
+        self.assertFalse(args.single_stream)
+        self.assertEqual(args.default_prediction_device, "cable_output")
+
+    def test_linux_explicit_prediction_device_can_enable_dual_stream(self):
+        with patch("oculize.platform.system", return_value="Linux"), \
+                patch("sys.argv", ["oculize.py", "--prediction-device", "USB Capture"]):
+            args = oculize.parse_args()
+        self.assertTrue(args.single_stream)
+        self.assertFalse(args.single_stream_explicit)
+
+    def test_explicit_single_stream_wins_over_prediction_device(self):
+        with patch("oculize.platform.system", return_value="Linux"), \
+                patch("sys.argv", ["oculize.py", "--single-stream", "--prediction-device", "USB Capture"]):
+            args = oculize.parse_args()
+        self.assertTrue(args.single_stream)
+        self.assertTrue(args.single_stream_explicit)
+
     def test_headless_default_and_explicit_value(self):
         with patch("sys.argv", ["oculizer_service.py"]):
             self.assertEqual(oculizer_service.parse_args().scene_cache_size, 10)
