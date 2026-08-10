@@ -6,7 +6,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         # Core dependencies
-        'numpy>=1.21.0',
+        'numpy>=1.21.0,<2.0.0; python_version < "3.13"',
+        'numpy>=2.1.0,<3.0.0; python_version >= "3.13"',
         'scipy>=1.7.0',
         
         # Audio processing
@@ -25,6 +26,7 @@ setup(
         # Lighting control
         'pyserial>=3.5',
         'PyDMXControl',
+        'websocket-client>=1.8.0,<2.0.0',
         
         # Terminal UI (Windows only)
         'windows-curses>=2.3.0; sys_platform == "win32"',

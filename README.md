@@ -16,7 +16,7 @@ Development architecture, implementation details, decisions, validation history,
 
 ## Requirements
 
-- Python 3.8 or newer; Python 3.11 is recommended;
+- Python 3.11 for the macOS development environment or Python 3.13 for the Debian 13 Raspberry Pi target;
 - Git and internet access during installation;
 - PortAudio and an audio input for live capture;
 - optionally, a virtual audio cable such as BlackHole on macOS;
@@ -28,8 +28,8 @@ A CUDA-capable GPU can accelerate prediction but is not required. Initial model 
 ## Installation
 
 ```bash
-git clone https://github.com/LandryBulls/Oculizer.git
-cd Oculizer
+git clone https://github.com/infrafast/OculizerQLC.git
+cd OculizerQLC
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
@@ -48,6 +48,47 @@ Verify the model dependency:
 ```bash
 python -c "import efficientat; print('EfficientAT: OK')"
 ```
+
+### Raspberry Pi 5 service installation
+
+The Phase 8b installer targets 64-bit Debian 13/Raspberry Pi OS on Raspberry Pi 5. It installs the Python environment, QLC+ and audio system packages, a production `oculizerctl` command, and separate ordered systemd services for QLC+ and headless Oculizer.
+
+Run the read-only preflight first:
+
+```bash
+cd ~/OculizerQLC
+./deploy/install.sh --check
+```
+
+The current installation uses this QLC+ workspace by default:
+
+```text
+/home/pi/interval/QLCfiles/intervalPI5.qxw
+```
+
+Both absolute and repository-relative workspace paths are accepted. Install without starting the services for the first dependency validation:
+
+```bash
+sudo ./deploy/install.sh --no-start
+```
+
+Override settings when needed:
+
+```bash
+sudo ./deploy/install.sh --workspace "/absolute/path/Interval show.qxw" --output qlc-websocket --audio-input default --dynamic-control normal
+```
+
+After installation, use:
+
+```bash
+sudo systemctl start oculizer-qlc.service
+sudo systemctl start oculizer.service
+sudo systemctl status oculizer-qlc.service oculizer.service
+sudo journalctl -u oculizer-qlc.service -u oculizer.service -f
+oculizerctl status
+```
+
+The installer enables both services for future boots. `--no-start` only prevents them from being started during that installation run. Do not reboot for the first validation: inspect dependency installation and both service logs first.
 
 ## Configuration
 

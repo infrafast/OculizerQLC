@@ -576,7 +576,20 @@ Automated validation:
 
 ### Phase 8b — Raspberry Pi 5 production target
 
-Status: **pending after Phase 8a.2 — deployment design and Linux ARM64 validation pending**
+Status: **in progress — Raspberry Pi 5 Linux ARM64 baseline identified; dependency validation pending**
+
+Initial target baseline recorded on 2026-08-10:
+
+- Raspberry Pi 5 with 8 GB RAM and 2 GB swap;
+- Debian 13.5 (`trixie`) on native `arm64`/`aarch64`;
+- system Python 3.13.5;
+- Debian 13 provides no packaged Python 3.11 or 3.12 alternative, so Python 3.13 in a project-local virtual environment is the preferred validation target;
+- QLC+ 5.2.2 available as `/usr/bin/qlcplus-qml`;
+- repository cloned from `origin/main` with commit `2fdf1d0` as the initial deployment baseline;
+- approximately 7.3 GiB memory available at idle during the initial inventory.
+- initial CPU temperature reported as 47.7 degrees Celsius.
+
+Do not install the current Python requirements blindly on this target. The repository still constrains NumPy to `<2`, while Python 3.13 requires a newer compatible NumPy line. First determine whether Debian provides a supported alternate Python and validate ARM64 wheels for the complete inference stack. Prefer a maintainable distribution-native Python 3.13 deployment if dependency and saved-model compatibility can be proven; otherwise use an explicitly managed, pinned Python runtime without modifying the system interpreter.
 
 - [ ] validate every dependency on Linux ARM64;
 - [ ] remove assumptions about macOS paths or devices;
@@ -595,6 +608,33 @@ Status: **pending after Phase 8a.2 — deployment design and Linux ARM64 validat
 - [ ] document operation and incident recovery.
 
 Final criterion: a cold Raspberry Pi restart reaches an operational lighting system without local intervention.
+
+Installer workspace-path contract:
+
+- the default workspace for the current Raspberry Pi installation is `/home/pi/interval/QLCfiles/intervalPI5.qxw`;
+- `deploy/install.sh --workspace PATH` must accept both absolute and repository-relative paths;
+- an absolute path must be preserved as the selected external workspace and must never be rewritten relative to the checkout;
+- a relative path must be resolved against the repository root containing the installer, not the caller's current directory or a systemd working directory;
+- the installer must canonicalize the result to an absolute path, require an existing readable regular `.qxw` file, and store only that validated absolute path in the generated service configuration;
+- preflight must verify that the selected QLC+ service account can read the workspace and traverse every parent directory;
+- paths containing spaces must remain supported through correct argument and systemd quoting;
+- reinstallation must preserve an existing external workspace unless the operator explicitly supplies a different `--workspace` value.
+
+#### 2026-08-10 — First reproducible installer candidate
+
+- added an idempotent `deploy/install.sh` entry point with a read-only `--check` mode and staged `--no-start` installation;
+- added Python 3.13-aware NumPy requirements while retaining NumPy 1.x for the validated Python 3.11 macOS environment;
+- install Debian packages, create the repository-local virtual environment, install the pinned EfficientAT fork, and validate imports before writing service state;
+- store deployment choices in `/etc/oculizer/deployment.json`, back up the prior file on reinstall, and keep the resolved workspace as an absolute path;
+- install distinct `oculizer-qlc.service` and `oculizer.service` system units, with QLC+ ordered first and a bounded port-9999 readiness gate before WebSocket Oculizer starts;
+- start QLC+ with the documented `-w -o <workspace>` arguments; the invalid combined `-wp` form is not used;
+- default QLC+ to Qt's `offscreen` platform for unattended boot, while allowing `wayland` and `xcb` overrides for later visible-console validation;
+- install `/usr/local/bin/oculizerctl` against the production control socket `/run/oculizer/control.sock`;
+- support both `qlc-websocket` and `qlc-osc` from the same installer and shared runtime, consistent with the transport parity policy;
+- enable both services at installation time, but require the first target validation to use `--no-start` and manual ordered startup before testing a cold reboot;
+- add automated deployment tests for installer syntax/help, absolute workspace paths including spaces, rejection of relative runtime paths, and generated headless arguments.
+
+Local validation: 180 tests pass on macOS Python 3.11, shell syntax and Python compilation pass, JSON remains valid, and the working tree passes whitespace checks. Target validation is still required for Python 3.13 ARM64 wheels, NumPy 2 compatibility with saved scikit-learn artefacts, QLC+ offscreen startup, audio-device selection, systemd lifecycle, and resource behavior. Do not mark the installation or service checklist items complete until those checks pass on the Raspberry Pi.
 
 ### Shared runtime control contract (Phase 8a)
 
