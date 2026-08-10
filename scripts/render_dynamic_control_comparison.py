@@ -120,7 +120,7 @@ def scene_style(scene: str) -> tuple[str, str]:
 def load_scene_durations() -> tuple[set[str], dict[str, float]]:
     import json
 
-    names = {"off", "announcement"}
+    names = {"silent", "announcement"}
     durations = {}
     for path in sorted((ROOT / "scenes").glob("*.json")):
         try:

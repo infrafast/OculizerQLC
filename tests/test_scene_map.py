@@ -14,14 +14,14 @@ class SceneMapTests(unittest.TestCase):
                 "unmapped": "error",
                 "scenes": {
                     "party": {"OSCPath": "/show/party"},
-                    "off": {"OSCPath": "/blackout"},
+                    "silent": {"OSCPath": "/oculizer/scenes/silent"},
                 },
             }
         )
 
         self.assertEqual(scene_map.get("party").osc_path, "/show/party")
-        self.assertEqual(scene_map.get("off").osc_action, "pushButton")
-        self.assertEqual(scene_map.get("off").osc_path, "/blackout")
+        self.assertEqual(scene_map.get("silent").osc_action, "pushButton")
+        self.assertEqual(scene_map.get("silent").osc_path, "/oculizer/scenes/silent")
         self.assertEqual(scene_map.pulse_seconds, 0.2)
         self.assertEqual(scene_map.unmapped, "error")
 
@@ -56,7 +56,7 @@ class SceneMapTests(unittest.TestCase):
             {"fallback_scene": "party", "scenes": {"party": {"OSCPath": "/party"}}},
             {"scenes": {"party": {"OSCPath": "test"}}},
             {"scenes": {"party": {"OSCaction": "unknown"}}},
-            {"scenes": {"off": {"OSCaction": "off", "OSCPath": "/blackout"}}},
+            {"scenes": {"silent": {"OSCaction": "off", "OSCPath": "/oculizer/scenes/silent"}}},
             {"scenes": {"party": {"OSCaction": "toggle", "OSCPath": "/party"}}},
             {"scenes": {"party": {"path": "/legacy"}}},
             {"scenes": {"party": {"action": "toggle", "OSCPath": "/party"}}},

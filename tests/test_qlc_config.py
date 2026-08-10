@@ -25,7 +25,7 @@ class QLCConfigTests(unittest.TestCase):
                                 "OSCaction": "pushButton",
                                 "OSCPath": "/oculizer/scenes/announcement",
                             },
-                            "off": {"OSCaction": "pushButton", "OSCPath": "/blackout"},
+                            "silent": {"OSCaction": "pushButton", "OSCPath": "/oculizer/scenes/silent"},
                         },
                     },
                 }),
@@ -44,7 +44,7 @@ class QLCConfigTests(unittest.TestCase):
         self.assertEqual(config.controls["bass"].osc_path, "/oculizer/bass")
         self.assertEqual(config.routing.pulse_seconds, 0.2)
         self.assertEqual(config.routing.get("announcement").osc_path, "/oculizer/scenes/announcement")
-        self.assertEqual(config.routing.get("off").osc_action, "pushButton")
+        self.assertEqual(config.routing.get("silent").osc_action, "pushButton")
 
     def test_rejects_invalid_sections_and_controls(self):
         invalid_configs = (

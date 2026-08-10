@@ -43,7 +43,7 @@ class QLCOscBackendTests(unittest.TestCase):
                 "scenes": {
                     "party": {"OSCPath": "/party"},
                     "chill": {"OSCPath": "/chill"},
-                    "off": {"OSCPath": "/blackout"},
+                    "silent": {"OSCPath": "/oculizer/scenes/silent"},
                 },
             }
         )
@@ -100,7 +100,7 @@ class QLCOscBackendTests(unittest.TestCase):
         )
         self.assertEqual(backend.active_scene, "chill")
 
-    def test_off_uses_its_configured_path_and_unmapped_scene_preserves_state(self):
+    def test_silent_uses_its_configured_path_and_unmapped_scene_preserves_state(self):
         client = Mock()
         client.press.return_value = True
         client.release.return_value = True
@@ -109,11 +109,11 @@ class QLCOscBackendTests(unittest.TestCase):
         self.assertTrue(backend.activate_scene("party"))
         self.assertFalse(backend.activate_scene("unknown"))
         self.assertEqual(backend.active_scene, "party")
-        self.assertTrue(backend.activate_scene("off"))
-        self.assertEqual(backend.active_scene, "off")
+        self.assertTrue(backend.activate_scene("silent"))
+        self.assertEqual(backend.active_scene, "silent")
         self.assertEqual(client.method_calls[-2:], [
-            unittest.mock.call.press("/blackout"),
-            unittest.mock.call.release("/blackout"),
+            unittest.mock.call.press("/oculizer/scenes/silent"),
+            unittest.mock.call.release("/oculizer/scenes/silent"),
         ])
 
         self.assertTrue(backend.activate_scene("party"))
@@ -146,7 +146,7 @@ class QLCWebSocketBackendTests(unittest.TestCase):
     def test_activation_only_uses_exact_configured_caption(self):
         scene_map = SceneMap.from_mapping({"scenes": {
             "party": {"OSCPath": "/party", "caption": "Party Button"},
-            "off": {"OSCPath": "/blackout", "caption": "Safe Off"},
+            "silent": {"OSCPath": "/oculizer/scenes/silent", "caption": "Silent"},
             "announcement": {"OSCPath": "/announcement", "caption": "Speech"},
         }, "unmapped": "fallback", "fallback_scene": "party"})
         client = Mock()
@@ -155,13 +155,13 @@ class QLCWebSocketBackendTests(unittest.TestCase):
 
         self.assertTrue(backend.activate_scene("party"))
         self.assertTrue(backend.activate_scene("party"))
-        self.assertTrue(backend.activate_scene("off"))
+        self.assertTrue(backend.activate_scene("silent"))
         self.assertTrue(backend.activate_scene("announcement"))
         self.assertTrue(backend.activate_scene("unknown"))
         backend.close()
 
         self.assertEqual(client.activate_button.call_args_list, [
-            unittest.mock.call("Party Button"), unittest.mock.call("Safe Off"),
+            unittest.mock.call("Party Button"), unittest.mock.call("Silent"),
             unittest.mock.call("Speech"), unittest.mock.call("Party Button"),
         ])
         self.assertEqual(backend.active_scene, "party")
@@ -182,15 +182,15 @@ class QLCWebSocketBackendTests(unittest.TestCase):
 
     def test_repeated_activation_error_is_logged_only_once(self):
         scene_map = SceneMap.from_mapping({"scenes": {
-            "off": {"OSCPath": "/blackout", "caption": "off"},
+            "silent": {"OSCPath": "/oculizer/scenes/silent", "caption": "silent"},
         }})
         client = Mock()
         client.activate_button.side_effect = QLCWebSocketError("wrong action")
         backend = QLCWebSocketBackend(client, scene_map)
 
         with self.assertLogs("oculizer.light.backends", level="ERROR") as logs:
-            self.assertFalse(backend.activate_scene("off"))
-            self.assertFalse(backend.activate_scene("off"))
+            self.assertFalse(backend.activate_scene("silent"))
+            self.assertFalse(backend.activate_scene("silent"))
 
         self.assertEqual(len(logs.records), 1)
 

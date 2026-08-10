@@ -18,7 +18,7 @@ class Engine:
     def __init__(self):
         self.scene_cache_size = 25
         self.current_predicted_scene = "wave"
-        self.scene_manager = Mock(current_scene={"name": "off"})
+        self.scene_manager = Mock(current_scene={"name": "silent"})
         self.backend = Backend()
         self.alive = True
         self.suspended = False
@@ -27,7 +27,7 @@ class Engine:
         self.scene_cache_size = size
 
     def resolve_scene_target(self, scene):
-        return scene if scene in {"wave", "off", "party"} else None
+        return scene if scene in {"wave", "silent", "party"} else None
 
     def change_scene(self, scene):
         target = self.resolve_scene_target(scene)

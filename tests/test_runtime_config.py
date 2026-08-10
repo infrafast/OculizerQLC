@@ -96,6 +96,10 @@ class RuntimeConfigTests(unittest.TestCase):
         self.assertEqual(silence.resume_threshold, 0.02)
         self.assertEqual(silence.duration_seconds, 3.0)
 
+    def test_silence_scene_defaults_to_silent(self):
+        silence = configured_silence({})
+        self.assertEqual(silence.scene, "silent")
+
     def test_rejects_invalid_silence_hysteresis(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "oculizer.json"

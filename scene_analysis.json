@@ -1996,7 +1996,7 @@
       "rockville_count": 4,
       "total_fixtures": 12
     },
-    "off": {
+    "silent": {
       "fixtures": [
         "lasers",
         "orb1",
@@ -4261,7 +4261,7 @@
     "lamp",
     "laser_strobe",
     "lasers",
-    "off",
+    "silent",
     "orb_cycle",
     "orb_racer",
     "orb_sine",

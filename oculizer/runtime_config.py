@@ -17,7 +17,7 @@ class SilenceConfig:
     threshold: float = 0.001
     resume_threshold: float = 0.002
     duration_seconds: float = 2.0
-    scene: str = "off"
+    scene: str = "silent"
 
 @dataclass(frozen=True)
 class SpeechConfig:
@@ -112,7 +112,7 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
         threshold=silence.get("threshold", 0.001),
         resume_threshold=silence.get("resume_threshold", 0.002),
         duration_seconds=silence.get("duration_seconds", 2.0),
-        scene=silence.get("scene", "off"),
+        scene=silence.get("scene", "silent"),
     )
     if not isinstance(silence_config.enabled, bool):
         raise ValueError("audio.silence.enabled must be a boolean")
@@ -249,7 +249,7 @@ def configured_silence(config: dict[str, Any]) -> SilenceConfig:
         threshold=float(silence.get("threshold", 0.001)),
         resume_threshold=float(silence.get("resume_threshold", 0.002)),
         duration_seconds=float(silence.get("duration_seconds", 2.0)),
-        scene=silence.get("scene", "off"),
+        scene=silence.get("scene", "silent"),
     )
 
 def configured_speech(config: dict[str, Any]) -> SpeechConfig:

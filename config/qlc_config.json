@@ -309,9 +309,9 @@
         "OSCPath": "/oculizer/scenes/white_speedracer",
         "implemented": false
       },
-      "off": {
+      "silent": {
         "OSCaction": "pushButton",
-        "OSCPath": "/blackout"
+        "OSCPath": "/oculizer/scenes/silent"
       },
       "announcement": {
         "OSCaction": "pushButton",

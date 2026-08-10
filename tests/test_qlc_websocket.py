@@ -110,12 +110,12 @@ class ClientTests(unittest.TestCase):
         client = QLCWebSocketClient(
             QLCWebSocketConfig(), websocket_factory=Mock(return_value=socket),
             inventory_loader=lambda: inventory(
-                {"id": 5, "type": "Button", "caption": "off", "actionType": 2}
+                {"id": 5, "type": "Button", "caption": "silent", "actionType": 2}
             ),
         )
         client.connect()
 
-        self.assertTrue(client.activate_button("off"))
+        self.assertTrue(client.activate_button("silent"))
         self.assertEqual(socket.sent, ["QLC+API|getWidgetStatus|5", "5|255"])
 
     def test_stop_all_button_is_sent_as_one_momentary_press(self):
@@ -123,25 +123,25 @@ class ClientTests(unittest.TestCase):
         client = QLCWebSocketClient(
             QLCWebSocketConfig(), websocket_factory=Mock(return_value=socket),
             inventory_loader=lambda: inventory(
-                {"id": 6, "type": "Button", "caption": "off", "actionType": 3}
+                {"id": 6, "type": "Button", "caption": "silent", "actionType": 3}
             ),
         )
         client.connect()
 
-        self.assertTrue(client.activate_button("off"))
+        self.assertTrue(client.activate_button("silent"))
         self.assertEqual(socket.sent, ["6|255"])
 
-    def test_type_agnostic_off_adapts_to_flash_button(self):
+    def test_type_agnostic_silent_adapts_to_flash_button(self):
         socket = FakeSocket()
         client = QLCWebSocketClient(
             QLCWebSocketConfig(), websocket_factory=Mock(return_value=socket),
             inventory_loader=lambda: inventory(
-                {"id": 7, "type": "Button", "caption": "Off", "actionType": 1}
+                {"id": 7, "type": "Button", "caption": "Silent", "actionType": 1}
             ),
         )
         client.connect()
 
-        self.assertTrue(client.activate_button("off"))
+        self.assertTrue(client.activate_button("silent"))
         self.assertEqual(socket.sent, ["7|255", "7|0"])
 
     def test_slider_maps_normalized_level_to_discovered_range(self):

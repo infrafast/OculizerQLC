@@ -154,7 +154,7 @@ python oculize.py \
 
 ### Silence and speech scenes
 
-Oculizer can recognize sustained silence and dominant spoken voice independently of the normal music-scene prediction. Each event can activate a dedicated logical scene: for example, silence can select `off`, while speech can select `announcement` so that lighting remains suitable when someone speaks between songs.
+Oculizer can recognize sustained silence and dominant spoken voice independently of the normal music-scene prediction. Each event activates a dedicated logical scene: silence selects `silent`, while speech selects `announcement` so that lighting remains suitable when someone speaks between songs.
 
 Configure the two routes under `audio` in `config/oculizer.json`:
 
@@ -166,7 +166,7 @@ Configure the two routes under `audio` in `config/oculizer.json`:
       "threshold": 0.001,
       "resume_threshold": 0.002,
       "duration_seconds": 2.0,
-      "scene": "off"
+      "scene": "silent"
     },
     "speech": {
       "enabled": true,
@@ -190,7 +190,7 @@ Configure the two routes under `audio` in `config/oculizer.json`:
 
 Change each `scene` value to any logical scene available to the selected output backend. Silence uses the inexpensive RMS thresholds and duration configured under `audio.silence`. Speech routing performs one serialized semantic check per second over the latest two seconds of audio, uses the existing confidence and timing margins, then discards stale scene evidence before returning to music prediction. It shares the existing EfficientAT model and prediction thread: no second model, worker, or event-triggered inference is created. Set the corresponding `enabled` value to `false` to disable a detector.
 
-The following example processes `mixvoicemusic.wav`, which contains silence, spoken voice, and music. The scene markers include `off` during detected silence and `announcement` when speech becomes dominant, alongside the scenes selected for musical passages. It uses the neutral raw view because silence and speech are priority events rather than ordinary music transitions and do not require a dynamic-control comparison.
+The following example processes `mixvoicemusic.wav`, which contains silence, spoken voice, and music. The scene markers include `silent` during detected silence and `announcement` when speech becomes dominant, alongside the scenes selected for musical passages. It uses the neutral raw view because silence and speech are priority events rather than ordinary music transitions and do not require a dynamic-control comparison.
 
 ![Silence, speech, and music scene detection on mixvoicemusic.wav](docs/mixvoicemusic.svg)
 
@@ -290,7 +290,7 @@ For example:
 }
 ```
 
-Every cluster from `0` to `29` must occur exactly once. Several clusters may deliberately use the same scene, but no value may be empty and no cluster may be omitted or added. Speech and silence are detected separately at runtime and use the dedicated `announcement` and `off` routes; do not try to encode those two events solely through the musical cluster mapping.
+Every cluster from `0` to `29` must occur exactly once. Several clusters may deliberately use the same scene, but no value may be empty and no cluster may be omitted or added. Speech and silence are detected separately at runtime and use the dedicated `announcement` and `silent` routes; do not try to encode those two events solely through the musical cluster mapping.
 
 This review is normally iterative: when a cluster is ambiguous, replay all its excerpts and choose the scene whose behaviour is safest and most coherent across the whole group, rather than the scene that best matches one isolated excerpt.
 
@@ -380,10 +380,10 @@ Override the OSC destination with `--osc-host HOST` and `--osc-port PORT`.
 `config/qlc_config.json` contains every logical scene emitted by predictors v4 and v6 and derives each OSC address as `/oculizer/scenes/<scene-name>`. Transport-specific fields are explicit: `OSCPath` is the OSC address, `OSCaction` defines the OSC gesture, and the optional `caption` overrides the logical name used for WebSocket lookup. WebSocket never interprets `OSCPath` or `OSCaction`. All 30 v6 scenes carry a temporary `"implemented": false` marker so the operator can track QLC+ widget creation. Oculizer deliberately ignores this marker; change it manually as the QLC+ project progresses. Predictor mappings and artistic scene filenames use the same canonical identifiers; historical aliases and misspellings have been normalized.
 
 ```json
-"off": {
+"silent": {
   "OSCaction": "pushButton",
-  "OSCPath": "/blackout",
-  "caption": "Off"
+  "OSCPath": "/oculizer/scenes/silent",
+  "caption": "Silent"
 }
 ```
 
@@ -403,9 +403,9 @@ Then start Oculizer with:
 python oculize.py --output qlc-websocket --qlc-config config/qlc_config.json --input-device blackhole
 ```
 
-The backend retrieves `/vc.json` after connecting to `/qlcplusWS`, recursively discovers Virtual Console buttons and sliders, and resolves each requested logical control by a normalized caption. Matching ignores letter case and the common separators space, `_`, and `-`, so `white_fairies`, `WHITE FAIRIES`, and `White-Fairies` are equivalent. No partial or fuzzy match is used. Captions present in QLC+ must remain unique after normalization; ambiguous pairs fail explicitly. Every route uses its logical name as the default caption, or can declare `"caption": "Exact QLC+ label"`. For every requested button—not only `off`—the backend reads the actual QLC+ `actionType` and sends the matching gesture: state-aware activation for Toggle and Blackout, press/release for Flash, and one momentary press for Stop All. The type or function assigned in QLC+ is therefore not duplicated in Oculizer configuration. Missing controls, unsupported widget/action types, and malformed states fail explicitly. Put mutually exclusive scene buttons in a QLC+ Solo Frame; Oculizer activates the requested button and does not toggle the previous one off.
+The backend retrieves `/vc.json` after connecting to `/qlcplusWS`, recursively discovers Virtual Console buttons and sliders, and resolves each requested logical control by a normalized caption. Matching ignores letter case and the common separators space, `_`, and `-`, so `white_fairies`, `WHITE FAIRIES`, and `White-Fairies` are equivalent. No partial or fuzzy match is used. Captions present in QLC+ must remain unique after normalization; ambiguous pairs fail explicitly. Every route uses its logical name as the default caption, or can declare `"caption": "Exact QLC+ label"`. For every requested button—including `silent`—the backend reads the actual QLC+ `actionType` and sends the matching gesture: state-aware activation for Toggle and Blackout, press/release for Flash, and one momentary press for Stop All. The type or function assigned in QLC+ is therefore not duplicated in Oculizer configuration. Missing controls, unsupported widget/action types, and malformed states fail explicitly. Put mutually exclusive scene buttons in a QLC+ Solo Frame; Oculizer activates the requested button and does not toggle the previous one off.
 
-The `off` entry is an ordinary route. Its explicit `OSCaction: "pushButton"` sends a press (`1.0`) followed by a release (`0.0`) to the configured `OSCPath`; the default `/blackout` preserves the existing mapping. The name describes the OSC gesture, not the state or type of the receiving QLC+ control. WebSocket ignores both OSC fields, resolves its caption (default `off`), and adapts to the discovered QLC+ button type. No special `off` transport action exists. Keeping `OSCaction` explicit for every shipped route makes future OSC gestures or value policies unambiguous. `announcement`, fallback resolution, and ordinary scenes follow the same transport separation.
+The `silent` entry is an ordinary scene route. Its explicit `OSCaction: "pushButton"` sends a press (`1.0`) followed by a release (`0.0`) to `/oculizer/scenes/silent`. WebSocket ignores the OSC fields, resolves the `silent` caption, and adapts to the discovered QLC+ button type. Silence does not imply blackout: the QLC+ function assigned to the `Silent` widget owns the desired lighting state. `announcement`, fallback resolution, and ordinary scenes follow the same transport separation.
 
 Dry-run validates configuration and logs intended captions without opening a network connection:
 
@@ -573,7 +573,7 @@ The following values are recommended starting points when those named profiles a
 
 The comparison below demonstrates the intended progression on the current reference WAV: `off` and `responsive` each produce 80 changes, `normal` produces 55, and `calm` produces 34. Raw predictions are sampled every two seconds. Responsive therefore remains close to unrestricted behavior, while normal and calm provide increasingly deliberate scene retention.
 
-The reference file begins with silence and spoken voice before the music. Every profile follows the same priority timeline: `off` from `2.0s` to `18.0s`, `announcement` from `18.0s` to `19.3s`, then `off` until `24.0s`. A second silence routes to `off` from `47.0s` to `56.0s`. These identical intervals demonstrate that silence and speech routing are independent from ordinary dynamic-control limits; only subsequent artistic scene changes differ between profiles.
+The reference file begins with silence and spoken voice before the music. Every profile follows the same priority timeline: `silent` from `2.0s` to `18.0s`, `announcement` from `18.0s` to `19.3s`, then `silent` until `24.0s`. A second silence routes to `silent` from `47.0s` to `56.0s`. These identical intervals demonstrate that silence and speech routing are independent from ordinary dynamic-control limits; only subsequent artistic scene changes differ between profiles.
 
 ### Visual comparison
 

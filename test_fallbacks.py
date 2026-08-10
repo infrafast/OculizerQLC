@@ -69,7 +69,7 @@ def test_scene_fallback(profile_name):
         'disco',                # Uses rgb1-8 + rockvilles (should be OK)
         'party',                # Uses lots of fixtures
         'supernova',            # Uses rgb1-8 + rockvilles
-        'off',                  # Uses many fixtures
+        'silent',               # Uses many fixtures
         'orb_racer',           # Uses orbs only
     ]
     
@@ -146,4 +146,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -16,7 +16,7 @@ from oculizer.runtime_config import SilenceConfig, SpeechConfig
 class FakeOculizer:
     def __init__(self):
         self.current_predicted_scene = None
-        self.targets = {"wave": "party", "party": "party", "off": "off"}
+        self.targets = {"wave": "party", "party": "party", "silent": "silent"}
         self.changes = []
         self.alive = False
         self.current_audio_rms = None
@@ -301,7 +301,7 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         now = [0.0]
         router = AutomaticSceneRouter(
             engine,
-            silence_config=SilenceConfig(duration_seconds=0, scene="off"),
+            silence_config=SilenceConfig(duration_seconds=0, scene="silent"),
             scene_rate_limit=(1, 60.0),
             scene_throttle=(1, 60.0),
             clock=lambda: now[0],
@@ -316,7 +316,7 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         engine.current_audio_rms = 0.1
         self.assertTrue(router.step())
 
-        self.assertEqual(engine.changes, ["wave", "off", "wave"])
+        self.assertEqual(engine.changes, ["wave", "silent", "wave"])
 
     def test_manual_override_bypasses_transition_limits(self):
         engine = FakeOculizer()
@@ -328,9 +328,9 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         )
 
         self.assertTrue(router.step())
-        self.assertTrue(router.set_manual_override("off"))
+        self.assertTrue(router.set_manual_override("silent"))
 
-        self.assertEqual(engine.changes, ["party", "off"])
+        self.assertEqual(engine.changes, ["party", "silent"])
 
     def test_clearing_manual_override_resumes_immediately_despite_limits(self):
         engine = FakeOculizer()
@@ -338,10 +338,10 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         router = AutomaticSceneRouter(engine, scene_throttle=(1, 60.0))
 
         self.assertTrue(router.step())
-        self.assertTrue(router.set_manual_override("off"))
+        self.assertTrue(router.set_manual_override("silent"))
         self.assertTrue(router.clear_manual_override())
 
-        self.assertEqual(engine.changes, ["party", "off", "party"])
+        self.assertEqual(engine.changes, ["party", "silent", "party"])
 
     def test_applies_prediction_fallback_and_deduplicates_resolved_target(self):
         engine = FakeOculizer()
@@ -360,11 +360,11 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         router = AutomaticSceneRouter(engine)
         engine.current_predicted_scene = "party"
 
-        self.assertTrue(router.set_manual_override("off"))
+        self.assertTrue(router.set_manual_override("silent"))
         self.assertFalse(router.step())
         self.assertTrue(router.clear_manual_override())
 
-        self.assertEqual(engine.changes, ["off", "party"])
+        self.assertEqual(engine.changes, ["silent", "party"])
 
     def test_rejects_unknown_prediction_without_changing_scene(self):
         engine = FakeOculizer()
@@ -412,7 +412,7 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         engine.current_audio_rms = 0.0
         router = AutomaticSceneRouter(
             engine,
-            silence_config=SilenceConfig(duration_seconds=0, scene="off"),
+            silence_config=SilenceConfig(duration_seconds=0, scene="silent"),
         )
 
         self.assertTrue(router.set_manual_override("party"))
@@ -424,7 +424,7 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         engine.current_audio_rms = 0.0
         router = AutomaticSceneRouter(
             engine,
-            silence_config=SilenceConfig(duration_seconds=0, scene="off"),
+            silence_config=SilenceConfig(duration_seconds=0, scene="silent"),
             speech_config=SpeechConfig(minimum_duration_seconds=0),
         )
         router.speech_active = True
@@ -519,7 +519,7 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         router = AutomaticSceneRouter(
             engine,
             speech_config=SpeechConfig(enabled=False),
-            silence_config=SilenceConfig(scene="off", duration_seconds=0.1),
+            silence_config=SilenceConfig(scene="silent", duration_seconds=0.1),
             scene_rate_limit=(1, 60.0),
             scene_throttle=(1, 60.0),
             clock=lambda: now[0],
@@ -532,7 +532,7 @@ class AutomaticSceneRouterTests(unittest.TestCase):
         now[0] = 1.11
         self.assertTrue(router.step())
 
-        self.assertEqual(engine.changes, ["party", "off"])
+        self.assertEqual(engine.changes, ["party", "silent"])
         self.assertEqual(router.get_route_status()["route_reason"], "priority_silence")
 
     def test_status_distinguishes_stable_candidate_blocked_by_policy(self):

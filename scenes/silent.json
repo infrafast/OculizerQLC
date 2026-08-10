@@ -1,6 +1,6 @@
 {
-    "name": "off",
-    "description": "All lights off",
+    "name": "silent",
+    "description": "Lighting state used while sustained silence is detected",
     "type": "effect",
     "midi": 36,
     "key_command": "o",

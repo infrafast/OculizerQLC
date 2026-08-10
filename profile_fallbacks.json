@@ -18,7 +18,7 @@
     "lamp": "sequence_ice",
     "laser_strobe": "sequence_pink",
     "lasers": "rightround",
-    "off": "chill_white",
+    "silent": "chill_white",
     "orb_cycle": "sequence_ice",
     "orb_racer": "sequence_ice",
     "orb_sine": "sequence_ice",
@@ -55,7 +55,7 @@
     "orb_racer": "rainbow",
     "orb_sine": "rainbow",
     "lamp": "chill_white",
-    "off": "chill_white",
+    "silent": "chill_white",
     "snap": "RGB",
     "bulb_flicker": "halogen_flicker",
     "vintage": "chill_halogen"

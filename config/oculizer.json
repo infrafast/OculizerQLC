@@ -77,7 +77,7 @@
       "threshold": 0.001,
       "resume_threshold": 0.002,
       "duration_seconds": 2.0,
-      "scene": "off"
+      "scene": "silent"
     },
     "speech": {
       "enabled": true,
