@@ -57,6 +57,7 @@ Run the read-only preflight first:
 
 ```bash
 cd ~/OculizerQLC
+chmod +x raspi_service_pack/install.sh
 ./raspi_service_pack/install.sh --check
 ```
 

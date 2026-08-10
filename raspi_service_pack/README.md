@@ -5,9 +5,12 @@ This directory contains only the Oculizer service installation and lifecycle fil
 Run preflight and installation from the repository root:
 
 ```bash
+chmod +x raspi_service_pack/install.sh
 ./raspi_service_pack/install.sh --check
 sudo ./raspi_service_pack/install.sh
 ```
+
+Git preserves the executable bit. The `chmod` command is harmless and also supports copies made through an archive or filesystem that discarded Unix modes.
 
 The installer preserves the current running and boot-enabled states. Choose one operating mode afterward:
 
