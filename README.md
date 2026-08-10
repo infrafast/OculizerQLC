@@ -51,44 +51,62 @@ python -c "import efficientat; print('EfficientAT: OK')"
 
 ### Raspberry Pi 5 service installation
 
-The Phase 8b installer targets 64-bit Debian 13/Raspberry Pi OS on Raspberry Pi 5. It installs the Python environment, QLC+ and audio system packages, a production `oculizerctl` command, and separate ordered systemd services for QLC+ and headless Oculizer.
+The Phase 8b installer targets 64-bit Debian 13/Raspberry Pi OS on Raspberry Pi 5. It installs only Oculizer's Python environment, audio system packages, production `oculizerctl` command, and headless systemd service. QLC+, its workspace, and its own service are managed by the separate QLC+ deployment repository and are never installed, configured, started, stopped, or enabled by this repository.
 
 Run the read-only preflight first:
 
 ```bash
 cd ~/OculizerQLC
-./deploy/install.sh --check
+./raspi_service_pack/install.sh --check
 ```
 
-The current installation uses this QLC+ workspace by default:
-
-```text
-/home/pi/interval/QLCfiles/intervalPI5.qxw
-```
-
-Both absolute and repository-relative workspace paths are accepted. Install without starting the services for the first dependency validation:
+Install the service pack. Installation neither starts the service nor changes its boot auto-start state:
 
 ```bash
-sudo ./deploy/install.sh --no-start
+sudo ./raspi_service_pack/install.sh
 ```
 
 Override settings when needed:
 
 ```bash
-sudo ./deploy/install.sh --workspace "/absolute/path/Interval show.qxw" --output qlc-websocket --audio-input default --dynamic-control normal
+sudo ./raspi_service_pack/install.sh --output qlc-websocket --audio-input default --dynamic-control normal
 ```
 
-After installation, use:
+Choose automatic boot operation:
 
 ```bash
-sudo systemctl start oculizer-qlc.service
-sudo systemctl start oculizer.service
-sudo systemctl status oculizer-qlc.service oculizer.service
-sudo journalctl -u oculizer-qlc.service -u oculizer.service -f
-oculizerctl status
+oculizer-service auto
 ```
 
-The installer enables both services for future boots. `--no-start` only prevents them from being started during that installation run. Do not reboot for the first validation: inspect dependency installation and both service logs first.
+Or leave boot auto-start disabled and operate it manually, including from a QLC+ System Command script:
+
+```bash
+oculizer-service start
+oculizer-service stop
+oculizer-service restart
+oculizer-service status
+oculizer-service logs
+oculizer-service health
+oculizer-service last-state
+```
+
+Run the same installed configuration in the foreground for diagnostics:
+
+```bash
+oculizer-service run-auto
+```
+
+Disable future boot auto-start without stopping the currently running process:
+
+```bash
+oculizer-service noauto
+```
+
+The installer grants the configured service account passwordless permission only for starting, stopping, restarting, enabling, or disabling `oculizer.service`. This allows QLC+ to invoke the absolute commands `/usr/local/bin/oculizer-service start` and `/usr/local/bin/oculizer-service stop` without a terminal or password prompt. It grants no control over QLC+ or any other service.
+
+`oculizer-service auto` controls systemd boot behavior. It is distinct from `oculizerctl auto`, which tells an already running Oculizer process to leave pause/manual-scene mode and resume automatic prediction.
+
+Oculizer passively waits for the separately managed local QLC+ WebSocket endpoint when that transport is selected; it does not own the QLC+ lifecycle. Do not reboot for the first validation: ensure the external QLC+ service is operational, then inspect the Oculizer log first.
 
 ## Configuration
 

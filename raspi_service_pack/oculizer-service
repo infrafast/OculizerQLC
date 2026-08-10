@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SERVICE=oculizer.service
+CONFIG=/etc/oculizer/deployment.json
+
+run_systemctl() {
+  sudo -n /usr/bin/systemctl "$@" "$SERVICE"
+}
+
+case "${1:-}" in
+  start)
+    run_systemctl start
+    ;;
+  stop)
+    run_systemctl stop
+    ;;
+  restart)
+    run_systemctl restart
+    ;;
+  status)
+    /usr/bin/systemctl status "$SERVICE" --no-pager
+    ;;
+  logs)
+    /usr/bin/journalctl -u "$SERVICE" -f
+    ;;
+  run-auto)
+    [[ -r $CONFIG ]] || { echo "oculizer-service: missing $CONFIG" >&2; exit 1; }
+    /usr/bin/python3 /usr/local/lib/oculizer-deploy/wait_for_qlc.py
+    exec /usr/bin/python3 /usr/local/lib/oculizer-deploy/run_oculizer.py
+    ;;
+  auto)
+    sudo -n /usr/bin/systemctl enable --now "$SERVICE"
+    echo "Oculizer auto-start enabled and service started."
+    ;;
+  noauto)
+    run_systemctl disable
+    echo "Oculizer auto-start disabled; the current process state was not changed."
+    ;;
+  last-state)
+    echo "Enabled: $(/usr/bin/systemctl is-enabled "$SERVICE" 2>/dev/null || true)"
+    echo "Active : $(/usr/bin/systemctl is-active "$SERVICE" 2>/dev/null || true)"
+    ;;
+  health)
+    exec /usr/local/bin/oculizerctl status
+    ;;
+  *)
+    echo "Usage: oculizer-service {start|stop|restart|status|logs|run-auto|auto|noauto|last-state|health}" >&2
+    exit 1
+    ;;
+esac

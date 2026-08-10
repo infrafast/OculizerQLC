@@ -1,19 +1,21 @@
 [Unit]
 Description=Oculizer headless audio-reactive lighting service
-Requires=oculizer-qlc.service
-After=oculizer-qlc.service sound.target
+After=network.target sound.target
+Wants=network.target sound.target
 
 [Service]
 Type=simple
 User=@SERVICE_USER@
 Group=@SERVICE_GROUP@
 Environment=HOME=@SERVICE_HOME@
+Environment=XDG_RUNTIME_DIR=/run/user/@SERVICE_UID@
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/@SERVICE_UID@/bus
 RuntimeDirectory=oculizer
 RuntimeDirectoryMode=0750
 ExecStartPre=/usr/bin/python3 /usr/local/lib/oculizer-deploy/wait_for_qlc.py
 ExecStart=/usr/bin/python3 /usr/local/lib/oculizer-deploy/run_oculizer.py
-Restart=on-failure
-RestartSec=3
+Restart=always
+RestartSec=5
 TimeoutStopSec=30
 KillSignal=SIGTERM
 

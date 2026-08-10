@@ -3,42 +3,34 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
-DEFAULT_WORKSPACE=/home/pi/interval/QLCfiles/intervalPI5.qxw
 DEFAULT_OUTPUT=qlc-websocket
 DEFAULT_AUDIO_INPUT=default
 DEFAULT_DYNAMIC_CONTROL=normal
-DEFAULT_QLC_PLATFORM=offscreen
 CONFIG_DIR=/etc/oculizer
 CONFIG_FILE=$CONFIG_DIR/deployment.json
 HELPER_DIR=/usr/local/lib/oculizer-deploy
 CONTROL_CLIENT=/usr/local/bin/oculizerctl
-QLC_UNIT=oculizer-qlc.service
+SERVICE_CLIENT=/usr/local/bin/oculizer-service
 APP_UNIT=oculizer.service
 
-workspace=
 output=$DEFAULT_OUTPUT
 audio_input=$DEFAULT_AUDIO_INPUT
 dynamic_control=$DEFAULT_DYNAMIC_CONTROL
-qlc_platform=$DEFAULT_QLC_PLATFORM
 service_user=${SUDO_USER:-pi}
 check_only=false
-no_start=false
 
 usage() {
   cat <<'EOF'
-Usage: sudo ./deploy/install.sh [OPTIONS]
+Usage: sudo ./raspi_service_pack/install.sh [OPTIONS]
 
-Install Oculizer and QLC+ as Raspberry Pi systemd services.
+Install Oculizer as a Raspberry Pi systemd service.
 
 Options:
-  --workspace PATH          QLC+ .qxw file (absolute or repository-relative)
   --output MODE             qlc-websocket (default) or qlc-osc
   --audio-input SELECTOR    Oculizer input selector (default: default)
   --dynamic-control NAME    Startup dynamic-control profile (default: normal)
-  --qlc-platform PLATFORM   Qt platform for QLC+: offscreen, wayland, or xcb
   --service-user USER       Runtime account (default: invoking sudo user or pi)
   --check                   Validate the host and configuration without changes
-  --no-start                Install and enable units without starting them
   --non-interactive         Accepted for automation; installation is non-interactive
   -h, --help                Show this help
 EOF
@@ -51,14 +43,11 @@ fail() {
 
 while (($#)); do
   case "$1" in
-    --workspace) (($# >= 2)) || fail "--workspace requires a value"; workspace=$2; shift 2 ;;
     --output) (($# >= 2)) || fail "--output requires a value"; output=$2; shift 2 ;;
     --audio-input) (($# >= 2)) || fail "--audio-input requires a value"; audio_input=$2; shift 2 ;;
     --dynamic-control) (($# >= 2)) || fail "--dynamic-control requires a value"; dynamic_control=$2; shift 2 ;;
-    --qlc-platform) (($# >= 2)) || fail "--qlc-platform requires a value"; qlc_platform=$2; shift 2 ;;
     --service-user) (($# >= 2)) || fail "--service-user requires a value"; service_user=$2; shift 2 ;;
     --check) check_only=true; shift ;;
-    --no-start) no_start=true; shift ;;
     --non-interactive) shift ;;
     -h|--help) usage; exit 0 ;;
     *) fail "unknown option: $1" ;;
@@ -66,7 +55,6 @@ while (($#)); do
 done
 
 [[ $output == qlc-websocket || $output == qlc-osc ]] || fail "--output must be qlc-websocket or qlc-osc"
-[[ $qlc_platform == offscreen || $qlc_platform == wayland || $qlc_platform == xcb ]] || fail "--qlc-platform must be offscreen, wayland, or xcb"
 [[ $(uname -m) == aarch64 || $(uname -m) == arm64 ]] || fail "this installer currently requires Linux ARM64"
 [[ -r /etc/os-release ]] || fail "cannot identify the operating system"
 grep -qE '^(ID=debian|ID=raspbian)$' /etc/os-release || fail "Debian or Raspberry Pi OS is required"
@@ -74,24 +62,8 @@ id "$service_user" >/dev/null 2>&1 || fail "service user '$service_user' does no
 service_home=$(getent passwd "$service_user" | cut -d: -f6)
 [[ -n $service_home && -d $service_home ]] || fail "service user '$service_user' has no usable home directory"
 service_group=$(id -gn "$service_user")
+service_uid=$(id -u "$service_user")
 
-if [[ -z $workspace && -r $CONFIG_FILE ]]; then
-  workspace=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["workspace"])' "$CONFIG_FILE")
-fi
-[[ -n $workspace ]] || workspace=$DEFAULT_WORKSPACE
-if [[ $workspace != /* ]]; then
-  workspace=$REPO_ROOT/$workspace
-fi
-workspace=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$workspace")
-[[ $workspace == *.qxw ]] || fail "workspace must have a .qxw extension: $workspace"
-[[ -f $workspace ]] || fail "workspace does not exist: $workspace"
-if [[ $(id -un) == "$service_user" ]]; then
-  [[ -r $workspace ]] || fail "service user '$service_user' cannot read or traverse to: $workspace"
-elif [[ $EUID -eq 0 ]]; then
-  runuser -u "$service_user" -- test -r "$workspace" || fail "service user '$service_user' cannot read or traverse to: $workspace"
-else
-  fail "run preflight as '$service_user' or root to validate workspace access"
-fi
 [[ -r $REPO_ROOT/config/oculizer.json ]] || fail "missing config/oculizer.json"
 [[ -r $REPO_ROOT/config/qlc_config.json ]] || fail "missing config/qlc_config.json"
 [[ -f $REPO_ROOT/oculizer/scene_predictors/v6/.ready ]] || fail "the v6 predictor is not marked ready"
@@ -99,15 +71,12 @@ fi
 echo "Oculizer Raspberry Pi installation"
 echo "  repository:      $REPO_ROOT"
 echo "  service user:    $service_user"
-echo "  workspace:       $workspace"
 echo "  output:          $output"
 echo "  audio input:     $audio_input"
 echo "  dynamic control: $dynamic_control"
-echo "  QLC Qt platform: $qlc_platform"
 
 if $check_only; then
   command -v python3 >/dev/null || fail "python3 is missing"
-  command -v qlcplus-qml >/dev/null || fail "qlcplus-qml is missing"
   python3 -c 'import sys; assert sys.version_info >= (3, 11), sys.version'
   echo "Preflight passed; no changes made."
   exit 0
@@ -117,7 +86,7 @@ fi
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y git python3 python3-venv python3-dev build-essential portaudio19-dev libsndfile1-dev ffmpeg qlcplus
+apt-get install -y git sudo python3 python3-venv python3-dev build-essential portaudio19-dev libsndfile1-dev ffmpeg
 
 python3 -m venv "$REPO_ROOT/.venv"
 "$REPO_ROOT/.venv/bin/python" -m pip install --upgrade pip setuptools wheel
@@ -129,20 +98,18 @@ install -d -m 0755 "$CONFIG_DIR" "$HELPER_DIR"
 if [[ -e $CONFIG_FILE ]]; then
   cp -a "$CONFIG_FILE" "$CONFIG_FILE.previous"
 fi
-python3 - "$CONFIG_FILE" "$REPO_ROOT" "$workspace" "$service_user" "$output" "$audio_input" "$dynamic_control" "$qlc_platform" <<'PY'
+python3 - "$CONFIG_FILE" "$REPO_ROOT" "$service_user" "$output" "$audio_input" "$dynamic_control" <<'PY'
 import json
 import os
 import sys
 
-path, repository, workspace, user, output, audio_input, dynamic_control, qlc_platform = sys.argv[1:]
+path, repository, user, output, audio_input, dynamic_control = sys.argv[1:]
 payload = {
     "repository": repository,
-    "workspace": workspace,
     "service_user": user,
     "output": output,
     "audio_input": audio_input,
     "dynamic_control": dynamic_control,
-    "qlc_platform": qlc_platform,
     "control_socket": "/run/oculizer/control.sock",
     "qlc_port": 9999,
 }
@@ -154,40 +121,48 @@ os.chmod(temporary, 0o644)
 os.replace(temporary, path)
 PY
 
-install -m 0755 "$SCRIPT_DIR/run_qlc.py" "$HELPER_DIR/run_qlc.py"
 install -m 0755 "$SCRIPT_DIR/run_oculizer.py" "$HELPER_DIR/run_oculizer.py"
 install -m 0755 "$SCRIPT_DIR/wait_for_qlc.py" "$HELPER_DIR/wait_for_qlc.py"
 install -m 0755 "$SCRIPT_DIR/oculizerctl-wrapper" "$CONTROL_CLIENT"
-python3 - "$SCRIPT_DIR/systemd/oculizer-qlc.service" "/etc/systemd/system/$QLC_UNIT" "$service_user" "$service_group" "$service_home" <<'PY'
+install -m 0755 "$SCRIPT_DIR/oculizer-service" "$SERVICE_CLIENT"
+python3 - "$SCRIPT_DIR/systemd/oculizer.service" "/etc/systemd/system/$APP_UNIT" "$service_user" "$service_group" "$service_home" "$service_uid" <<'PY'
 import pathlib, sys
-source, destination, user, group, home = sys.argv[1:]
+source, destination, user, group, home, uid = sys.argv[1:]
 text = pathlib.Path(source).read_text(encoding="utf-8")
-text = text.replace("@SERVICE_USER@", user).replace("@SERVICE_GROUP@", group).replace("@SERVICE_HOME@", home)
+text = text.replace("@SERVICE_USER@", user).replace("@SERVICE_GROUP@", group).replace("@SERVICE_HOME@", home).replace("@SERVICE_UID@", uid)
 pathlib.Path(destination).write_text(text, encoding="utf-8")
 PY
-python3 - "$SCRIPT_DIR/systemd/oculizer.service" "/etc/systemd/system/$APP_UNIT" "$service_user" "$service_group" "$service_home" <<'PY'
+chmod 0644 "/etc/systemd/system/$APP_UNIT"
+systemd-analyze verify "/etc/systemd/system/$APP_UNIT"
+
+python3 - "/etc/sudoers.d/oculizer-service" "$service_user" <<'PY'
 import pathlib, sys
-source, destination, user, group, home = sys.argv[1:]
-text = pathlib.Path(source).read_text(encoding="utf-8")
-text = text.replace("@SERVICE_USER@", user).replace("@SERVICE_GROUP@", group).replace("@SERVICE_HOME@", home)
-pathlib.Path(destination).write_text(text, encoding="utf-8")
+path, user = sys.argv[1:]
+commands = (
+    "/usr/bin/systemctl start oculizer.service",
+    "/usr/bin/systemctl stop oculizer.service",
+    "/usr/bin/systemctl restart oculizer.service",
+    "/usr/bin/systemctl enable --now oculizer.service",
+    "/usr/bin/systemctl disable oculizer.service",
+)
+text = "Cmnd_Alias OCULIZER_SERVICE = " + ", ".join(commands) + "\n"
+text += f"{user} ALL=(root) NOPASSWD: OCULIZER_SERVICE\n"
+pathlib.Path(path).write_text(text, encoding="utf-8")
 PY
-chmod 0644 "/etc/systemd/system/$QLC_UNIT" "/etc/systemd/system/$APP_UNIT"
-systemd-analyze verify "/etc/systemd/system/$QLC_UNIT" "/etc/systemd/system/$APP_UNIT"
+chmod 0440 /etc/sudoers.d/oculizer-service
+visudo -cf /etc/sudoers.d/oculizer-service
 
 for group in audio dialout; do
   getent group "$group" >/dev/null && usermod -a -G "$group" "$service_user"
 done
+loginctl enable-linger "$service_user"
 
 systemctl daemon-reload
-systemctl enable "$QLC_UNIT" "$APP_UNIT"
-if ! $no_start; then
-  systemctl restart "$QLC_UNIT"
-  systemctl restart "$APP_UNIT"
-fi
 
 echo "Installation complete."
 echo "Configuration: $CONFIG_FILE"
-echo "Status: sudo systemctl status $QLC_UNIT $APP_UNIT"
-echo "Logs: sudo journalctl -u $QLC_UNIT -u $APP_UNIT -f"
+echo "Status: sudo systemctl status $APP_UNIT"
+echo "Logs: sudo journalctl -u $APP_UNIT -f"
 echo "Control: oculizerctl status"
+echo "Manual start: oculizer-service start"
+echo "Boot auto-start: oculizer-service auto"
