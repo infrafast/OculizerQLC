@@ -198,6 +198,8 @@ class Oculizer(threading.Thread):
         self.current_mel_sample_rate = None
         self.audio_underrun_count = 0
         self.max_queue_depth_seen = 0  # Track maximum queue buildup
+        self.queue_pressure_checks = 0
+        self.queue_pressure_level = None
         self.audio_loop_generation = 0
 
         # Adaptive gain normalizer — compensates for differing source levels
@@ -570,12 +572,35 @@ class Oculizer(threading.Thread):
                     time.sleep(0.1)
                     continue
 
-                # Check queue depth before processing
+                # A queue naturally accumulates chunks while inference is
+                # running and while waiting for the configured cadence. Only
+                # sustained pressure near its bounded capacity indicates lag.
                 queue_depth = self.prediction_audio_queue.qsize()
                 if queue_depth > self.max_queue_depth_seen:
                     self.max_queue_depth_seen = queue_depth
-                    if queue_depth > 10:
-                        logger.warning(f"⚠️  Audio queue depth: {queue_depth} (predictions may be lagging behind real-time)")
+                queue_capacity = self.prediction_audio_queue.maxsize
+                queue_ratio = queue_depth / queue_capacity
+                if queue_ratio >= 0.95:
+                    self.queue_pressure_checks += 1
+                    if self.queue_pressure_level != "critical":
+                        logger.error(
+                            "🛑 Audio queue critical: %d/%d chunks; real-time audio may be lost",
+                            queue_depth,
+                            queue_capacity,
+                        )
+                    self.queue_pressure_level = "critical"
+                elif queue_ratio >= 0.80:
+                    self.queue_pressure_checks += 1
+                    if self.queue_pressure_checks >= 3 and self.queue_pressure_level is None:
+                        logger.warning(
+                            "⚠️  Sustained audio queue pressure: %d/%d chunks",
+                            queue_depth,
+                            queue_capacity,
+                        )
+                        self.queue_pressure_level = "warning"
+                else:
+                    self.queue_pressure_checks = 0
+                    self.queue_pressure_level = None
                 
                 # Process any queued audio data (with timeout to check running flag)
                 try:
@@ -703,9 +728,21 @@ class Oculizer(threading.Thread):
                             f"Time: {prediction_duration*1000:.1f}ms | {queue_info} | {cache_info}"
                         )
                     
-                    # Warn if predictions are taking too long
-                    if prediction_duration > 0.5:  # More than 500ms
-                        logger.warning(f"⚠️  Slow prediction: {prediction_duration*1000:.1f}ms - may cause lag")
+                    # Judge inference time against its configured scheduling
+                    # budget instead of the historical fixed 500ms threshold.
+                    if prediction_duration >= self.prediction_interval:
+                        logger.error(
+                            "🛑 Prediction exceeded its %.0fms interval: %.1fms; real-time lag is likely",
+                            self.prediction_interval * 1000.0,
+                            prediction_duration * 1000.0,
+                        )
+                    elif prediction_duration >= self.prediction_interval * 0.80:
+                        logger.warning(
+                            "⚠️  Prediction used %.0f%% of its %.0fms interval: %.1fms",
+                            prediction_duration / self.prediction_interval * 100.0,
+                            self.prediction_interval * 1000.0,
+                            prediction_duration * 1000.0,
+                        )
                     
             except Exception as e:
                 logger.error(f"Error in prediction processing thread: {e}")

@@ -771,6 +771,8 @@ Experimental implementation:
 
 - added validated `audio.prediction.interval_seconds`, defaulting to `1.0s`, independently from the training-compatible `4.0s` rolling window;
 - passed the configured cadence through both interactive and headless runtimes and log the effective window, interval, and cache history at predictor startup;
+- replaced the obsolete fixed `500ms` slow-prediction warning with a cadence-relative warning at 80% of the configured interval and a critical diagnostic when inference exceeds the full interval;
+- replaced queue warnings above ten chunks, which were normal while inference was running, with sustained pressure detection at 80% of the bounded queue and a critical diagnostic at 95%; warnings use `⚠️` and critical conditions use `🛑` for immediate operator recognition;
 - retained the existing cache values because the accepted Phase 8a.1 reference simulations and dynamic-control calibration already used a one-second artistic prediction hop; dividing the caches would change the validated profile behavior rather than preserve it;
 - retained fast silence and announcement routing unchanged so the experiment isolates artistic-inference cadence from priority-event behavior.
 
