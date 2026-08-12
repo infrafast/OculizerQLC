@@ -11,6 +11,26 @@ PIP_NETWORK_OPTIONS=(
     --retries "${OCULIZER_PIP_RETRIES:-20}"
     --resume-retries "${OCULIZER_PIP_RESUME_RETRIES:-50}"
 )
+INSTALL_ATTEMPTS="${OCULIZER_INSTALL_ATTEMPTS:-5}"
+
+run_pip() {
+    local attempt
+
+    for ((attempt = 1; attempt <= INSTALL_ATTEMPTS; attempt++)); do
+        if "$VENV_PYTHON" -m pip "$@"; then
+            return 0
+        fi
+
+        if ((attempt == INSTALL_ATTEMPTS)); then
+            echo "Error: pip failed after $INSTALL_ATTEMPTS attempts." >&2
+            return 1
+        fi
+
+        echo
+        echo "pip download interrupted; retrying ($((attempt + 1))/$INSTALL_ATTEMPTS)..."
+        sleep $((attempt * 2))
+    done
+}
 
 usage() {
     cat <<'EOF'
@@ -48,6 +68,11 @@ while (($#)); do
     esac
 done
 
+if [[ ! "$INSTALL_ATTEMPTS" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: OCULIZER_INSTALL_ATTEMPTS must be a positive integer." >&2
+    exit 2
+fi
+
 if ! command -v "$PYTHON_COMMAND" >/dev/null 2>&1; then
     echo "Error: Python command not found: $PYTHON_COMMAND" >&2
     exit 1
@@ -70,7 +95,7 @@ fi
 VENV_PYTHON="$VENV_DIR/bin/python"
 
 echo "Installing Oculizer dependencies..."
-"$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" --upgrade pip setuptools wheel
+run_pip install "${PIP_NETWORK_OPTIONS[@]}" --upgrade pip setuptools wheel
 
 # PyPI's Linux PyTorch wheels can pull the CUDA runtime even on machines with
 # no NVIDIA GPU. Install the official CPU builds first; the matching pins in
@@ -78,13 +103,13 @@ echo "Installing Oculizer dependencies..."
 # NCCL, or Triton. macOS wheels are already CPU/Metal builds on PyPI.
 if [[ "$(uname -s)" == "Linux" ]]; then
     echo "Installing CPU-only PyTorch packages..."
-    "$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" \
+    run_pip install "${PIP_NETWORK_OPTIONS[@]}" \
         --index-url "$PYTORCH_CPU_INDEX" \
         torch==2.11.0 torchaudio==2.11.0 torchvision==0.26.0
 fi
 
-"$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" -r "$SCRIPT_DIR/requirements.txt"
-"$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" --no-deps "$EFFICIENTAT_URL"
+run_pip install "${PIP_NETWORK_OPTIONS[@]}" -r "$SCRIPT_DIR/requirements.txt"
+run_pip install "${PIP_NETWORK_OPTIONS[@]}" --no-deps "$EFFICIENTAT_URL"
 
 echo
 echo "Oculizer installation complete."
