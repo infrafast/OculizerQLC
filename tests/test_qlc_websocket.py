@@ -187,7 +187,10 @@ class ClientTests(unittest.TestCase):
             websocket_factory=Mock(side_effect=OSError("refused")),
             inventory_loader=lambda: inventory(),
         )
-        with self.assertRaisesRegex(QLCWebSocketError, "Cannot connect"):
+        with self.assertRaisesRegex(
+            QLCWebSocketError,
+            r"Cannot connect.*ws://127\.0\.0\.1:9999/qlcplusWS.*http://127\.0\.0\.1:9999/vc\.json",
+        ):
             client.connect()
 
     def test_missing_caption_fails_explicitly(self):

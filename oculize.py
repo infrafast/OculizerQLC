@@ -9,6 +9,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
 from oculizer.light import OUTPUT_CHOICES
+from oculizer.light.qlc_websocket import QLCWebSocketError
 from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.automatic import AutomaticSceneRouter, PolicyConflictError
 from oculizer.control_socket import ControlSocketServer, default_control_socket_path
@@ -1231,6 +1232,12 @@ if __name__ == "__main__":
                 None if args.no_control_socket else args.control_socket,
                 args.fast_detection_config,
             ))
+        except QLCWebSocketError as exc:
+            raise SystemExit(
+                f"QLC+ WebSocket startup failed: {exc}\n"
+                "Check that the QLC+ Web Server is running, or override the "
+                "connection with --qlc-host and --qlc-port."
+            ) from None
         except RuntimeError as exc:
             if str(exc).startswith("No DMX interface found"):
                 raise SystemExit(

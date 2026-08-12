@@ -50,6 +50,13 @@ QLC+ through its WebSocket server:
 ./.venv/bin/python oculize.py --output qlc-websocket
 ```
 
+To validate QLC+ mappings and view the intended commands without connecting to
+QLC+ or sending network traffic, add `--qlc-dry-run`:
+
+```bash
+./.venv/bin/python oculize.py --output qlc-websocket --qlc-dry-run
+```
+
 Without connected DMX hardware, the default Enttec backend can also be tested
 with `--output enttec --dmx-dry-run`. Add the required options for your audio
 input and lighting output using the examples below.

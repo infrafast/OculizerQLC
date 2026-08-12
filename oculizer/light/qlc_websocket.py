@@ -199,7 +199,11 @@ class QLCWebSocketClient:
                 raise
             except Exception as exc:
                 self._close_socket()
-                raise QLCWebSocketError(f"Cannot connect to QLC+ WebSocket: {exc}") from exc
+                raise QLCWebSocketError(
+                    "Cannot connect to QLC+ WebSocket at "
+                    f"{self.config.websocket_url} "
+                    f"(widget inventory: {self.config.inventory_url}): {exc}"
+                ) from exc
 
     def _load_inventory(self):
         with urlopen(self.config.inventory_url, timeout=self.config.request_timeout_seconds) as response:
