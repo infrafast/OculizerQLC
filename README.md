@@ -42,7 +42,19 @@ cd OculizerQLC
 ./.venv/bin/python oculize.py
 ```
 
-Add the required options for your audio input and lighting output using the examples below. Run `./.venv/bin/python oculize.py --help` to display every available option.
+The default lighting output is an Enttec-compatible DMX interface. Select a
+different output backend explicitly when required; for example, to control
+QLC+ through its WebSocket server:
+
+```bash
+./.venv/bin/python oculize.py --output qlc-websocket
+```
+
+Without connected DMX hardware, the default Enttec backend can also be tested
+with `--output enttec --dmx-dry-run`. Add the required options for your audio
+input and lighting output using the examples below.
+
+Run `./.venv/bin/python oculize.py --help` to display every available option.
 
 ### Raspberry Pi 5 service installation
 
