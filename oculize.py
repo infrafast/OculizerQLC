@@ -1198,35 +1198,43 @@ if __name__ == "__main__":
             logging.info(f"Starting in SINGLE-STREAM mode:")
             logging.info(f"  Device: {args.input_device} (used for both FFT and prediction)")
         
-        wrapper(lambda stdscr: main(
-            stdscr, 
-            args.profile, 
-            args.input_device,
-            dual_stream,
-            prediction_device if dual_stream else None,
-            args.predictor_version,
-            args.average_dual_channels,
-            args.scene_cache_size,
-            args.prediction_channels,
-            args.test,
-            args.output,
-            args.qlc_config,
-            args.osc_host,
-            args.osc_port,
-            args.osc_dry_run,
-            args.silence_config,
-            args.speech_config,
-            args.master_config,
-            args.frequency_config,
-            args.prediction_config.window_seconds,
-            args.audio_file,
-            args.filter_osc,
-            args.dmx_dry_run,
-            args.filter_dmx,
-            not args.no_graph,
-            args.dynamic_control,
-            args.dynamic_controls,
-            args.scene_max_duration,
-            None if args.no_control_socket else args.control_socket,
-            args.fast_detection_config,
-        ))
+        try:
+            wrapper(lambda stdscr: main(
+                stdscr,
+                args.profile,
+                args.input_device,
+                dual_stream,
+                prediction_device if dual_stream else None,
+                args.predictor_version,
+                args.average_dual_channels,
+                args.scene_cache_size,
+                args.prediction_channels,
+                args.test,
+                args.output,
+                args.qlc_config,
+                args.osc_host,
+                args.osc_port,
+                args.osc_dry_run,
+                args.silence_config,
+                args.speech_config,
+                args.master_config,
+                args.frequency_config,
+                args.prediction_config.window_seconds,
+                args.audio_file,
+                args.filter_osc,
+                args.dmx_dry_run,
+                args.filter_dmx,
+                not args.no_graph,
+                args.dynamic_control,
+                args.dynamic_controls,
+                args.scene_max_duration,
+                None if args.no_control_socket else args.control_socket,
+                args.fast_detection_config,
+            ))
+        except RuntimeError as exc:
+            if str(exc).startswith("No DMX interface found"):
+                raise SystemExit(
+                    "No DMX interface found. Connect the interface or run with "
+                    "--output enttec --dmx-dry-run."
+                ) from None
+            raise
