@@ -260,9 +260,23 @@ Useful options:
 The artistic predictor analyses the latest `audio.prediction.window_seconds`
 seconds of audio at the cadence configured by
 `audio.prediction.interval_seconds` in `config/oculizer.json`. The shipped
-values use a four-second window and one prediction per second. Increasing the
-interval reduces CPU use but also reduces how often a new artistic candidate
-can be produced; it does not change the separate priority silence detector.
+and recommended production values use a four-second window and one prediction
+per second:
+
+```json
+"prediction": {
+  "window_seconds": 4.0,
+  "interval_seconds": 1.0
+}
+```
+
+Increasing the interval reduces CPU use but also reduces how often a new
+artistic candidate can be produced; it does not change the separate priority
+silence, audio-resume, or announcement routes, nor the master and frequency
+modulation updates. If one artistic prediction per second feels too restrained,
+`0.75` is the recommended first responsiveness compromise. Avoid `0.5` on a
+Raspberry Pi when inference already takes about 500ms: it leaves no scheduling
+margin and can return the service to continuous high CPU usage.
 
 System can be used different trained predictors. `v6` is the default predictor and is selected when `--predictor-version` is omitted. Use `--predictor-version v4` or `--predictor-version v5` only for explicit comparison or compatibility tests. `v5` uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
 
