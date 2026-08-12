@@ -192,9 +192,10 @@ class AudioOculizerController:
                  control_socket_path=None, fast_detection_config=None):
         dynamic_controls = dynamic_controls or {}
         off_cache_size = scene_cache_size
-        profile = ({"cache": scene_cache_size, "rate": None, "throttle": None}
-                   if dynamic_control == "off" else dynamic_controls[dynamic_control])
-        scene_cache_size = profile["cache"]
+        dynamic_policy = ({"cache": scene_cache_size, "rate": None, "throttle": None}
+                          if dynamic_control == "off"
+                          else dynamic_controls[dynamic_control])
+        scene_cache_size = dynamic_policy["cache"]
         self.stdscr = stdscr
         curses.curs_set(0)
         self.stdscr.nodelay(1)
@@ -243,8 +244,8 @@ class AudioOculizerController:
             self.oculizer,
             silence_config=silence_config,
             speech_config=speech_config,
-            scene_rate_limit=profile["rate"],
-            scene_throttle=profile["throttle"],
+            scene_rate_limit=dynamic_policy["rate"],
+            scene_throttle=dynamic_policy["throttle"],
             scene_max_duration=scene_max_duration,
         )
         self.master_modulator = MasterModulator(self.oculizer, config=master_config)
