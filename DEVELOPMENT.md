@@ -465,6 +465,33 @@ Exit criterion: all dynamic-control profiles detect priority events at essential
 
 Operator acceptance on 2026-08-12 confirmed the expected live behavior across `responsive`, `normal`, and `calm`: priority `silent` and `announcement` routing remains responsive and independent from ordinary transition filtering, music resumes from fresh prediction state, and `calm` reduces ordinary scene changes without delaying priority events. Raspberry Pi CPU, temperature, and missed-deadline measurements remain part of Phase 8b and do not block this completed phase.
 
+#### Pre-next-phase decision checkpoint — possible fast-detection rollback
+
+Status: **decision deferred — evaluate on Raspberry Pi before continuing beyond the current Phase 8b validation work or starting another feature phase; no rollback has been applied**
+
+The current Phase 8a.1 design deliberately separates priority semantic events from ordinary artistic prediction. Music scenes still come from the v6 predictor using its training-compatible four-second window. Sustained silence is detected from the already available RMS value using a configurable entry threshold, minimum duration, and higher resume threshold. Speech uses the existing single EfficientAT instance through a serialized semantic-only pass over the latest two seconds of audio at a fixed one-second cadence. Confirmed `silent` and `announcement` routes bypass the ordinary scene cache, rate limit, throttle, maximum-duration rule, and re-entry delay. On release, stale artistic evidence is cleared so music resumes only from fresh predictions. This targets a practical one-to-two-second response without a second model, concurrent inference, an additional audio stream, a new VAD dependency, or an unbounded work queue.
+
+Before continuing beyond the current Phase 8b validation work or beginning another feature milestone, explicitly decide whether to retain this design or roll part of it back. A rollback must be surgical and must not be implemented as a broad Git revert: it must preserve the `silent` scene name, OSC/WebSocket transport parity, QLC+ mappings, runtime-control behavior, dynamic-control profiles, the v6 default model, service deployment work, and all unrelated fixes.
+
+Rollback candidates, in increasing order of impact:
+
+1. **Retain the current design (preferred baseline).** Keep RMS silence detection and the two-second/one-second-cadence semantic announcement path. Select this when Raspberry Pi measurements remain bounded and live false-positive/oscillation behavior is acceptable.
+2. **Roll back only fast announcement detection.** Remove or disable the additional semantic-only schedule and derive speech routing from the normal four-second v6/EfficientAT pass again. Keep the lightweight RMS `silent`/resume path as a priority route. This reduces semantic inference frequency and code paths, but announcement entry can return toward the former approximately 2.5-second latency and may approach one complete artistic window in adverse alignment.
+3. **Roll back all priority-path separation.** Route silence and speech only through the former slow prediction lifecycle. This is the simplest behavior but is not recommended: it re-couples safety/semantic events to artistic-window latency and dynamic scene admission, recreating the original reason for Phase 8a.1.
+
+Use measured evidence rather than subjective code-size concerns alone. Consider rollback candidate 2 if the Raspberry Pi 5 shows sustained excessive CPU or temperature, repeated missed audio deadlines, growing audio queue depth, materially delayed v6 inference, or unacceptable `announcement` false positives/oscillation that threshold and hysteresis tuning cannot correct. Do not roll back merely because semantic inference adds some measurable load: the accepted requirement is reliable routing within one to two seconds, not minimum possible CPU at the expense of operational behavior. Candidate 3 requires a separate operator decision acknowledging the loss of priority-event latency guarantees.
+
+The before/after decision protocol must remain reproducible:
+
+- replay `tests/mixvoicemusic.wav` against the operator-authored `tests/mixvoicemusic.md` timeline using the same v6 model, four-second artistic window, one-second artistic hop, 0.1-second router simulation step, and seed zero;
+- preserve and compare `reports/phase_8a1_baseline_mixvoicemusic.{json,svg}` and `reports/phase_8a1_post_mixvoicemusic.{json,svg}` rather than overwriting either reference;
+- measure announcement entry/release latency, false `announcement` intervals, `silent` entry/resume latency, ordinary scene recovery, transition counts per dynamic-control profile, semantic and artistic inference duration, maximum audio queue depth, process RSS, sustained CPU, temperature, and missed audio deadlines;
+- repeat a live voice-only, music-only, silence-to-voice, voice-to-music, and mixed voice/music validation through both OSC and WebSocket;
+- require fresh artistic evidence after every priority release in every retained option, unless a future decision explicitly accepts the stale-scene flash regression;
+- record the selected option, measurements, configuration, commit, and operator acceptance in this roadmap before starting the next feature phase.
+
+Rollback completion criteria for candidate 2: the fast semantic scheduler and its now-unused configuration/status fields are removed cleanly rather than left dormant; RMS `silent` routing remains priority and transport-neutral; speech again follows the documented four-second path; tests and user documentation describe the increased expected latency; the complete regression suite passes; and new comparison artefacts are stored under distinct rollback filenames. Until this checkpoint is resolved, Phase 8a.1 remains the accepted production candidate and no implicit rollback should be inferred.
+
 ### Phase 8a.2 — QLC+ 5 WebSocket Virtual Console backend
 
 Status: **complete — automated and live QLC+ 5.2.2 operator validation accepted**
