@@ -9,7 +9,8 @@
   "audio": {
     "input_device": "default",
     "prediction": {
-      "window_seconds": 4.0
+      "window_seconds": 4.0,
+      "interval_seconds": 1.0
     },
     "fast_detection": {
       "enabled": true,

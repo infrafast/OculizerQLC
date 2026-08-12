@@ -187,7 +187,8 @@ class AudioOculizerController:
                  test_mode=False, output='enttec', qlc_config=None, osc_host=None,
                  osc_port=None, osc_dry_run=None, silence_config=None,
                  speech_config=None, master_config=None, frequency_config=None,
-                 prediction_window_seconds=4.0, audio_file=None, osc_log_filters=(),
+                 prediction_window_seconds=4.0, prediction_interval_seconds=1.0,
+                 audio_file=None, osc_log_filters=(),
                  dmx_dry_run=False, filter_dmx=False, graph_enabled=True,
                  dynamic_control="off", dynamic_controls=None, scene_max_duration=40.0,
                  control_socket_path=None, fast_detection_config=None):
@@ -233,6 +234,7 @@ class AudioOculizerController:
             osc_port=osc_port,
             osc_dry_run=osc_dry_run,
             prediction_window_seconds=prediction_window_seconds,
+            prediction_interval_seconds=prediction_interval_seconds,
             audio_file=audio_file,
             osc_log_filters=osc_log_filters,
             dmx_dry_run=dmx_dry_run,
@@ -1054,7 +1056,8 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
          average_dual_channels, scene_cache_size, prediction_channels, test_mode,
          output, qlc_config, osc_host, osc_port, osc_dry_run,
          silence_config, speech_config, master_config, frequency_config,
-         prediction_window_seconds, audio_file, osc_log_filters, dmx_dry_run,
+         prediction_window_seconds, prediction_interval_seconds, audio_file,
+         osc_log_filters, dmx_dry_run,
          filter_dmx, graph_enabled, dynamic_control, dynamic_controls,
          scene_max_duration, control_socket_path, fast_detection_config):
     setup_colors()
@@ -1099,6 +1102,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
                 master_config=master_config,
                 frequency_config=frequency_config,
                 prediction_window_seconds=prediction_window_seconds,
+                prediction_interval_seconds=prediction_interval_seconds,
                 audio_file=audio_file,
                 osc_log_filters=osc_log_filters,
                 dmx_dry_run=dmx_dry_run,
@@ -1221,6 +1225,7 @@ if __name__ == "__main__":
                 args.master_config,
                 args.frequency_config,
                 args.prediction_config.window_seconds,
+                args.prediction_config.interval_seconds,
                 args.audio_file,
                 args.filter_osc,
                 args.dmx_dry_run,

@@ -121,9 +121,22 @@ class RuntimeConfigTests(unittest.TestCase):
     def test_loads_prediction_window(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "oculizer.json"
-            path.write_text(json.dumps({"audio": {"prediction": {"window_seconds": 2.5}}}))
+            path.write_text(json.dumps({"audio": {"prediction": {
+                "window_seconds": 2.5,
+                "interval_seconds": 1.5,
+            }}}))
             config = load_runtime_config(path)
         self.assertEqual(configured_prediction(config).window_seconds, 2.5)
+        self.assertEqual(configured_prediction(config).interval_seconds, 1.5)
+
+    def test_rejects_invalid_prediction_interval(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oculizer.json"
+            path.write_text(json.dumps({"audio": {"prediction": {
+                "interval_seconds": 0,
+            }}}))
+            with self.assertRaisesRegex(ValueError, "interval_seconds"):
+                load_runtime_config(path)
 
     def test_loads_master_modulation(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -122,6 +122,7 @@ def build_service(args) -> HeadlessOculizerService:
         dmx_dry_run=args.dmx_dry_run,
         filter_dmx=args.filter_dmx,
         prediction_window_seconds=args.prediction_config.window_seconds,
+        prediction_interval_seconds=args.prediction_config.interval_seconds,
         audio_file=args.audio_file,
         fast_detection_config=args.fast_detection_config,
     )

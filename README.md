@@ -257,6 +257,13 @@ Useful options:
 | `--no-graph` | Hide the interactive RMS graph |
 | `--list-devices` | List available audio inputs |
 
+The artistic predictor analyses the latest `audio.prediction.window_seconds`
+seconds of audio at the cadence configured by
+`audio.prediction.interval_seconds` in `config/oculizer.json`. The shipped
+values use a four-second window and one prediction per second. Increasing the
+interval reduces CPU use but also reduces how often a new artistic candidate
+can be produced; it does not change the separate priority silence detector.
+
 System can be used different trained predictors. `v6` is the default predictor and is selected when `--predictor-version` is omitted. Use `--predictor-version v4` or `--predictor-version v5` only for explicit comparison or compatibility tests. `v5` uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
 
 ### Train a concert-specific predictor

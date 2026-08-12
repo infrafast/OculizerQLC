@@ -71,6 +71,7 @@ class Oculizer(threading.Thread):
                  test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
                  qlc_config_path=None, osc_host=None,
                  osc_port=None, osc_dry_run=None, prediction_window_seconds=4.0,
+                 prediction_interval_seconds=1.0,
                  audio_file=None, osc_log_filters=(), dmx_dry_run=False,
                  filter_dmx=False, fast_detection_config=None):
         threading.Thread.__init__(self)
@@ -166,6 +167,7 @@ class Oculizer(threading.Thread):
         self.scene_cache_size = scene_cache_size
         self.prediction_channels_spec = prediction_channels  # Store the user specification
         self.prediction_window_seconds = float(prediction_window_seconds)
+        self.prediction_interval = float(prediction_interval_seconds)
         self.prediction_channel_indices = None  # Will be parsed later
         self.scene_predictor = None
         self.prediction_stream = None
@@ -177,7 +179,6 @@ class Oculizer(threading.Thread):
         self.current_cluster = None
         self.current_audioset_scores = None
         self.last_prediction_time = 0
-        self.prediction_interval = 0.1
         self.prediction_count = 0
         self.prediction_thread = None  # Separate thread for prediction processing
         self.prediction_lock = threading.Lock()  # Lock for thread-safe access
@@ -433,8 +434,21 @@ class Oculizer(threading.Thread):
         # Initialize scene cache with configurable size
         self.scene_cache = deque(maxlen=self.scene_cache_size)
         
-        logger.info(f"Scene prediction initialized with {self.predictor_version} predictor at {self.prediction_sr}Hz (device: {self.scene_prediction_device})")
-        logger.info(f"Scene cache size: {self.scene_cache_size} ({'instant response' if self.scene_cache_size == 1 else f'~{self.scene_cache_size * 0.1:.1f}s smoothing'})")
+        logger.info(
+            "Scene prediction initialized with %s predictor at %dHz (device: %s); "
+            "window %.1fs, interval %.1fs",
+            self.predictor_version,
+            self.prediction_sr,
+            self.scene_prediction_device,
+            self.prediction_window_seconds,
+            self.prediction_interval,
+        )
+        logger.info(
+            "Scene cache size: %d (%s)",
+            self.scene_cache_size,
+            "one prediction" if self.scene_cache_size == 1 else
+            f"~{self.scene_cache_size * self.prediction_interval:.1f}s sampled history",
+        )
         
         # Validate device sample rate if we have a prediction device
         if self.scene_prediction_device is not None:

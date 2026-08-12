@@ -752,10 +752,31 @@ Do not install the current Python requirements blindly on this target. The repos
 - [ ] configure service user, working directory, environment, logs, and graceful stop behavior;
 - [ ] configure Oculizer restart behavior and a bounded passive readiness check for the independently managed QLC+ endpoint;
 - [ ] validate audio on Raspberry Pi OS;
+- [ ] validate the one-second artistic inference cadence against the previous CPU-saturated runtime, including CPU, queue depth, prediction latency, priority-event latency, and subjective scene response;
 - [ ] monitor temperature, CPU, RAM, and latency during a long session;
 - [ ] document operation and incident recovery.
 
 Final criterion: a cold Raspberry Pi restart reaches an operational lighting system without local intervention.
+
+#### 2026-08-12 — Raspberry Pi prediction-cadence experiment
+
+Observed baseline before this change:
+
+- the Raspberry Pi service process consumed approximately `201–237%` CPU, equivalent to slightly more than two cores, while QLC+ consumed about `7%`;
+- v6 artistic predictions took approximately `500–545ms` each and advanced by ten predictions in roughly five seconds;
+- the runtime hard-coded a `0.1s` minimum prediction interval, so each completed inference was followed almost immediately by another and the audio queue remained around `16` chunks with an observed maximum of `23`;
+- disabling `audio.fast_detection` changed little, demonstrating that the serialized short speech checks were not the dominant load.
+
+Experimental implementation:
+
+- added validated `audio.prediction.interval_seconds`, defaulting to `1.0s`, independently from the training-compatible `4.0s` rolling window;
+- passed the configured cadence through both interactive and headless runtimes and log the effective window, interval, and cache history at predictor startup;
+- retained the existing cache values because the accepted Phase 8a.1 reference simulations and dynamic-control calibration already used a one-second artistic prediction hop; dividing the caches would change the validated profile behavior rather than preserve it;
+- retained fast silence and announcement routing unchanged so the experiment isolates artistic-inference cadence from priority-event behavior.
+
+Restoration point: Git tag `pre-prediction-cadence-raspi` identifies commit `a391db3611a3998a89f92f90e70ff225f909b7b7`, the clean repository state immediately before this experiment. If target validation rejects the new cadence, restore that revision on a dedicated branch or revert the cadence commit; do not use a destructive reset on a working deployment.
+
+Acceptance targets: prediction count should advance near once per second, sustained Oculizer CPU and queue depth should fall materially, no audio deadlines should be missed, priority `silent`/`announcement` behavior should remain unchanged, and `responsive`, `normal`, and `calm` must retain acceptable subjective timing. Record the Raspberry Pi measurements here before accepting or reverting the experiment.
 
 #### 2026-08-10 — First reproducible installer candidate
 

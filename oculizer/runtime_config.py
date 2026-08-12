@@ -31,6 +31,7 @@ class SpeechConfig:
 @dataclass(frozen=True)
 class PredictionConfig:
     window_seconds: float = 4.0
+    interval_seconds: float = 1.0
 
 @dataclass(frozen=True)
 class FastSpeechConfig:
@@ -140,6 +141,11 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
     window_seconds = prediction.get("window_seconds", 4.0)
     if isinstance(window_seconds, bool) or not isinstance(window_seconds, (int, float)) or not 0.5 <= window_seconds <= 10:
         raise ValueError("audio.prediction.window_seconds must be between 0.5 and 10 seconds")
+    interval_seconds = prediction.get("interval_seconds", 1.0)
+    if (isinstance(interval_seconds, bool)
+            or not isinstance(interval_seconds, (int, float))
+            or not 0.1 <= interval_seconds <= 10):
+        raise ValueError("audio.prediction.interval_seconds must be between 0.1 and 10 seconds")
     master = audio.get("master_modulation", {})
     if not isinstance(master, dict):
         raise ValueError("audio.master_modulation must be an object")
@@ -259,7 +265,10 @@ def configured_speech(config: dict[str, Any]) -> SpeechConfig:
 
 def configured_prediction(config: dict[str, Any]) -> PredictionConfig:
     prediction = config.get("audio", {}).get("prediction", {})
-    return PredictionConfig(window_seconds=float(prediction.get("window_seconds", 4.0)))
+    return PredictionConfig(
+        window_seconds=float(prediction.get("window_seconds", 4.0)),
+        interval_seconds=float(prediction.get("interval_seconds", 1.0)),
+    )
 
 def configured_fast_detection(config: dict[str, Any]) -> FastDetectionConfig:
     raw = config.get("audio", {}).get("fast_detection", {})
