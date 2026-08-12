@@ -5,6 +5,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
 EFFICIENTAT_URL="efficientat @ git+https://github.com/LandryBulls/EfficientAT.git@010b68e69d9f75d074eb8720ac06968c38352ac8"
+PIP_NETWORK_OPTIONS=(
+    --timeout "${OCULIZER_PIP_TIMEOUT:-300}"
+    --retries "${OCULIZER_PIP_RETRIES:-20}"
+    --resume-retries "${OCULIZER_PIP_RESUME_RETRIES:-50}"
+)
 
 usage() {
     cat <<'EOF'
@@ -64,9 +69,9 @@ fi
 VENV_PYTHON="$VENV_DIR/bin/python"
 
 echo "Installing Oculizer dependencies..."
-"$VENV_PYTHON" -m pip install --upgrade pip setuptools wheel
-"$VENV_PYTHON" -m pip install -r "$SCRIPT_DIR/requirements.txt"
-"$VENV_PYTHON" -m pip install --no-deps "$EFFICIENTAT_URL"
+"$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" --upgrade pip setuptools wheel
+"$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" -r "$SCRIPT_DIR/requirements.txt"
+"$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" --no-deps "$EFFICIENTAT_URL"
 
 echo
 echo "Oculizer installation complete."

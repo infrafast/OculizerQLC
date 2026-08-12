@@ -928,6 +928,7 @@ Delivered behavior:
 
 - removed the unused legacy `setup.py`, which duplicated `requirements.txt` but was not used by the documented or Raspberry Pi installation paths;
 - added an idempotent root `install.sh` that validates Python 3.11+, creates or reuses `.venv`, installs the requirements and pinned EfficientAT dependency, and prints the direct launch command;
+- configured long socket timeouts, connection retries, and resumable-download retries for large ARM64 PyTorch wheels, with `OCULIZER_PIP_TIMEOUT`, `OCULIZER_PIP_RETRIES`, and `OCULIZER_PIP_RESUME_RETRIES` overrides;
 - reduced the local user installation procedure to `./install.sh` after cloning and removed the need to activate the virtual environment before launching Oculizer.
 
 Validation:
