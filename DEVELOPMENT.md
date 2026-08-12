@@ -71,7 +71,7 @@ oculize.py / toggle.py
         │
         ├── SceneManager
         │     ├── scenes/*.json
-        │     └── profile_fallbacks.json
+        │     └── profiles/profile_fallbacks.json
         │
         └── Oculizer thread
               ├── audio capture
@@ -792,6 +792,150 @@ Control state is initially process-local and is not restored after a crash or re
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-12 — Removed repository-local QLC+ workspace
+
+Delivered behavior:
+
+- removed the `qlc/` directory, including the reference workspace, its backup, and the legacy OSC input profile;
+- removed the current README instruction that treated those files as the user-facing QLC+ reference;
+- retained historical validation entries below as development history only.
+
+Decision:
+
+- QLC+, its workspace, input profiles, fixture patching, and deployment lifecycle are owned by the separate QLC+ project and are no longer duplicated in this repository;
+- Oculizer retains only its transport configuration and OSC/WebSocket clients.
+
+Validation:
+
+- confirmed no runtime module, test, script, or Oculizer service installer reads files from `qlc/`;
+- removed the resulting empty directory and checked repository whitespace.
+
+Remaining work: maintain transport examples without reintroducing a QLC+ workspace into this repository.
+
+### 2026-08-12 — Removed unused staged scenes
+
+Delivered behavior:
+
+- removed the unreferenced `scenes_staging/` directory and its six historical scene drafts;
+- retained `scenes/` as the sole source of runtime scene definitions.
+
+Validation:
+
+- confirmed no runtime module, test, script, installer, or documentation referenced the staging directory;
+- removed the resulting empty directory and checked repository whitespace.
+
+Remaining work: none.
+
+### 2026-08-12 — Removed unused development notebooks
+
+Delivered behavior:
+
+- removed the four historical notebooks under `notebooks/`, which were no longer referenced by runtime code, tests, scripts, installation, or documentation;
+- removed the obsolete `notebooks/` ignore rule so a future accidental reintroduction remains visible to Git.
+
+Validation:
+
+- confirmed no repository component depended on the notebooks;
+- removed the resulting empty directory and checked repository whitespace.
+
+Remaining work: none.
+
+### 2026-08-12 — Removed unused scene templates
+
+Delivered behavior:
+
+- removed the root `templates/` directory and its ten historical scene examples;
+- retained `scenes/` as the sole runtime scene-definition directory.
+
+Validation:
+
+- confirmed no application module, test, script, installer, or documentation referenced `templates/`;
+- checked repository whitespace.
+
+Remaining work: none.
+
+### 2026-08-12 — Removed obsolete Etna launcher
+
+Delivered behavior:
+
+- removed the unreferenced root `etna` shell launcher, which depended on an obsolete Conda environment and hard-coded audio arguments;
+- retained `profiles/etna.json` and its fallback mappings because they are profile configuration, not part of the removed launcher.
+
+Validation:
+
+- confirmed no documentation, test, service, or application path referenced the launcher;
+- checked repository whitespace.
+
+Remaining work: the separate historical Etna fallback targets noted below still require an explicit decision if the profile is used again.
+
+### 2026-08-12 — Consolidated profile-fallback tests
+
+Delivered behavior:
+
+- removed the three overlapping root-level manual scripts `test_fallbacks.py`, `test_fallbacks_simple.py`, and `test_profile_fallbacks.py`;
+- replaced them with assertion-based `unittest` coverage in `tests/test_profile_fallbacks.py`;
+- covered JSON validity, mobile scene-reference integrity, the 31 mobile mappings, actual mobile substitution, absence of garage mappings, fixture compatibility, and loading outside the repository working directory;
+- updated the developer test/tool inventory to use the standard test command.
+
+Validation:
+
+- ran the focused profile-fallback module and the complete discovered test suite;
+- compiled the new test and checked repository whitespace.
+
+Remaining work: none.
+
+Historical note: the unrelated `etna` mapping still names the absent targets `rainbow`, `orange_bass_pulse`, and `strobe`. Retargeting those entries requires an explicit artistic decision and was not folded into this test-organization change.
+
+### 2026-08-12 — Profile fallback configuration organization
+
+Delivered behavior:
+
+- moved `profile_fallbacks.json` from the repository root to `profiles/profile_fallbacks.json`, alongside the fixture profiles it specializes;
+- updated `SceneManager` to resolve the mapping from the repository location independently of the process working directory;
+- moved the fallback generator to `scripts/generate_fallbacks.py` and made its input/output paths independent of the process working directory;
+- updated the historical validation path to use the new location;
+- updated all current user and developer documentation references.
+
+Validation:
+
+- confirmed the moved JSON is unchanged and remains valid;
+- validated actual fallback loading and scene substitution through the existing fallback scripts;
+- compiled the modified Python files and checked repository whitespace.
+
+Remaining work: none.
+
+### 2026-08-12 — Scene-analysis tool and report organization
+
+Delivered behavior:
+
+- moved the standalone generator from `analyze_scenes.py` to `scripts/analyze_scenes.py`;
+- moved its generated `scene_analysis.json` output into `reports/`;
+- made repository and output paths independent from the caller's current working directory;
+- updated the documented maintenance command and historical report path.
+
+Validation:
+
+- ran the relocated generator successfully against all 127 current scene definitions;
+- confirmed that the regenerated report has the same scene count and summary statistics as the retained report;
+- compiled the relocated script and checked repository whitespace.
+
+Remaining work: none.
+
+### 2026-08-12 — Simplified local installation entry point
+
+Delivered behavior:
+
+- removed the unused legacy `setup.py`, which duplicated `requirements.txt` but was not used by the documented or Raspberry Pi installation paths;
+- added an idempotent root `install.sh` that validates Python 3.11+, creates or reuses `.venv`, installs the requirements and pinned EfficientAT dependency, and prints the direct launch command;
+- reduced the local user installation procedure to `./install.sh` after cloning and removed the need to activate the virtual environment before launching Oculizer.
+
+Validation:
+
+- validated shell syntax and the installer help/error paths without modifying the existing environment;
+- checked documentation whitespace with `git diff --check`.
+
+Remaining work: retain `requirements.txt` as the shared dependency source for local and Raspberry Pi installation, and keep platform system-package installation in the dedicated Raspberry Pi service pack.
 
 ### 2026-08-12 — Native QLC+ protocol pre-evaluation and Phase 8a.3 gate
 
@@ -2086,7 +2230,7 @@ Implemented:
 - corrected internal scene names so `scenes/smut.json` declares `smut` and `scenes/rockville_example.json` declares `rockville_example`;
 - added the missing `bass_hopper_red` artistic definition required by the archived v3 mapping, deriving its established hopper behavior from `bass_hopper_blue` with a red/orange palette;
 - synchronized the complete v4 QLC+ routing catalog by removing the obsolete `disodream` entry and replacing `full` with `fullstrobe` and its canonical OSC path;
-- regenerated `scene_analysis.json` from all 127 scene definitions.
+- regenerated `reports/scene_analysis.json` from all 127 scene definitions.
 
 Validation:
 
@@ -2212,17 +2356,20 @@ Next
 
 ## Existing tests and tools
 
-The repository contains several historical validation scripts:
+Run the profile-fallback regression coverage through the standard test suite:
 
 ```bash
-python test_fallbacks_simple.py
-python test_fallbacks.py
-python test_profile_fallbacks.py
-python analyze_scenes.py
-python generate_fallbacks.py
+python -m unittest tests.test_profile_fallbacks
 ```
 
-Before treating them as a complete suite, check their dependencies and behavior in the current environment. `scripts/fix_pickle_files.py` is a one-off maintenance tool for serialized models, not a standard test.
+The repository also contains maintenance and reporting tools:
+
+```bash
+python scripts/analyze_scenes.py
+python scripts/generate_fallbacks.py
+```
+
+These tools are not part of the test suite. `scripts/fix_pickle_files.py` is a one-off maintenance tool for serialized models, not a standard test.
 
 ## Open decisions
 

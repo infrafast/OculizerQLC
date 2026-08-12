@@ -8,6 +8,7 @@ that don't support all fixtures (e.g., mobile profile with only rockvilles).
 
 import json
 import os
+from pathlib import Path
 from typing import Dict, List, Set
 
 def get_scene_characteristics(scene_name: str, scene_data: dict) -> Dict:
@@ -237,8 +238,8 @@ def generate_fallback_mapping(scenes_dir: str) -> Dict:
     return fallback_map
 
 def main():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    scenes_dir = os.path.join(script_dir, 'scenes')
+    repository_dir = Path(__file__).resolve().parents[1]
+    scenes_dir = repository_dir / 'scenes'
     
     if not os.path.exists(scenes_dir):
         print(f"Error: Scenes directory not found at {scenes_dir}")
@@ -255,8 +256,8 @@ def main():
     }
     
     # Save to JSON file
-    output_file = os.path.join(script_dir, 'profile_fallbacks.json')
-    with open(output_file, 'w') as f:
+    output_file = repository_dir / 'profiles' / 'profile_fallbacks.json'
+    with output_file.open('w', encoding='utf-8') as f:
         json.dump(profile_fallbacks, f, indent=2)
     
     print(f"✅ Generated {len(fallback_map)} fallback mappings")
@@ -264,4 +265,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

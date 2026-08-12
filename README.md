@@ -30,24 +30,19 @@ A CUDA-capable GPU can accelerate prediction but is not required. Initial model 
 ```bash
 git clone https://github.com/infrafast/OculizerQLC.git
 cd OculizerQLC
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m pip install --no-deps \
-  "efficientat @ git+https://github.com/LandryBulls/EfficientAT.git@010b68e69d9f75d074eb8720ac06968c38352ac8"
+./install.sh
 ```
 
-On Windows, activate the environment with:
+The installer creates or updates the local `.venv` environment and installs all Python dependencies. Run it again after updating the repository. Use `./install.sh --python COMMAND` only when a specific Python interpreter is required.
 
-```text
-.venv\Scripts\activate
-```
-
-Verify the model dependency:
+## Start the application after installation
 
 ```bash
-python -c "import efficientat; print('EfficientAT: OK')"
+cd OculizerQLC
+./.venv/bin/python oculize.py
 ```
+
+Add the required options for your audio input and lighting output using the examples below. Run `./.venv/bin/python oculize.py --help` to display every available option.
 
 ### Raspberry Pi 5 service installation
 
@@ -117,7 +112,7 @@ The main user configuration files are:
 - `config/qlc_config.json`: QLC+ OSC destination, global controls, and logical-scene mappings;
 - `profiles/`: direct-DMX fixture profiles;
 - `scenes/`: lighting scenes;
-- `profile_fallbacks.json`: profile-specific scene substitutions.
+- `profiles/profile_fallbacks.json`: profile-specific scene substitutions.
 
 Use another general configuration with `--config PATH`, or another QLC+ configuration with `--qlc-config PATH`.
 
@@ -467,8 +462,6 @@ python oculize.py \
   --filter-osc /oculizer/high
 ```
 
-The reference QLC+ workspace is `qlc/qlc.qxw`, and its input profile is `qlc/Oculizer-OSC.qxi`. On macOS, install the profile in `~/Library/Application Support/QLC+/InputProfiles/` before opening the workspace.
-
 ## Direct-DMX dry run
 
 Exercise the Enttec rendering path without a connected DMX interface:
@@ -620,7 +613,7 @@ python oculize.py --test --profile mobile
 - No DMX interface: use `--output enttec --dmx-dry-run` for a hardware-free test.
 - Slow or apparently blank startup: model loading can take several seconds on a CPU.
 - Excessive OSC or DMX dry-run logs: use repeatable `--filter-osc PATH` or `--filter-dmx`.
-- Dark or substituted scene: check the active profile, `profile_fallbacks.json`, and QLC+ mappings.
+- Dark or substituted scene: check the active profile, `profiles/profile_fallbacks.json`, and QLC+ mappings.
 - Runtime details and errors: inspect `oculizer.log`.
 - Installation cannot find EfficientAT on PyPI: run the separate EfficientAT installation command shown above.
 

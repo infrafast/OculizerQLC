@@ -9,6 +9,7 @@ each scene uses, helping to identify compatibility issues with different profile
 import json
 import os
 from collections import defaultdict
+from pathlib import Path
 from typing import Set, Dict, List
 
 def get_scene_fixtures(scene_data: dict) -> Set[str]:
@@ -249,8 +250,8 @@ def get_scene_colors_and_vibe(scene_name: str, scene_data: dict) -> Dict[str, an
     }
 
 def main():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    scenes_dir = os.path.join(script_dir, 'scenes')
+    repository_dir = Path(__file__).resolve().parents[1]
+    scenes_dir = repository_dir / 'scenes'
     
     if not os.path.exists(scenes_dir):
         print(f"Error: Scenes directory not found at {scenes_dir}")
@@ -261,11 +262,11 @@ def main():
     print_analysis(results)
     
     # Save detailed analysis to file
-    output_file = os.path.join(script_dir, 'scene_analysis.json')
-    with open(output_file, 'w') as f:
+    output_file = repository_dir / 'reports' / 'scene_analysis.json'
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    with output_file.open('w', encoding='utf-8') as f:
         json.dump(results, f, indent=2)
     print(f"\n💾 Detailed analysis saved to: {output_file}\n")
 
 if __name__ == "__main__":
     main()
-

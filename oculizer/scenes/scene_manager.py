@@ -16,7 +16,12 @@ The SceneManager:
 import os
 import json
 import logging
+from pathlib import Path
 from typing import Set, Optional
+
+
+REPOSITORY_DIR = Path(__file__).resolve().parents[2]
+PROFILE_FALLBACKS_PATH = REPOSITORY_DIR / 'profiles' / 'profile_fallbacks.json'
 
 class SceneManager:
     def __init__(self, scenes_directory, profile_name: Optional[str] = None, 
@@ -83,11 +88,10 @@ class SceneManager:
         return data
 
     def _load_fallback_mappings(self) -> dict:
-        """Load scene fallback mappings from profile_fallbacks.json"""
+        """Load scene fallback mappings from profiles/profile_fallbacks.json."""
         try:
-            fallback_path = os.path.join(os.path.dirname(__file__), '..', '..', 'profile_fallbacks.json')
-            if os.path.exists(fallback_path):
-                with open(fallback_path, 'r') as f:
+            if PROFILE_FALLBACKS_PATH.exists():
+                with PROFILE_FALLBACKS_PATH.open('r', encoding='utf-8') as f:
                     data = json.load(f)
                     # Return the mappings for current profile, or empty dict
                     if self.profile_name and self.profile_name in data:

@@ -2,9 +2,6 @@
 *.pt
 *.pth
 
-# Notebooks directory
-notebooks/
-
 # Media files
 *.mp3
 *.mp4
