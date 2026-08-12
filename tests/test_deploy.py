@@ -1,5 +1,6 @@
 import subprocess
 import unittest
+from unittest.mock import patch
 
 from raspi_service_pack.run_oculizer import build_command as build_oculizer_command
 from pathlib import Path
@@ -43,6 +44,19 @@ class DeploymentTests(unittest.TestCase):
         self.assertEqual(command[0], "/opt/Oculizer QLC/.venv/bin/python")
         self.assertIn("qlc-websocket", command)
         self.assertIn("/run/oculizer/control.sock", command)
+
+    def test_foreground_run_can_override_system_control_socket(self):
+        config = {
+            "repository": "/opt/OculizerQLC",
+            "output": "qlc-websocket",
+            "audio_input": "default",
+            "dynamic_control": "normal",
+            "control_socket": "/run/oculizer/control.sock",
+        }
+        with patch.dict("os.environ", {"OCULIZER_CONTROL_SOCKET": "/tmp/oculizer-1000.sock"}):
+            command = build_oculizer_command(config)
+        self.assertIn("/tmp/oculizer-1000.sock", command)
+        self.assertNotIn("/run/oculizer/control.sock", command)
 
 
 if __name__ == "__main__":

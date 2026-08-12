@@ -13,6 +13,9 @@ def build_command(config):
     repository = Path(config["repository"])
     python = repository / ".venv/bin/python"
     entrypoint = repository / "oculizer_service.py"
+    control_socket = os.environ.get(
+        "OCULIZER_CONTROL_SOCKET", config["control_socket"]
+    )
     return [
         str(python), str(entrypoint),
         "--config", str(repository / "config/oculizer.json"),
@@ -20,7 +23,7 @@ def build_command(config):
         "--output", config["output"],
         "--input-device", config["audio_input"],
         "--dynamic-control", config["dynamic_control"],
-        "--control-socket", config["control_socket"],
+        "--control-socket", control_socket,
     ]
 
 

@@ -88,10 +88,11 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y git sudo python3 python3-venv python3-dev build-essential portaudio19-dev libsndfile1-dev ffmpeg
 
-python3 -m venv "$REPO_ROOT/.venv"
-"$REPO_ROOT/.venv/bin/python" -m pip install --upgrade pip setuptools wheel
-"$REPO_ROOT/.venv/bin/python" -m pip install -r "$REPO_ROOT/requirements.txt"
-"$REPO_ROOT/.venv/bin/python" -m pip install --no-deps "efficientat @ git+https://github.com/LandryBulls/EfficientAT.git@010b68e69d9f75d074eb8720ac06968c38352ac8"
+[[ -x $REPO_ROOT/install.sh ]] || fail "missing executable install.sh"
+if [[ -d $REPO_ROOT/.venv ]]; then
+  chown -R "$service_user:$service_group" "$REPO_ROOT/.venv"
+fi
+sudo -u "$service_user" -H "$REPO_ROOT/install.sh" --python python3
 "$REPO_ROOT/.venv/bin/python" -c 'import efficientat, numpy, scipy, torch; print(f"Validated Python stack: numpy={numpy.__version__} scipy={scipy.__version__} torch={torch.__version__}")'
 
 install -d -m 0755 "$CONFIG_DIR" "$HELPER_DIR"

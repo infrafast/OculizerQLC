@@ -27,6 +27,7 @@ case "${1:-}" in
   run-auto)
     [[ -r $CONFIG ]] || { echo "oculizer-service: missing $CONFIG" >&2; exit 1; }
     /usr/bin/python3 /usr/local/lib/oculizer-deploy/wait_for_qlc.py
+    export OCULIZER_CONTROL_SOCKET="${XDG_RUNTIME_DIR:-/tmp}/oculizer-$(id -u).sock"
     exec /usr/bin/python3 /usr/local/lib/oculizer-deploy/run_oculizer.py
     ;;
   auto)
