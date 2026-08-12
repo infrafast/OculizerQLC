@@ -5,6 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
 EFFICIENTAT_URL="efficientat @ git+https://github.com/LandryBulls/EfficientAT.git@010b68e69d9f75d074eb8720ac06968c38352ac8"
+PYTORCH_CPU_INDEX="https://download.pytorch.org/whl/cpu"
 PIP_NETWORK_OPTIONS=(
     --timeout "${OCULIZER_PIP_TIMEOUT:-300}"
     --retries "${OCULIZER_PIP_RETRIES:-20}"
@@ -70,6 +71,18 @@ VENV_PYTHON="$VENV_DIR/bin/python"
 
 echo "Installing Oculizer dependencies..."
 "$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" --upgrade pip setuptools wheel
+
+# PyPI's Linux PyTorch wheels can pull the CUDA runtime even on machines with
+# no NVIDIA GPU. Install the official CPU builds first; the matching pins in
+# requirements.txt then remain satisfied without downloading CUDA, cuDNN,
+# NCCL, or Triton. macOS wheels are already CPU/Metal builds on PyPI.
+if [[ "$(uname -s)" == "Linux" ]]; then
+    echo "Installing CPU-only PyTorch packages..."
+    "$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" \
+        --index-url "$PYTORCH_CPU_INDEX" \
+        torch==2.11.0 torchaudio==2.11.0 torchvision==0.26.0
+fi
+
 "$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" -r "$SCRIPT_DIR/requirements.txt"
 "$VENV_PYTHON" -m pip install "${PIP_NETWORK_OPTIONS[@]}" --no-deps "$EFFICIENTAT_URL"
 

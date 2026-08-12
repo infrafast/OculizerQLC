@@ -16,6 +16,9 @@ torch==2.11.0
 torchaudio==2.11.0
 torchvision==0.26.0
 
+# On Linux, install.sh obtains these three packages from PyTorch's CPU index
+# before processing this file, preventing PyPI from pulling CUDA dependencies.
+
 # EfficientAT is installed separately with --no-deps. Its historical package
 # metadata pins PyTorch 1.13, which is unavailable for Python 3.11 on Apple
 # Silicon. See the installation command in README.md.
