@@ -95,7 +95,7 @@ fi
 VENV_PYTHON="$VENV_DIR/bin/python"
 
 echo "Installing Oculizer dependencies..."
-run_pip install "${PIP_NETWORK_OPTIONS[@]}" --upgrade pip setuptools wheel
+run_pip install "${PIP_NETWORK_OPTIONS[@]}" --upgrade pip "setuptools<82" wheel
 
 # PyPI's Linux PyTorch wheels can pull the CUDA runtime even on machines with
 # no NVIDIA GPU. Install the official CPU builds first; the matching pins in
@@ -110,6 +110,27 @@ fi
 
 run_pip install "${PIP_NETWORK_OPTIONS[@]}" -r "$SCRIPT_DIR/requirements.txt"
 run_pip install "${PIP_NETWORK_OPTIONS[@]}" --no-deps "$EFFICIENTAT_URL"
+
+echo "Checking runtime dependencies..."
+"$VENV_PYTHON" - <<'PY'
+import efficientat
+import torch
+import torchaudio
+import torchvision
+
+expected = {
+    "torch": (torch.__version__, "2.11.0"),
+    "torchaudio": (torchaudio.__version__, "2.11.0"),
+    "torchvision": (torchvision.__version__, "0.26.0"),
+}
+for package, (installed, required) in expected.items():
+    if installed.split("+", 1)[0] != required:
+        raise SystemExit(
+            f"Error: {package} {installed} is installed; expected {required}."
+        )
+
+print("Runtime dependency check passed.")
+PY
 
 echo
 echo "Oculizer installation complete."
