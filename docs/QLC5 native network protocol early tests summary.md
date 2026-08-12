@@ -74,6 +74,12 @@ Example QLC+ startup, without `--web`:
 /usr/bin/qlcplus-qml /path/to/workspace.qxw -f -3 --nowm
 ```
 
+Technically native server doesn't exclude web server, even though the UI
+looks like it.
+If you launch QLC+ with the --web option you should still be able to use
+the network protocol.
+
+
 ## 2. Protocol Overview
 
 Native packets start with `E6 86`, followed by:

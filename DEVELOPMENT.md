@@ -393,7 +393,7 @@ Exit criterion: while the interactive application or headless runtime is running
 
 ### Phase 8a.1 — Fast event detection and scene-transition separation
 
-Status: **implemented — automated/offline validation complete; live macOS validation pending**
+Status: **complete — automated/offline and live QLC+ operator validation accepted**
 
 Objective: make detection latency independent from the operator's scene-change-frequency policy. The v6 predictor remains the source of artistic scene candidates and keeps its training-compatible four-second window. A lightweight priority path detects silence, audio recovery, and speech transitions without waiting for a v6 artistic classification. `responsive`, `normal`, and `calm` may accept ordinary music scenes at different rates, but they must observe priority events and stable candidate changes at the same latency.
 
@@ -463,9 +463,11 @@ Embedded-system impact gate: this phase targets a Raspberry Pi 5 with 8 GB RAM. 
 
 Exit criterion: all dynamic-control profiles detect priority events at essentially the same latency; silence follows its configured RMS hysteresis without waiting for v6; a confident music-to-speech transition selects `announcement` within one to two seconds; v6 retains its four-second artistic window; calm substantially reduces ordinary activations without hiding stable candidates; and status clearly explains every detected, blocked, priority, and accepted route.
 
+Operator acceptance on 2026-08-12 confirmed the expected live behavior across `responsive`, `normal`, and `calm`: priority `silent` and `announcement` routing remains responsive and independent from ordinary transition filtering, music resumes from fresh prediction state, and `calm` reduces ordinary scene changes without delaying priority events. Raspberry Pi CPU, temperature, and missed-deadline measurements remain part of Phase 8b and do not block this completed phase.
+
 ### Phase 8a.2 — QLC+ 5 WebSocket Virtual Console backend
 
-Status: **implemented — automated validation complete; live buttons plus master/bass slider protocol validated on QLC+ 5.2.2**
+Status: **complete — automated and live QLC+ 5.2.2 operator validation accepted**
 
 Objective: add a second QLC+ 5 transport selected with `--output qlc-websocket`, while retaining `--output qlc-osc` as a fully supported backend. Both transports implement activation-only scene routing and the same normalized master/bass/mid/high controls. `silent` is an ordinary configured scene route; neither transport owns a separate implicit blackout policy. Oculizer requests only the target button activation, while the QLC+ workspace owner chooses layering or exclusivity with Frames and Solo Frames. This milestone does not affect prediction, audio analysis, Enttec output, or the Phase 8a local Unix control socket used by `oculizerctl.py`.
 
@@ -518,16 +520,18 @@ Automated validation gate — no live QLC+ dependency:
 Manual QLC+ 5 validation gate:
 
 - [x] connect to the real QLC+ 5.2.2 instance and confirm widget discovery after opening the current workspace;
-- [ ] confirm every configured scene caption resolves to exactly one normalized button caption and collision failures are actionable; `ambient1` -> `AMBIENT1` is validated;
-- [ ] confirm in an ordinary Frame that successive Oculizer commands can leave functions layered, and in a Solo Frame that activating a new button stops the previous function and updates visible button state;
-- [ ] confirm explicit `silent`, `announcement`, fallback, reload, and shutdown behavior without relying on implicit previous-scene deactivation;
-- [ ] restart QLC+ or reload the workspace and prove that rediscovery replaces stale widget IDs;
-- [ ] run the same representative scene sequence through OSC and WebSocket and compare functional lighting behavior;
-- [ ] document the validated QLC+ build, known limitations, files changed, tests added/executed, and recommendations for future advanced-widget support.
+- [x] confirm every configured scene caption resolves to exactly one normalized button caption and collision failures are actionable;
+- [x] confirm in an ordinary Frame that successive Oculizer commands can leave functions layered, and in a Solo Frame that activating a new button stops the previous function and updates visible button state;
+- [x] confirm explicit `silent`, `announcement`, fallback, reload, and shutdown behavior without relying on implicit previous-scene deactivation;
+- [x] restart QLC+ or reload the workspace and prove that rediscovery replaces stale widget IDs;
+- [x] run the same representative scene sequence through OSC and WebSocket and compare functional lighting behavior;
+- [x] document the validated QLC+ build, known limitations, files changed, tests added/executed, and recommendations for future advanced-widget support.
 
 Embedded-system impact gate: measure idle connection cost, message latency, memory, reconnect behavior, and log volume. The backend must add no audio-analysis work and must remain suitable for the Phase 8b Raspberry Pi 5 service design.
 
 Exit criterion: `--output qlc-websocket` discovers Virtual Console buttons by unique caption and both QLC+ transports issue activation-only scene intentions, allowing ordinary Frames to layer functions and Solo Frames to enforce exclusivity, while special routes, fallback, reload, dry-run, shutdown, OSC/Enttec regressions, and non-persistence of widget IDs are validated.
+
+Operator acceptance on 2026-08-12 confirmed the complete manual gate on QLC+ 5.2.2: configured captions resolve correctly, ordinary and Solo Frames retain their intended layering/exclusivity responsibilities, `silent`, `announcement`, fallback, reload, shutdown, and widget rediscovery behave as specified, and representative OSC and WebSocket scene sequences are functionally equivalent. The validated `master` and `bass` sliders cover the controls enabled by the reference configuration; `mid` and `high` remain available but require corresponding QLC+ widgets before operators enable them. Automatic reconnect, authenticated WebSocket access, and advanced widgets remain documented future extensions rather than completion requirements for this phase.
 
 QLC+ action policy: `OSCaction` and `OSCPath` are consumed exclusively by the OSC backend. WebSocket ignores both fields, resolves every logical route by `caption` (defaulting to the logical name), and derives the correct gesture from the actual QLC+ button action type: Toggle and Blackout are state-aware activations, Flash is a press/release, and Stop All is one momentary press. Persistent activation errors must be logged once per distinct error rather than on every audio update tick. Obsolete routing keys `action` and `path` are rejected with a migration error to prevent cross-transport ambiguity.
 
@@ -582,9 +586,121 @@ Automated validation:
 - retained old `off` labels in archived concert/comparison reports as historical output rather than rewriting past observations;
 - migration requires renaming the QLC+ Virtual Console widget to `Silent` (or an equivalent normalized caption) and relearning its OSC input with the new address.
 
+### Phase 8a.3 — QLC+ 5 native network protocol evaluation and backend decision
+
+Status: **specified but awaiting upstream QLC+ clarification — protocol proof of concept validated; Web/native coexistence is unavailable in the tested GUI/CLI behavior**
+
+Objective: evaluate and, only if QLC+ can run its Native Server concurrently with its required Web Server and all validation gates succeed, implement a third selectable `qlc-native` lighting backend using the QLC+ 5 Tardis network protocol on UDP `9997` and TCP `9998`. Oculizer still selects exactly one lighting backend at a time; it would not send the same output through WebSocket and native simultaneously. However, the QLC+ Web Server must remain running for other operator tools and integrations even when Oculizer itself selects `qlc-native`. The existing `qlc-websocket`, `qlc-osc`, and Enttec backends remain supported. Native transport must preserve the current logical routing contract, automatic widget-ID discovery, activation-only scene behavior, QLC+ Frame/Solo Frame ownership, and normalized `master`, `bass`, `mid`, and `high` controls. Its additional value is access to the authoritative workspace transfer and broader Virtual Console actions, including carefully bounded semantic status feedback.
+
+Current evidence and pre-evaluation:
+
+- the repository reference documents the QLC+ 5.2.2 packet format, SimpleCrypt compatibility, authentication, project transfer, live action codes, and security limitations in `docs/QLC+ 5 native network protocol reference.md`;
+- the Python proof of concept in `docs/QLC5 native network protocol early tests summary.md` has successfully completed UDP discovery, TCP connection, authentication, project transfer handling, and a real `VCWidgetCaption` change to `HELLO FROM OCULIZER`;
+- technical feasibility is therefore established, but a production client is a medium-to-high complexity addition rather than a small variation of the WebSocket client;
+- native transport can provide a richer bidirectional integration and remove the HTTP `/vc.json` dependency for its own inventory, but it does not yet justify removing the simpler, validated WebSocket backend;
+- Phase 8a.3 is a conditional decision gate: add native as another mutually exclusive Oculizer output choice only if QLC+ can keep its Web Server independently available at the same time, and only after measured parity and reliability are demonstrated. Dual QLC+ server availability must not be confused with Oculizer using two lighting backends concurrently.
+
+Upstream dependency recorded from operator tests:
+
+- the tested QLC+ GUI permits selection of either the Native Server or the Web Server, but not both;
+- saving a project with Native Server selected does not preserve native availability when QLC+ is subsequently launched with `--web`: the command-line option overrides the saved server selection;
+- simultaneous native and WebSocket use is therefore not available through the tested configuration/startup paths, despite an earlier informal statement that the protocols could coexist;
+- before Oculizer relies on coexistence, request an unambiguous upstream contract and either independent GUI controls for both servers or independent CLI switches such as `--network-native` and `--web` that can be combined;
+- because Web Server availability is required by the operator's wider QLC+ use, implementation is deferred unless upstream provides supported simultaneous Web and native server operation inside QLC+. The `qlc-native` backend would remain mutually exclusive with `qlc-websocket` in Oculizer's `--output` selection; what is unacceptable is QLC+ forcing its Web Server to stop when its Native Server starts.
+
+#### Widget discovery and stable logical routing
+
+The native project transfer is the preferred runtime source of widget metadata:
+
+- [ ] authenticate and reassemble the bounded `NetProjectTransfer` XML exactly, including projects whose size is an exact multiple of 8192 bytes;
+- [ ] parse only the Virtual Console metadata required for routing: widget ID, caption, concrete widget type, button action type, slider range, parent Frame, and relevant function association;
+- [ ] build the same normalized complete-caption index used by WebSocket, reject collisions, and keep numeric widget IDs in memory only;
+- [ ] resolve every scene and continuous control from its logical name or configured `caption`; never persist a native widget ID in `qlc_config.json`;
+- [ ] rediscover the complete inventory after every new native session or project transfer and invalidate all prior IDs atomically;
+- [ ] consume relevant inbound widget create/delete/caption/type/range actions to update the inventory safely, or explicitly require a bounded rediscovery/reconnect when live project editing is detected;
+- [ ] retain optional offline `.qxw` parsing only as a configuration-validation tool. A file path may be stale, may not match the workspace currently open in QLC+, and must not be the default authority at runtime;
+- [ ] do not make the native backend depend on WebSocket `/vc.json`. WebSocket inventory may be evaluated as an explicit diagnostic fallback, but mixing two transports would add lifecycle and failure coupling and is excluded from the first native slice.
+
+The transferred XML is untrusted network input. Enforce a configurable maximum project size, bounded buffers, strict element/attribute validation, and parser behavior that does not resolve external entities. A malformed, incomplete, oversized, or incompatible project must fail before any live action is sent.
+
+#### Widget type and command semantics
+
+Runtime-discovered QLC+ type information is the preferred authority. Configuration may optionally declare an expected type as a safety assertion, but must not duplicate volatile IDs or silently override the actual widget type:
+
+- [ ] extend the transport-neutral control description only where necessary so the same logical `caption` can serve WebSocket and native lookup;
+- [ ] validate an optional expected widget class/action against the transferred project and fail explicitly on mismatch;
+- [ ] verify the exact QLC+ 5.2.2 section types and values for `VCButtonSetPressed` (`0xF004`) and every supported button action before implementing control;
+- [ ] preserve the activation-only business contract: Oculizer requests the target button activation and never deactivates the previous scene merely because another scene was selected;
+- [ ] let ordinary Frames layer functions and Solo Frames enforce exclusivity, exactly as validated for WebSocket;
+- [ ] route `silent`, `announcement`, fallbacks, and all ordinary scenes through the same configured caption resolution without implicit blackout semantics;
+- [ ] use Virtual Console button actions rather than `FunctionStart`/`FunctionStop` for normal scene routing, because direct function control would bypass button state and Frame/Solo Frame behavior;
+- [ ] define `active_scene` as the last logical command successfully issued by Oculizer, not as authoritative QLC+ global state;
+- [ ] issue no implicit scene stop or blackout on shutdown.
+
+#### Continuous master and frequency controls
+
+- [ ] implement `VCSliderSetValue` (`0xF005`) for the existing normalized `master`, `bass`, `mid`, and `high` values;
+- [ ] discover each slider's current ID and range from the transferred project and map Oculizer's `[0.0, 1.0]` value into that range with the same clamping behavior as WebSocket;
+- [ ] preserve the current modulation enable/disable configuration, smoothing, refresh rate, change threshold, and safe-value policy without adding an FFT or analysis pass;
+- [ ] coalesce replaceable slider updates in a bounded transport queue so a slow TCP session cannot block the audio, prediction, routing, or runtime-control threads and cannot accumulate stale values;
+- [ ] prioritize discrete scene commands over replaceable modulation updates while preserving command order and avoiding starvation;
+- [ ] suppress repeated identical transport errors and measure idle/update log volume on Raspberry Pi.
+
+`master`, `bass`, `mid`, and `high` remain ordinary utility sliders in QLC+. The native backend must not reinterpret their artistic purpose or create widgets/functions in the live workspace.
+
+#### Native session and coexistence caveats
+
+- [ ] implement correct TCP stream framing for split and coalesced packets, encrypted-payload lengths, malformed-packet resynchronization, and deterministic close;
+- [ ] reproduce the tested QLC+ 5 SimpleCrypt CRC, compression, and native-endian float behavior exactly, with protocol code isolated and covered by fixed binary vectors;
+- [ ] handle the authentication approval prompt and timeout explicitly. A cold headless boot cannot be considered autonomous until repeated or pre-authorized client behavior has been tested on the deployed QLC+ build;
+- [ ] detect disconnect through TCP closure because `NetPoll`/`NetPollReply` are declared but not implemented, then use bounded reconnect/backoff and obtain a fresh project before resuming output;
+- [ ] pin and validate the QLC+ action-code table against each supported QLC+ build. Positional opcode changes can silently execute the wrong action and must be treated as a compatibility boundary. Ask upstream to assign explicit stable numeric values, append new actions without renumbering existing values, and expose a protocol/version or capability handshake that lets third-party clients reject incompatible peers before sending actions;
+- [x] establish the current coexistence behavior: the tested GUI allows only one server type, and launching a native-configured project with `--web` overrides the saved selection and makes the Web server authoritative;
+- [ ] obtain an upstream response defining whether simultaneous Web and native servers are supported or intended, and how server selection should behave consistently between saved GUI configuration and command-line overrides;
+- [ ] if coexistence is accepted upstream, validate a build exposing both TCP `9998` and WebSocket/HTTP `9999` concurrently on macOS and Raspberry Pi through unambiguous GUI settings or combinable CLI switches;
+- [ ] before allowing `--output qlc-native`, verify native readiness while independently confirming that QLC+'s Web Server remains available for external consumers. Oculizer need not open or use a WebSocket connection in native mode, and failure of the native connection must not remove or disrupt the QLC+ Web Server;
+- [ ] bind native ports to localhost or a trusted show network only. The hard-coded replayable key, ineffective server password, advisory access mask, weak SimpleCrypt cipher, and unauthenticated CRC provide no meaningful network security;
+- [ ] ensure a second QLC+ peer cannot cause Oculizer to edit fixtures, functions, or workspace structure. The client emits only the approved live-control and narrowly scoped feedback actions.
+
+Frequent status updates through `VCWidgetCaption`, colors, or fonts require special caution: these opcodes are editing actions below `0xF000`, may mark the workspace modified, enter undo/replication paths, and create unnecessary traffic. The first native slice must keep semantic feedback optional, low-rate, change-only, and limited to explicitly configured status widgets. It must never update captions at audio or modulation frequency. If QLC+ cannot provide a non-editing status action, scene/button/slider parity may be accepted while continuous semantic feedback remains deferred.
+
+#### Implementation boundary
+
+If the research gate is accepted, add an isolated native protocol/client module and a `QLCNativeBackend` behind the existing `LightingBackend` interface. Reuse `SceneMap`, logical captions, fallback handling, modulation producers, automatic routing, and runtime control. Do not place encryption, TCP reads, project parsing, reconnect logic, or QLC+-specific action codes in audio callbacks, `AutomaticSceneRouter`, curses, or predictor code.
+
+Suggested implementation slices:
+
+1. fixed-vector packet/section/SimpleCrypt codec tests and bounded TCP framing;
+2. discovery, authentication, project transfer, safe XML inventory, and dry-run/offline inspection;
+3. button activation with Frame/Solo Frame parity and special-route validation;
+4. coalesced slider transport for `master`, `bass`, `mid`, and `high`;
+5. reconnect, live inventory invalidation, service readiness, resource measurements, and optional semantic feedback;
+6. explicit comparison of OSC, WebSocket, and native behavior before deciding whether all three remain supported.
+
+Automated validation gate:
+
+- [ ] cover known binary packets, encryption/decryption, truncated/coalesced TCP data, authentication replies, exact-multiple project chunks, corrupt/oversized XML, and disconnects;
+- [ ] cover caption normalization/collisions, widget-type mismatch, inventory replacement, missing widgets, all supported button actions, slider ranges, bounded coalescing, error suppression, and reconnect state reset;
+- [ ] prove scene changes remain activation-only and no transport failure blocks audio or prediction;
+- [ ] prove dry-run and offline validation open no UDP/TCP/WebSocket connection;
+- [ ] run all OSC, WebSocket, Enttec, automatic routing, runtime-control, interactive, headless, and deployment regressions.
+
+Manual QLC+ 5 validation gate:
+
+- [ ] validate native discovery/authentication/project transfer on the exact macOS and Raspberry Pi QLC+ builds;
+- [ ] validate automatic caption/type/ID discovery without reading hard-coded IDs;
+- [ ] validate ordinary and Solo Frames, `silent`, `announcement`, fallback, reload, shutdown, and widget-ID changes;
+- [ ] validate `master` and `bass`, then `mid` and `high` when their widgets are enabled;
+- [x] test simultaneous WebSocket and native availability under the current GUI and `--web` startup paths: the tested behavior is mutually exclusive and `--web` overrides the saved Native Server choice;
+- [ ] repeat coexistence validation only if upstream clarifies the contract or provides a build/configuration that can enable both servers explicitly;
+- [ ] compare representative OSC, WebSocket, and native scene/modulation sequences;
+- [ ] measure latency, CPU, RSS, queue depth, reconnect behavior, log volume, and long-session stability on Raspberry Pi.
+
+Decision criterion: a native backend may proceed to implementation and production only if the same QLC+ instance supports the Web Server and Native Server concurrently through an explicit, stable, and supported configuration. At runtime Oculizer will still select one output backend: either `qlc-websocket` or `qlc-native`, never both. A selected native backend must preserve the relevant validated lighting behavior, discover IDs and widget types without persistent numeric configuration, keep continuous controls bounded, survive project/session changes safely, and provide a measured operational benefit. If starting QLC+'s Native Server disables its Web Server, Phase 8a.3 remains deferred because the operator's other Web-based QLC+ uses would stop working.
+
 ### Phase 8b — Raspberry Pi 5 production target
 
-Status: **in progress — Raspberry Pi 5 Linux ARM64 baseline identified; dependency validation pending**
+Status: **in progress — Raspberry Pi 5 Linux ARM64 baseline identified; finalization follows the Phase 8a.3 decision gate**
 
 Initial target baseline recorded on 2026-08-10:
 
@@ -676,6 +792,28 @@ Control state is initially process-local and is not restored after a crash or re
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-12 — Native QLC+ protocol pre-evaluation and Phase 8a.3 gate
+
+Delivered documentation:
+
+- reviewed the complete native-protocol reference and successful Python/QLC+ proof of concept under their renamed `docs/` paths;
+- inserted Phase 8a.3 before completion of the Raspberry Pi production phase without changing the existing Phase 8b scope;
+- selected native project transfer XML as the preferred authoritative runtime inventory, with `.qxw` parsing limited to offline validation and WebSocket inventory excluded from the initial native dependency chain;
+- specified discovery of IDs, captions, widget/action types, slider ranges, and Frame ownership without persistent numeric configuration;
+- preserved activation-only button routing, QLC+ Frame/Solo Frame responsibility, and the existing normalized master/bass/mid/high modulation contract;
+- recorded TCP framing, SimpleCrypt, authentication approval, project-size, opcode compatibility, security, reconnect, bounded-queue, semantic-feedback, and Web/native coexistence caveats;
+- made implementation conditional on automated, live QLC+, and Raspberry Pi gates rather than treating the caption proof of concept as a production backend.
+
+Validation:
+
+- reconciled the proposal with the existing OSC and WebSocket backends, `LightingBackend`, `SceneMap`, logical caption configuration, runtime control, and Phase 8b service constraints;
+- checked the roadmap update with `git diff --check`;
+- operator testing resolved the conflicting coexistence claims for the current build: the GUI exposes mutually exclusive Web/Native selection, and `--web` overrides a saved Native Server choice;
+- converted future coexistence into an upstream dependency requiring explicit, combinable server controls before any production design relies on both protocols;
+- recorded an upstream compatibility request for stable explicit action-code values and a protocol/capability handshake so third-party clients can reject incompatible opcode tables safely.
+
+Remaining work: await upstream clarification on QLC+ server coexistence and opcode compatibility. Continue Phase 8a.3 only if QLC+ can keep both servers running; Oculizer itself will continue selecting a single backend. If QLC+ keeps the servers mutually exclusive, defer native implementation indefinitely because the Web Server is independently required by other operator integrations.
 
 ### 2026-08-06 — Unified dynamic-control profiles
 
