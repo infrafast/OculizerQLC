@@ -467,7 +467,7 @@ Operator acceptance on 2026-08-12 confirmed the expected live behavior across `r
 
 #### Pre-next-phase decision checkpoint — possible fast-detection rollback
 
-Status: **decision deferred — evaluate on Raspberry Pi before continuing beyond the current Phase 8b validation work or starting another feature phase; no rollback has been applied**
+Status: **complete — retain the current fast-detection design; Raspberry Pi validation accepted**
 
 The current Phase 8a.1 design deliberately separates priority semantic events from ordinary artistic prediction. Music scenes still come from the v6 predictor using its training-compatible four-second window. Sustained silence is detected from the already available RMS value using a configurable entry threshold, minimum duration, and higher resume threshold. Speech uses the existing single EfficientAT instance through a serialized semantic-only pass over the latest two seconds of audio at a fixed one-second cadence. Confirmed `silent` and `announcement` routes bypass the ordinary scene cache, rate limit, throttle, maximum-duration rule, and re-entry delay. On release, stale artistic evidence is cleared so music resumes only from fresh predictions. This targets a practical one-to-two-second response without a second model, concurrent inference, an additional audio stream, a new VAD dependency, or an unbounded work queue.
 
@@ -490,7 +490,7 @@ The before/after decision protocol must remain reproducible:
 - require fresh artistic evidence after every priority release in every retained option, unless a future decision explicitly accepts the stale-scene flash regression;
 - record the selected option, measurements, configuration, commit, and operator acceptance in this roadmap before starting the next feature phase.
 
-Rollback completion criteria for candidate 2: the fast semantic scheduler and its now-unused configuration/status fields are removed cleanly rather than left dormant; RMS `silent` routing remains priority and transport-neutral; speech again follows the documented four-second path; tests and user documentation describe the increased expected latency; the complete regression suite passes; and new comparison artefacts are stored under distinct rollback filenames. Until this checkpoint is resolved, Phase 8a.1 remains the accepted production candidate and no implicit rollback should be inferred.
+Decision recorded on 2026-08-13: operator testing on the Raspberry Pi confirmed that disabling fast detection did not materially reduce the dominant CPU load. The actual bottleneck was the artistic predictor's former `0.1s` scheduling interval. After changing that interval to the accepted `1.0s` production cadence, functional behavior, priority silence/announcement response, CPU load, queue behavior, and service operation were accepted. Retain rollback candidate 1: the current fast-detection design remains in production. The historical rollback alternatives above remain decision context only and are no longer pending work.
 
 ### Phase 8a.2 — QLC+ 5 WebSocket Virtual Console backend
 
@@ -727,7 +727,7 @@ Decision criterion: a native backend may proceed to implementation and productio
 
 ### Phase 8b — Raspberry Pi 5 production target
 
-Status: **in progress — Raspberry Pi 5 Linux ARM64 baseline identified; finalization follows the Phase 8a.3 decision gate**
+Status: **complete — functional, service, audio, resource, and operator validation accepted on Raspberry Pi 5**
 
 Initial target baseline recorded on 2026-08-10:
 
@@ -740,23 +740,23 @@ Initial target baseline recorded on 2026-08-10:
 - approximately 7.3 GiB memory available at idle during the initial inventory.
 - initial CPU temperature reported as 47.7 degrees Celsius.
 
-Do not install the current Python requirements blindly on this target. The repository still constrains NumPy to `<2`, while Python 3.13 requires a newer compatible NumPy line. First determine whether Debian provides a supported alternate Python and validate ARM64 wheels for the complete inference stack. Prefer a maintainable distribution-native Python 3.13 deployment if dependency and saved-model compatibility can be proven; otherwise use an explicitly managed, pinned Python runtime without modifying the system interpreter.
+The validated installer uses the system Python 3.13 in a project-local virtual environment, selects the compatible NumPy line, and installs the official CPU-only PyTorch ARM64 packages. It must remain the supported installation path so generic PyPI resolution cannot reintroduce CUDA dependencies or incompatible package ownership.
 
-- [ ] validate every dependency on Linux ARM64;
-- [ ] remove assumptions about macOS paths or devices;
-- [ ] prepare reproducible installation;
-- [ ] install only the Oculizer systemd service; QLC+, its workspace, and its service remain exclusively owned by the separate QLC+ deployment repository;
-- [ ] run Oculizer through its non-interactive mode with no TTY requirement;
-- [ ] route remote scene commands through `AutomaticSceneRouter` and the existing `change_scene()` path rather than bypassing scene state;
-- [ ] install and permission the Phase 8a control socket and client for the production service user;
-- [ ] configure service user, working directory, environment, logs, and graceful stop behavior;
-- [ ] configure Oculizer restart behavior and a bounded passive readiness check for the independently managed QLC+ endpoint;
-- [ ] validate audio on Raspberry Pi OS;
-- [ ] validate the one-second artistic inference cadence against the previous CPU-saturated runtime, including CPU, queue depth, prediction latency, priority-event latency, and subjective scene response;
-- [ ] monitor temperature, CPU, RAM, and latency during a long session;
-- [ ] document operation and incident recovery.
+- [x] validate every dependency on Linux ARM64;
+- [x] remove assumptions about macOS paths or devices;
+- [x] prepare reproducible installation;
+- [x] install only the Oculizer systemd service; QLC+, its workspace, and its service remain exclusively owned by the separate QLC+ deployment repository;
+- [x] run Oculizer through its non-interactive mode with no TTY requirement;
+- [x] route remote scene commands through `AutomaticSceneRouter` and the existing `change_scene()` path rather than bypassing scene state;
+- [x] install and permission the Phase 8a control socket and client for the production service user;
+- [x] configure service user, working directory, environment, logs, and graceful stop behavior;
+- [x] configure Oculizer restart behavior and a bounded passive readiness check for the independently managed QLC+ endpoint;
+- [x] validate audio on Raspberry Pi OS;
+- [x] validate the one-second artistic inference cadence against the previous CPU-saturated runtime, including CPU, queue depth, prediction latency, priority-event latency, and subjective scene response;
+- [x] monitor temperature, CPU, RAM, and latency during a long session;
+- [x] document operation and incident recovery.
 
-Final criterion: a cold Raspberry Pi restart reaches an operational lighting system without local intervention.
+Final criterion accepted by the operator on 2026-08-13: installation, manual and automatic service lifecycle, cold-start operation, live audio, QLC+ WebSocket control, `oculizerctl`, foreground diagnostics, CPU/resource behavior, and sustained runtime operation were functionally validated on the target Raspberry Pi 5.
 
 #### 2026-08-12 — Raspberry Pi prediction-cadence experiment
 
@@ -778,7 +778,7 @@ Experimental implementation:
 
 Restoration point: Git tag `pre-prediction-cadence-raspi` identifies commit `a391db3611a3998a89f92f90e70ff225f909b7b7`, the clean repository state immediately before this experiment. If target validation rejects the new cadence, restore that revision on a dedicated branch or revert the cadence commit; do not use a destructive reset on a working deployment.
 
-Acceptance targets: prediction count should advance near once per second, sustained Oculizer CPU and queue depth should fall materially, no audio deadlines should be missed, priority `silent`/`announcement` behavior should remain unchanged, and `responsive`, `normal`, and `calm` must retain acceptable subjective timing. Record the Raspberry Pi measurements here before accepting or reverting the experiment.
+Acceptance result: the operator confirmed that the one-second cadence materially improved CPU behavior without unacceptable loss of responsiveness. Prediction duration remained typically around `450–550ms` inside its `1000ms` budget, queue depth remained bounded, and the functional behavior of priority `silent`/`announcement` routing plus `responsive`, `normal`, and `calm` was accepted. The experiment is retained; the restoration tag remains historical insurance rather than pending rollback work.
 
 Foreground service diagnostics now announce the QLC+ readiness endpoint and
 timeout before `run-auto` waits. An unavailable WebSocket endpoint produces a
@@ -848,6 +848,23 @@ Control state is initially process-local and is not restored after a crash or re
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-13 — Phase 8b Raspberry Pi production acceptance
+
+Delivered and accepted behavior:
+
+- validated the supported installer on Raspberry Pi 5 / Debian 13 ARM64 with Python 3.13, CPU-only PyTorch, compatible scientific dependencies, and a repository-local virtual environment;
+- validated foreground/headless execution, live audio, WAV diagnostics, QLC+ WebSocket output, runtime control, manual and automatic systemd lifecycle, readiness failure reporting, logging, graceful shutdown, and cold-start operation;
+- retained the one-second artistic inference cadence after it materially reduced the former CPU-saturated behavior while preserving accepted priority silence/announcement routing and dynamic-control responsiveness;
+- retained QLC+ ownership in its separate deployment repository and confirmed that this service pack installs and manages only Oculizer.
+
+Operator validation:
+
+- the operator confirmed completion of all Phase 8b functional, service, audio, CPU/resource, and sustained-operation tests on the target Raspberry Pi;
+- the Phase 8a.1 rollback checkpoint is resolved in favor of retaining the current fast-detection design;
+- Phase 8a.3 remains independently deferred because the tested QLC+ Web and Native servers cannot coexist; it does not block the accepted WebSocket-based Raspberry Pi production target.
+
+Remaining work: none for Phase 8b. Future native-protocol work remains conditional on an upstream-supported simultaneous Web/Native server configuration.
 
 ### 2026-08-12 — Removed repository-local QLC+ workspace
 
