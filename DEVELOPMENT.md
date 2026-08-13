@@ -615,25 +615,28 @@ Automated validation:
 
 ### Phase 8a.3 — QLC+ 5 native network protocol evaluation and backend decision
 
-Status: **specified but awaiting upstream QLC+ clarification — protocol proof of concept validated; Web/native coexistence is unavailable in the tested GUI/CLI behavior**
+Status: **ready for implementation against QLC+ commit `984f0e7` — simultaneous Web/native servers and stable grouped action codes are now provided upstream; native project transfer is accepted as the `/vc.json`-equivalent inventory authority**
 
-Objective: evaluate and, only if QLC+ can run its Native Server concurrently with its required Web Server and all validation gates succeed, implement a third selectable `qlc-native` lighting backend using the QLC+ 5 Tardis network protocol on UDP `9997` and TCP `9998`. Oculizer still selects exactly one lighting backend at a time; it would not send the same output through WebSocket and native simultaneously. However, the QLC+ Web Server must remain running for other operator tools and integrations even when Oculizer itself selects `qlc-native`. The existing `qlc-websocket`, `qlc-osc`, and Enttec backends remain supported. Native transport must preserve the current logical routing contract, automatic widget-ID discovery, activation-only scene behavior, QLC+ Frame/Solo Frame ownership, and normalized `master`, `bass`, `mid`, and `high` controls. Its additional value is access to the authoritative workspace transfer and broader Virtual Console actions, including carefully bounded semantic status feedback.
+Objective: now that QLC+ can run its Native Server concurrently with its required Web Server, implement a staged replacement for Oculizer's `qlc-websocket` transport using the QLC+ 5 Tardis network protocol on UDP `9997` and TCP `9998`. Keep `qlc-websocket` available only as a migration and validation baseline until native parity is proven; do not send through both transports simultaneously. After all automated and live gates pass, remove the WebSocket output from Oculizer while leaving QLC+'s Web Server running for other operator tools and integrations. The `qlc-osc` and Enttec backends remain supported. Native transport must preserve the current logical routing contract, automatic widget-ID discovery, activation-only scene behavior, QLC+ Frame/Solo Frame ownership, and normalized `master`, `bass`, `mid`, and `high` controls. Its additional value is access to the authoritative workspace transfer and broader Virtual Console actions, including carefully bounded semantic status feedback.
 
 Current evidence and pre-evaluation:
 
 - the repository reference documents the QLC+ 5.2.2 packet format, SimpleCrypt compatibility, authentication, project transfer, live action codes, and security limitations in `docs/QLC+ 5 native network protocol reference.md`;
 - the Python proof of concept in `docs/QLC5 native network protocol early tests summary.md` has successfully completed UDP discovery, TCP connection, authentication, project transfer handling, and a real `VCWidgetCaption` change to `HELLO FROM OCULIZER`;
+- upstream QLC+ commit [`984f0e7`](https://github.com/mcallegari/qlcplus/commit/984f0e75e48c7c19a56581b82c5e5895285135c7) makes Web and Native servers independent, replaces the exclusive server type with a bit mask, adds the combinable `--remote` command-line option, and lets the GUI start or stop each server independently;
+- the same upstream commit assigns explicit ranges to action families. Native control must use the new grouped live codes, notably `VCButtonSetPressed = 0xF200` and `VCSliderSetValue = 0xF300`, rather than the earlier positional `0xF004`/`0xF005` values documented by the initial proof of concept;
 - technical feasibility is therefore established, but a production client is a medium-to-high complexity addition rather than a small variation of the WebSocket client;
-- native transport can provide a richer bidirectional integration and remove the HTTP `/vc.json` dependency for its own inventory, but it does not yet justify removing the simpler, validated WebSocket backend;
-- Phase 8a.3 is a conditional decision gate: add native as another mutually exclusive Oculizer output choice only if QLC+ can keep its Web Server independently available at the same time, and only after measured parity and reliability are demonstrated. Dual QLC+ server availability must not be confused with Oculizer using two lighting backends concurrently.
+- native project transfer supplies the complete authoritative workspace XML. Its Virtual Console representation contains the IDs, captions, concrete widget elements, button configuration, slider limits, and Frame hierarchy required to reproduce current `/vc.json` caption/type discovery without WebSocket coupling;
+- native inventory is functionally equivalent for Oculizer routing, though operationally more complex than the already-parsed JSON: it requires authentication, bounded project reassembly, safe XML parsing, and atomic inventory refresh;
+- Phase 8a.3 may therefore resume. Keep the validated WebSocket backend during implementation and parity testing, then replace it with `qlc-native` as the QLC control backend only after the complete automated and live gates below pass. QLC+'s Web Server remains enabled for the operator's other integrations even when Oculizer communicates through Native Server.
 
-Upstream dependency recorded from operator tests:
+Upstream dependency resolution:
 
 - the tested QLC+ GUI permits selection of either the Native Server or the Web Server, but not both;
 - saving a project with Native Server selected does not preserve native availability when QLC+ is subsequently launched with `--web`: the command-line option overrides the saved server selection;
-- simultaneous native and WebSocket use is therefore not available through the tested configuration/startup paths, despite an earlier informal statement that the protocols could coexist;
-- before Oculizer relies on coexistence, request an unambiguous upstream contract and either independent GUI controls for both servers or independent CLI switches such as `--network-native` and `--web` that can be combined;
-- because Web Server availability is required by the operator's wider QLC+ use, implementation is deferred unless upstream provides supported simultaneous Web and native server operation inside QLC+. The `qlc-native` backend would remain mutually exclusive with `qlc-websocket` in Oculizer's `--output` selection; what is unacceptable is QLC+ forcing its Web Server to stop when its Native Server starts.
+- those observations remain valid for the older tested build but are superseded by QLC+ commit `984f0e7`;
+- the new GUI exposes independent Web and Native controls, saved workspace configuration stores `Native|Web`, and the new `--remote` option can be combined with `--web` to force both servers from the command line;
+- exact QLC+ builds containing this commit must still pass live macOS and Raspberry Pi coexistence tests before the WebSocket backend is removed.
 
 #### Widget discovery and stable logical routing
 
@@ -656,7 +659,7 @@ Runtime-discovered QLC+ type information is the preferred authority. Configurati
 
 - [ ] extend the transport-neutral control description only where necessary so the same logical `caption` can serve WebSocket and native lookup;
 - [ ] validate an optional expected widget class/action against the transferred project and fail explicitly on mismatch;
-- [ ] verify the exact QLC+ 5.2.2 section types and values for `VCButtonSetPressed` (`0xF004`) and every supported button action before implementing control;
+- [ ] verify the exact section types and values for grouped `VCButtonSetPressed` (`0xF200`) and every supported button action on the target QLC+ build before implementing control;
 - [ ] preserve the activation-only business contract: Oculizer requests the target button activation and never deactivates the previous scene merely because another scene was selected;
 - [ ] let ordinary Frames layer functions and Solo Frames enforce exclusivity, exactly as validated for WebSocket;
 - [ ] route `silent`, `announcement`, fallbacks, and all ordinary scenes through the same configured caption resolution without implicit blackout semantics;
@@ -666,7 +669,7 @@ Runtime-discovered QLC+ type information is the preferred authority. Configurati
 
 #### Continuous master and frequency controls
 
-- [ ] implement `VCSliderSetValue` (`0xF005`) for the existing normalized `master`, `bass`, `mid`, and `high` values;
+- [ ] implement grouped `VCSliderSetValue` (`0xF300`) for the existing normalized `master`, `bass`, `mid`, and `high` values;
 - [ ] discover each slider's current ID and range from the transferred project and map Oculizer's `[0.0, 1.0]` value into that range with the same clamping behavior as WebSocket;
 - [ ] preserve the current modulation enable/disable configuration, smoothing, refresh rate, change threshold, and safe-value policy without adding an FFT or analysis pass;
 - [ ] coalesce replaceable slider updates in a bounded transport queue so a slow TCP session cannot block the audio, prediction, routing, or runtime-control threads and cannot accumulate stale values;
@@ -683,7 +686,7 @@ Runtime-discovered QLC+ type information is the preferred authority. Configurati
 - [ ] detect disconnect through TCP closure because `NetPoll`/`NetPollReply` are declared but not implemented, then use bounded reconnect/backoff and obtain a fresh project before resuming output;
 - [ ] pin and validate the QLC+ action-code table against each supported QLC+ build. Positional opcode changes can silently execute the wrong action and must be treated as a compatibility boundary. Ask upstream to assign explicit stable numeric values, append new actions without renumbering existing values, and expose a protocol/version or capability handshake that lets third-party clients reject incompatible peers before sending actions;
 - [x] establish the current coexistence behavior: the tested GUI allows only one server type, and launching a native-configured project with `--web` overrides the saved selection and makes the Web server authoritative;
-- [ ] obtain an upstream response defining whether simultaneous Web and native servers are supported or intended, and how server selection should behave consistently between saved GUI configuration and command-line overrides;
+- [x] obtain an upstream resolution defining simultaneous Web and native operation: commit `984f0e7` makes both server types independent in saved configuration and adds combinable `--web` and `--remote` command-line switches;
 - [ ] if coexistence is accepted upstream, validate a build exposing both TCP `9998` and WebSocket/HTTP `9999` concurrently on macOS and Raspberry Pi through unambiguous GUI settings or combinable CLI switches;
 - [ ] before allowing `--output qlc-native`, verify native readiness while independently confirming that QLC+'s Web Server remains available for external consumers. Oculizer need not open or use a WebSocket connection in native mode, and failure of the native connection must not remove or disrupt the QLC+ Web Server;
 - [ ] bind native ports to localhost or a trusted show network only. The hard-coded replayable key, ineffective server password, advisory access mask, weak SimpleCrypt cipher, and unauthenticated CRC provide no meaningful network security;
@@ -723,7 +726,7 @@ Manual QLC+ 5 validation gate:
 - [ ] compare representative OSC, WebSocket, and native scene/modulation sequences;
 - [ ] measure latency, CPU, RSS, queue depth, reconnect behavior, log volume, and long-session stability on Raspberry Pi.
 
-Decision criterion: a native backend may proceed to implementation and production only if the same QLC+ instance supports the Web Server and Native Server concurrently through an explicit, stable, and supported configuration. At runtime Oculizer will still select one output backend: either `qlc-websocket` or `qlc-native`, never both. A selected native backend must preserve the relevant validated lighting behavior, discover IDs and widget types without persistent numeric configuration, keep continuous controls bounded, survive project/session changes safely, and provide a measured operational benefit. If starting QLC+'s Native Server disables its Web Server, Phase 8a.3 remains deferred because the operator's other Web-based QLC+ uses would stop working.
+Decision criterion: native implementation may now proceed because upstream provides explicit simultaneous Web and Native server operation. During migration, Oculizer selects either `qlc-websocket` or `qlc-native`, never both. Native must preserve the relevant validated lighting behavior, discover IDs and widget types without persistent numeric configuration, keep continuous controls bounded, survive project/session changes safely, and pass the live macOS and Raspberry Pi coexistence/parity gates. Once accepted, remove `qlc-websocket` from Oculizer and keep QLC+'s independently running Web Server for external consumers.
 
 ### Phase 8b — Raspberry Pi 5 production target
 
