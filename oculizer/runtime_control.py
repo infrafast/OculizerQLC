@@ -85,6 +85,7 @@ class RuntimeControl:
             policy = self.router.get_transition_policy_status()
             route = self.router.get_route_status()
             backend = getattr(self.oculizer, "backend", None)
+            native_state = getattr(getattr(backend, "client", None), "state", None)
             current = getattr(getattr(self.oculizer, "scene_manager", None), "current_scene", None)
             return {
                 "mode": self.mode,
@@ -92,6 +93,7 @@ class RuntimeControl:
                 "resolved_scene": current.get("name") if isinstance(current, dict) else None,
                 "blackout": bool(getattr(backend, "blackout_active", False)),
                 "audio_worker_healthy": bool(self.health_check()),
+                "lighting_state": getattr(native_state, "value", "ready"),
                 "dynamic_control": self.active_dynamic_control,
                 **route,
                 **policy,

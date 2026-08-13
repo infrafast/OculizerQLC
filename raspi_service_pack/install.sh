@@ -26,7 +26,7 @@ Usage: sudo ./raspi_service_pack/install.sh [OPTIONS]
 Install Oculizer as a Raspberry Pi systemd service.
 
 Options:
-  --output MODE             qlc-websocket (default) or qlc-osc
+  --output MODE             qlc-websocket (default), qlc-native, or qlc-osc
   --audio-input SELECTOR    Oculizer input selector (default: default)
   --dynamic-control NAME    Startup dynamic-control profile (default: normal)
   --service-user USER       Runtime account (default: invoking sudo user or pi)
@@ -54,7 +54,7 @@ while (($#)); do
   esac
 done
 
-[[ $output == qlc-websocket || $output == qlc-osc ]] || fail "--output must be qlc-websocket or qlc-osc"
+[[ $output == qlc-websocket || $output == qlc-native || $output == qlc-osc ]] || fail "--output must be qlc-websocket, qlc-native, or qlc-osc"
 [[ $(uname -m) == aarch64 || $(uname -m) == arm64 ]] || fail "this installer currently requires Linux ARM64"
 [[ -r /etc/os-release ]] || fail "cannot identify the operating system"
 grep -qE '^(ID=debian|ID=raspbian)$' /etc/os-release || fail "Debian or Raspberry Pi OS is required"
@@ -112,7 +112,7 @@ payload = {
     "audio_input": audio_input,
     "dynamic_control": dynamic_control,
     "control_socket": "/run/oculizer/control.sock",
-    "qlc_port": 9999,
+    "qlc_port": 9998 if output == "qlc-native" else 9999,
 }
 temporary = path + ".tmp"
 with open(temporary, "w", encoding="utf-8") as handle:

@@ -47,6 +47,8 @@ def parse_args():
     parser.add_argument("--qlc-config", default=None, help="Unified QLC+ configuration (default: config/qlc_config.json)")
     parser.add_argument("--qlc-host", "--osc-host", dest="osc_host", default=None)
     parser.add_argument("--qlc-port", "--osc-port", dest="osc_port", type=int, default=None)
+    parser.add_argument("--qlc-encryptionkey", default=None,
+                        help="QLC+ native encryption key (default: value from qlc_config.json)")
     parser.add_argument("--qlc-dry-run", "--osc-dry-run", dest="osc_dry_run", action="store_true", default=None)
     parser.add_argument(
         "--dmx-dry-run",
@@ -125,6 +127,7 @@ def build_service(args) -> HeadlessOculizerService:
         prediction_interval_seconds=args.prediction_config.interval_seconds,
         audio_file=args.audio_file,
         fast_detection_config=args.fast_detection_config,
+        qlc_encryption_key=args.qlc_encryptionkey,
     )
     oculizer.restrict_scenes_to_backend()
     return HeadlessOculizerService(

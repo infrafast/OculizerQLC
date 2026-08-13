@@ -84,6 +84,19 @@ class DeploymentTests(unittest.TestCase):
         messages = " ".join(str(call.args[0]) for call in output.call_args_list)
         self.assertIn("192.0.2.10:1234", messages)
 
+    def test_qlc_readiness_uses_native_default_port(self):
+        class Connection:
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+        calls = []
+        def connect(endpoint, timeout):
+            calls.append((endpoint, timeout))
+            return Connection()
+        self.assertTrue(wait_for_qlc(
+            {"output": "qlc-native"}, timeout_seconds=1, connector=connect,
+        ))
+        self.assertEqual(calls[0][0], ("127.0.0.1", 9998))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1004,10 +1004,8 @@ Scene Cache Size:
                       help='Override the selected QLC+ transport host')
     parser.add_argument('--qlc-port', '--osc-port', dest='osc_port', type=int, default=None,
                       help='Override the selected QLC+ transport port')
-    parser.add_argument('--qlc-native-caption-test', action='store_true',
-                      help='Temporary native-protocol test: update QLC+ widget caption 71 once per second')
-    parser.add_argument('--qlc-encryptionkey', default='', metavar='KEY',
-                      help='QLC+ native encryption key for the temporary caption test (default: built-in QLC+ key)')
+    parser.add_argument('--qlc-encryptionkey', default=None, metavar='KEY',
+                      help='Override the QLC+ native encryption key (default: qlc_config.json or built-in QLC+ key)')
     parser.add_argument('--qlc-dry-run', '--osc-dry-run', dest='osc_dry_run', action='store_true', default=None,
                       help='Validate and log QLC+ intentions without network output')
     parser.add_argument('--dmx-dry-run', action='store_true',
@@ -1050,8 +1048,6 @@ Scene Cache Size:
         parser.error('--dmx-dry-run requires --output enttec')
     if args.filter_dmx and not args.dmx_dry_run:
         parser.error('--filter-dmx requires --dmx-dry-run')
-    if args.qlc_native_caption_test and args.output != 'qlc-websocket':
-        parser.error('--qlc-native-caption-test currently requires --output qlc-websocket')
     if not 1 <= args.scene_cache_size <= 100:
         parser.error('--scene-cache-size must be between 1 and 100')
     if not 0.5 <= args.scene_max_duration <= 3600:
@@ -1066,11 +1062,12 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
          osc_log_filters, dmx_dry_run,
          filter_dmx, graph_enabled, dynamic_control, dynamic_controls,
          scene_max_duration, control_socket_path, fast_detection_config,
-         qlc_native_caption_test, qlc_encryption_key):
+         qlc_encryption_key):
     setup_colors()
     initialize_screen(stdscr)
     lighting_detail = "Lighting: QLC+ OSC" if output == 'qlc-osc' else (
         "Lighting: QLC+ WebSocket" if output == 'qlc-websocket' else
+        "Lighting: QLC+ native" if output == 'qlc-native' else
         "Lighting: virtual Enttec DMX" if dmx_dry_run else "Lighting: Enttec DMX"
     )
     audio_detail = (
@@ -1084,19 +1081,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         f"Profile: {profile_detail} | Predictor: {predictor_version}",
         f"Dynamic control: {dynamic_control}",
     ]
-    if qlc_native_caption_test:
-        loading_details.append("Native test: authorize 'OculizerQLC' in the QLC+ GUI")
     show_loading_screen(stdscr, loading_details)
-
-    native_caption_probe = None
-    if qlc_native_caption_test:
-        from oculizer.light.qlc_native_caption_test import NativeCaptionTest
-        native_caption_probe = NativeCaptionTest(
-            host=osc_host or '127.0.0.1',
-            encryption_key=qlc_encryption_key,
-        )
-        native_caption_probe.connect_and_wait_for_authorization()
-        native_caption_probe.start_counter()
 
     startup_output = io.StringIO()
     try:
@@ -1133,6 +1118,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
                 scene_max_duration=scene_max_duration,
                 control_socket_path=control_socket_path,
                 fast_detection_config=fast_detection_config,
+                qlc_encryption_key=qlc_encryption_key,
             )
     finally:
         _log_captured_startup_output(startup_output)
@@ -1147,9 +1133,6 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         stdscr.addstr(0, 0, f"Unhandled error: {str(e)}", curses.color_pair(COLOR_PAIRS['error']))
         stdscr.refresh()
         time.sleep(5)
-    finally:
-        if native_caption_probe is not None:
-            native_caption_probe.stop()
 
 if __name__ == "__main__":
     # Parse args first to handle --list-devices without curses
@@ -1259,7 +1242,6 @@ if __name__ == "__main__":
                 args.scene_max_duration,
                 None if args.no_control_socket else args.control_socket,
                 args.fast_detection_config,
-                args.qlc_native_caption_test,
                 args.qlc_encryptionkey,
             ))
         except QLCWebSocketError as exc:

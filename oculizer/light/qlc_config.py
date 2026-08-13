@@ -10,6 +10,7 @@ from typing import Any, Mapping
 from oculizer.light.osc_client import OscConfig, OscConfigError, build_float_message
 from oculizer.light.scene_map import SceneMap, SceneMapError
 from oculizer.light.qlc_websocket import QLCWebSocketConfig
+from oculizer.light.qlc_native import QLCNativeConfig
 
 
 class QLCConfigError(ValueError):
@@ -26,6 +27,7 @@ class QLCControl:
 class QLCConfig:
     transport: OscConfig
     websocket: QLCWebSocketConfig
+    native: QLCNativeConfig
     controls: Mapping[str, QLCControl]
     routing: SceneMap
 
@@ -49,6 +51,7 @@ class QLCConfig:
         transport = data.get("transport", {})
         controls = data.get("controls", {})
         websocket = data.get("websocket", {})
+        native = data.get("native", {})
         routing = data.get("routing", {})
         if not isinstance(transport, Mapping):
             raise QLCConfigError("QLC+ configuration 'transport' must be an object")
@@ -58,6 +61,8 @@ class QLCConfig:
             raise QLCConfigError("QLC+ configuration 'routing' must be an object")
         if not isinstance(websocket, Mapping):
             raise QLCConfigError("QLC+ configuration 'websocket' must be an object")
+        if not isinstance(native, Mapping):
+            raise QLCConfigError("QLC+ configuration 'native' must be an object")
 
         validated_controls = {}
         for name, raw_control in controls.items():
@@ -81,6 +86,7 @@ class QLCConfig:
             return cls(
                 transport=OscConfig.from_mapping(transport),
                 websocket=QLCWebSocketConfig.from_mapping(websocket),
+                native=QLCNativeConfig.from_mapping(native),
                 controls=validated_controls,
                 routing=SceneMap.from_mapping(routing),
             )

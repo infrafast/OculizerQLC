@@ -12,6 +12,14 @@
     "connect_timeout_seconds": 2.0,
     "request_timeout_seconds": 2.0
   },
+  "native": {
+    "host": "127.0.0.1",
+    "port": 9998,
+    "encryption_key": "",
+    "reconnect_seconds": 2.0,
+    "maximum_project_size": 16777216,
+    "dry_run": false
+  },
   "controls": {
     "master": {
       "OSCPath": "/oculizer/master",

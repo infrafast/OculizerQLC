@@ -8,6 +8,7 @@ from oculizer.light.backends import (
     EnttecBackend,
     QLCOscBackend,
     QLCWebSocketBackend,
+    create_qlc_native_backend,
     create_qlc_osc_backend,
     create_qlc_websocket_backend,
 )
@@ -208,6 +209,22 @@ class QLCWebSocketBackendTests(unittest.TestCase):
 
         self.assertTrue(backend.activate_scene("party"))
         factory.assert_not_called()
+        backend.close()
+
+
+class QLCNativeBackendTests(unittest.TestCase):
+    def test_factory_dry_run_opens_no_network_connection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "qlc.json"
+            path.write_text(json.dumps({
+                "native": {"dry_run": True},
+                "routing": {"scenes": {"party": {
+                    "OSCPath": "/party", "caption": "Party Button"
+                }}},
+            }))
+            backend = create_qlc_native_backend(path)
+        self.assertEqual(backend.client.state.value, "ready")
+        self.assertTrue(backend.activate_scene("party"))
         backend.close()
 
 

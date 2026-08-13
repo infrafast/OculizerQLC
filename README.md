@@ -454,11 +454,35 @@ python oculize.py --output qlc-websocket --qlc-config config/qlc_config.json --q
 
 Continuous values are mapped from Oculizer's normalized `0..1` range to each discovered slider's QLC+ range. Connection or protocol failure is reported explicitly, and automatic reconnect plus authenticated (`-wa`) web access are not yet implemented. QLC+ web access is disabled by default, uses `ws://` rather than encrypted `wss://`, and should remain bound to the local host or a trusted network. See the official [QLC+ Web Interface](https://docs.qlcplus.org/v5/advanced/web-interface) and [Web API](https://docs.qlcplus.org/v5/advanced/web-interface/web-api) documentation.
 
+### QLC+ native backend (Phase 8a.3 preview)
+
+This backend requires a QLC+ build containing commit `984f0e7`. Start both QLC+ servers so its Web interface remains available to other applications:
+
+```bash
+qlcplus --web --remote /path/to/workspace.qxw
+```
+
+Then start Oculizer with:
+
+```bash
+python oculize.py --output qlc-native --qlc-config config/qlc_config.json --input-device blackhole
+```
+
+QLC+ asks the operator to authorize the native client named `OculizerQLC`. Oculizer continues audio analysis while waiting and exposes `lighting_state: waiting-for-qlc-authorization` through `oculizerctl status`. Waiting uses a blocked network thread rather than active polling. Scene and slider intentions are bounded: only the newest scene and newest value for each continuous control are retained, then applied after authorization and project discovery.
+
+An empty `native.encryption_key` in `config/qlc_config.json` uses QLC+'s built-in key. If QLC+ has a custom key, configure the same value there or override it at startup with `--qlc-encryptionkey KEY`. The native server uses port `9998` by default. Use `--qlc-host` and `--qlc-port` to override it. Native dry-run opens no connection:
+
+```bash
+python oculize.py --output qlc-native --qlc-dry-run --audio-file tests/fascination.wav
+```
+
+This backend is undergoing Raspberry Pi parity validation. Keep `qlc-websocket` available until the native validation checklist is accepted.
+
 ### Real-time audio controls
 
 In addition to selecting scenes, Oculizer can continuously send four normalized values from `0` to `1` for use inside QLC+:
 
-| Default OSC path / WebSocket caption | Signal | Typical QLC+ use |
+| Default OSC path / WebSocket/native caption | Signal | Typical QLC+ use |
 | --- | --- | --- |
 | `/oculizer/master` | Overall audio RMS/level | Grand master, scene brightness, or a dimmer group |
 | `/oculizer/bass` | Low-frequency energy | Bass pulses, fixture intensity, or effect speed |
@@ -483,7 +507,7 @@ Enable or disable the overall level under `audio.master_modulation`, and the fre
 
 Set `frequency_modulation.enabled` to `false` to disable all three bands, or change one band's `enabled` value independently. The supplied configuration enables `master` and `bass` but leaves `mid` and `high` disabled. Keep the other tuning fields already present in the configuration when editing these abbreviated examples.
 
-For OSC, enable a QLC+ OSC input listening on the configured port (`7700` by default), create a Virtual Console slider for each signal, and assign its external input with QLC+'s input auto-detection. For WebSocket, create sliders captioned `master`, `bass`, `mid`, and `high`; captions can be overridden under `controls` in `config/qlc_config.json`. Each control object contains its transport-specific `OSCPath` and its WebSocket `caption`. The current reference workspace contains `master` and `bass`; add `mid` and `high` before enabling those bands. Direct Enttec output does not consume these controls.
+For OSC, enable a QLC+ OSC input listening on the configured port (`7700` by default), create a Virtual Console slider for each signal, and assign its external input with QLC+'s input auto-detection. For WebSocket or native output, create sliders captioned `master`, `bass`, `mid`, and `high`; captions can be overridden under `controls` in `config/qlc_config.json`. Each control object contains its transport-specific `OSCPath` and shared caption. The current reference workspace contains `master` and `bass`; add `mid` and `high` before enabling those bands. Direct Enttec output does not consume these controls.
 
 Test without sending UDP packets:
 

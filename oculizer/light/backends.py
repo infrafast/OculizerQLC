@@ -13,6 +13,7 @@ from oculizer.light.osc_client import OscClient
 from oculizer.light.qlc_config import QLCConfig
 from oculizer.light.scene_map import SceneMap
 from oculizer.light.qlc_websocket import QLCWebSocketClient, QLCWebSocketError
+from oculizer.light.qlc_native import QLCNativeClient
 
 
 logger = logging.getLogger(__name__)
@@ -20,8 +21,9 @@ logger = logging.getLogger(__name__)
 OUTPUT_ENTTEC = "enttec"
 OUTPUT_QLC_OSC = "qlc-osc"
 OUTPUT_QLC_WEBSOCKET = "qlc-websocket"
+OUTPUT_QLC_NATIVE = "qlc-native"
 OUTPUT_DISABLED = "disabled"
-OUTPUT_CHOICES = (OUTPUT_ENTTEC, OUTPUT_QLC_OSC, OUTPUT_QLC_WEBSOCKET)
+OUTPUT_CHOICES = (OUTPUT_ENTTEC, OUTPUT_QLC_OSC, OUTPUT_QLC_WEBSOCKET, OUTPUT_QLC_NATIVE)
 
 
 class LightingBackend(ABC):
@@ -290,6 +292,24 @@ class QLCWebSocketBackend(LightingBackend):
         self.client.close()
 
 
+class QLCNativeBackend(QLCWebSocketBackend):
+    """Native QLC+ transport preserving caption-based backend semantics."""
+
+    name = OUTPUT_QLC_NATIVE
+
+    def initialize(self):
+        self.client.start()
+        return True
+
+    def reload_scene_map(self):
+        if self.config_path is None:
+            return
+        config = QLCConfig.from_file(self.config_path)
+        self.scene_map = config.routing
+        self.controls = dict(config.controls)
+        self.active_scene = None
+
+
 def create_qlc_osc_backend(
     config_path: str | Path,
     *,
@@ -343,6 +363,37 @@ def create_qlc_websocket_backend(
             config,
             websocket_factory=websocket_factory,
             inventory_loader=inventory_loader,
+        ),
+        qlc_config.routing,
+        controls=qlc_config.controls,
+        config_path=config_path,
+    )
+    backend.initialize()
+    return backend
+
+
+def create_qlc_native_backend(
+    config_path: str | Path, *, host: str | None = None, port: int | None = None,
+    dry_run: bool | None = None, encryption_key: str | None = None,
+) -> QLCNativeBackend:
+    qlc_config = QLCConfig.from_file(config_path)
+    config = qlc_config.native
+    overrides = {}
+    if host is not None:
+        overrides["host"] = host
+    if port is not None:
+        overrides["port"] = port
+    if dry_run is not None:
+        overrides["dry_run"] = dry_run
+    if encryption_key is not None:
+        overrides["encryption_key"] = encryption_key
+    if overrides:
+        config = replace(config, **overrides)
+        config.validate()
+    backend = QLCNativeBackend(
+        QLCNativeClient(
+            config.host, config.port, config.encryption_key,
+            config.reconnect_seconds, config.maximum_project_size, config.dry_run,
         ),
         qlc_config.routing,
         controls=qlc_config.controls,

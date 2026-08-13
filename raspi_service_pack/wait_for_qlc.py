@@ -21,11 +21,13 @@ def wait_for_qlc(config, *, timeout_seconds=DEFAULT_TIMEOUT_SECONDS, connector=N
 
     connector = connector or socket.create_connection
     host = str(config.get("qlc_host", "127.0.0.1"))
-    port = int(config.get("qlc_port", 9999))
+    native = config["output"] == "qlc-native"
+    port = int(config.get("qlc_port", 9998 if native else 9999))
+    server_name = "native server" if native else "WebSocket server"
     deadline = time.monotonic() + timeout_seconds
     print(
         f"QLC+ readiness: waiting up to {timeout_seconds:g} seconds for "
-        f"WebSocket server at {host}:{port}...",
+        f"{server_name} at {host}:{port}...",
         flush=True,
     )
     while time.monotonic() < deadline:
@@ -36,9 +38,9 @@ def wait_for_qlc(config, *, timeout_seconds=DEFAULT_TIMEOUT_SECONDS, connector=N
         except OSError:
             time.sleep(0.5)
     print(
-        f"ERROR: QLC+ WebSocket server did not become available at "
+        f"ERROR: QLC+ {server_name} did not become available at "
         f"{host}:{port} within {timeout_seconds:g} seconds.\n"
-        "Check that QLC+ is running with its Web Server enabled and that "
+        "Check that QLC+ is running with the required server enabled and that "
         "the configured host and port are correct.",
         flush=True,
     )
