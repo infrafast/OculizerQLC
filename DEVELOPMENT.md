@@ -780,6 +780,12 @@ Restoration point: Git tag `pre-prediction-cadence-raspi` identifies commit `a39
 
 Acceptance targets: prediction count should advance near once per second, sustained Oculizer CPU and queue depth should fall materially, no audio deadlines should be missed, priority `silent`/`announcement` behavior should remain unchanged, and `responsive`, `normal`, and `calm` must retain acceptable subjective timing. Record the Raspberry Pi measurements here before accepting or reverting the experiment.
 
+Foreground service diagnostics now announce the QLC+ readiness endpoint and
+timeout before `run-auto` waits. An unavailable WebSocket endpoint produces a
+visible error and prevents Oculizer startup; the same readiness helper writes
+its progress and failure reason into the systemd journal when used by
+`ExecStartPre`.
+
 #### 2026-08-10 — First reproducible installer candidate
 
 - added an idempotent `raspi_service_pack/install.sh` entry point with a read-only `--check` mode; installation deliberately preserves the existing running and boot-enabled states;

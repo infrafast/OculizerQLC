@@ -111,6 +111,10 @@ Run the same installed configuration in the foreground for diagnostics:
 oculizer-service run-auto
 ```
 
+`run-auto` reports the QLC+ host and port it is waiting for. If the QLC+
+WebSocket server cannot be reached within 30 seconds, it exits with a clear
+connection error and troubleshooting hint instead of starting Oculizer.
+
 Disable future boot auto-start without stopping the currently running process:
 
 ```bash

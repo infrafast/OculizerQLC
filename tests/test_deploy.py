@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from raspi_service_pack.run_oculizer import build_command as build_oculizer_command
+from raspi_service_pack.wait_for_qlc import wait_for_qlc
 from pathlib import Path
 
 
@@ -57,6 +58,31 @@ class DeploymentTests(unittest.TestCase):
             command = build_oculizer_command(config)
         self.assertIn("/tmp/oculizer-1000.sock", command)
         self.assertNotIn("/run/oculizer/control.sock", command)
+
+    def test_qlc_readiness_reports_configured_websocket_endpoint(self):
+        class Connection:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        calls = []
+
+        def connect(endpoint, timeout):
+            calls.append((endpoint, timeout))
+            return Connection()
+
+        with patch("builtins.print") as output:
+            ready = wait_for_qlc(
+                {"output": "qlc-websocket", "qlc_host": "192.0.2.10", "qlc_port": 1234},
+                timeout_seconds=1,
+                connector=connect,
+            )
+        self.assertTrue(ready)
+        self.assertEqual(calls, [(('192.0.2.10', 1234), 0.5)])
+        messages = " ".join(str(call.args[0]) for call in output.call_args_list)
+        self.assertIn("192.0.2.10:1234", messages)
 
 
 if __name__ == "__main__":

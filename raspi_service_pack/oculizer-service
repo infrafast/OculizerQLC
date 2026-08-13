@@ -26,8 +26,14 @@ case "${1:-}" in
     ;;
   run-auto)
     [[ -r $CONFIG ]] || { echo "oculizer-service: missing $CONFIG" >&2; exit 1; }
-    /usr/bin/python3 /usr/local/lib/oculizer-deploy/wait_for_qlc.py
+    echo "Starting Oculizer in foreground diagnostic mode..."
+    if ! /usr/bin/python3 /usr/local/lib/oculizer-deploy/wait_for_qlc.py; then
+      echo "oculizer-service: startup cancelled because QLC+ is unavailable." >&2
+      echo "Use 'oculizer-service status' and 'oculizer-service logs' for systemd diagnostics." >&2
+      exit 1
+    fi
     export OCULIZER_CONTROL_SOCKET="${XDG_RUNTIME_DIR:-/tmp}/oculizer-$(id -u).sock"
+    echo "QLC+ readiness passed; starting Oculizer. Press Ctrl+C to stop."
     exec /usr/bin/python3 /usr/local/lib/oculizer-deploy/run_oculizer.py
     ;;
   auto)
