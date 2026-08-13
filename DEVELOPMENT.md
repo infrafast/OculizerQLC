@@ -720,16 +720,19 @@ Automated validation gate:
 
 Manual QLC+ 5 validation gate:
 
-- [ ] validate native discovery/authentication/project transfer on the exact macOS and Raspberry Pi QLC+ builds;
-- [ ] validate automatic caption/type/ID discovery without reading hard-coded IDs;
-- [ ] validate ordinary and Solo Frames, `silent`, `announcement`, fallback, reload, shutdown, and widget-ID changes;
-- [ ] validate `master` and `bass`, then `mid` and `high` when their widgets are enabled;
-- [x] test simultaneous WebSocket and native availability under the current GUI and `--web` startup paths: the tested behavior is mutually exclusive and `--web` overrides the saved Native Server choice;
-- [ ] repeat coexistence validation only if upstream clarifies the contract or provides a build/configuration that can enable both servers explicitly;
+- [x] validate native discovery/authentication/project transfer on the Raspberry Pi QLC+ build containing commit `984f0e7`;
+- [ ] repeat native discovery/authentication/project transfer validation on the target macOS QLC+ build;
+- [x] validate automatic caption/type/ID discovery without reading hard-coded IDs on Raspberry Pi;
+- [x] validate ordinary and Solo Frame scene activation on Raspberry Pi;
+- [ ] validate the extended `silent`, `announcement`, fallback, reload, shutdown, and widget-ID-change matrix;
+- [x] validate the currently enabled continuous controls on Raspberry Pi; `mid` and `high` remain conditional on corresponding QLC+ widgets;
+- [x] validate simultaneous QLC+ Web and Native server availability on Raspberry Pi with the commit `984f0e7` build launched using `--web --remote`;
 - [ ] compare representative OSC, WebSocket, and native scene/modulation sequences;
 - [ ] measure latency, CPU, RSS, queue depth, reconnect behavior, log volume, and long-session stability on Raspberry Pi.
 
 Decision criterion: native implementation may now proceed because upstream provides explicit simultaneous Web and Native server operation. During migration, Oculizer selects either `qlc-websocket` or `qlc-native`, never both. Native must preserve the relevant validated lighting behavior, discover IDs and widget types without persistent numeric configuration, keep continuous controls bounded, survive project/session changes safely, and pass the live macOS and Raspberry Pi coexistence/parity gates. Once accepted, remove `qlc-websocket` from Oculizer and keep QLC+'s independently running Web Server for external consumers.
+
+Operator acceptance recorded on 2026-08-13: the first Phase 8a.3 Raspberry Pi slice is accepted against QLC+ commit `984f0e7`. Simultaneous `--web --remote` operation, non-blocking authorization wait, transition to native readiness, project-derived widget routing, scene-button activation, Solo Frame ownership, and enabled continuous controls behaved as expected. This validates the architecture and permits the remaining hardening work; it does not yet remove the WebSocket migration fallback or close the long-session/reconnect/macOS gates.
 
 ### Phase 8b — Raspberry Pi 5 production target
 
