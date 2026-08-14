@@ -645,7 +645,7 @@ Upstream dependency resolution:
 The native project transfer is the preferred runtime source of widget metadata:
 
 - [x] authenticate and reassemble the bounded `NetProjectTransfer` XML exactly, including projects whose size is an exact multiple of 8192 bytes;
-- [ ] parse only the Virtual Console metadata required for routing: widget ID, caption, concrete widget type, button action type, slider range, parent Frame, and relevant function association;
+- [x] parse only the Virtual Console metadata required for routing: widget ID, caption, concrete widget type, button action type, slider range/mode/style, immediate parent Frame or SoloFrame, caption path, and relevant function association;
 - [x] build the same normalized complete-caption index used by WebSocket, reject collisions, and keep numeric widget IDs in memory only;
 - [x] resolve every scene and continuous control from its logical name or configured `caption`; never persist a native widget ID in `qlc_config.json`;
 - [x] rediscover the complete inventory after every new native session or project transfer and invalidate all prior IDs atomically;
@@ -659,14 +659,14 @@ The transferred XML is untrusted network input. Enforce a configurable maximum p
 
 Runtime-discovered QLC+ type information is the preferred authority. Configuration may optionally declare an expected type as a safety assertion, but must not duplicate volatile IDs or silently override the actual widget type:
 
-- [ ] extend the transport-neutral control description only where necessary so the same logical `caption` can serve WebSocket and native lookup;
+- [x] retain the transport-neutral logical `caption` for WebSocket and native lookup; native-only discovered metadata remains session inventory rather than duplicated configuration;
 - [ ] validate an optional expected widget class/action against the transferred project and fail explicitly on mismatch;
 - [ ] verify the exact section types and values for grouped `VCButtonSetPressed` (`0xF200`) and every supported button action on the target QLC+ build before implementing control;
 - [x] preserve the activation-only business contract: Oculizer requests the target button activation and never deactivates the previous scene merely because another scene was selected;
-- [ ] let ordinary Frames layer functions and Solo Frames enforce exclusivity, exactly as validated for WebSocket;
+- [x] let ordinary Frames layer functions and Solo Frames enforce exclusivity, exactly as validated for WebSocket;
 - [ ] route `silent`, `announcement`, fallbacks, and all ordinary scenes through the same configured caption resolution without implicit blackout semantics;
-- [ ] use Virtual Console button actions rather than `FunctionStart`/`FunctionStop` for normal scene routing, because direct function control would bypass button state and Frame/Solo Frame behavior;
-- [ ] define `active_scene` as the last logical command successfully issued by Oculizer, not as authoritative QLC+ global state;
+- [x] use Virtual Console button actions rather than `FunctionStart`/`FunctionStop` for normal scene routing, because direct function control would bypass button state and Frame/Solo Frame behavior;
+- [x] define `active_scene` as the last logical command successfully issued by Oculizer, not as authoritative QLC+ global state;
 - [x] issue no implicit scene stop or blackout on shutdown.
 
 #### Continuous master and frequency controls
@@ -761,6 +761,8 @@ Native protocol hardening on 2026-08-14 replaced ad-hoc packet reads with one bo
 The first Raspberry Pi run of that hardening exposed an over-strict XML policy: the standard QLC+ workspace declaration `<!DOCTYPE Workspace>` was rejected, so every otherwise successful authorization reached project download, disconnected, and prompted for authorization again. The parser now explicitly permits only that inert local marker while continuing to reject declarations capable of defining or loading content. A regression fixture uses the real QLC+ prologue. This was a project-validation failure, not an authentication or service-lifecycle defect.
 
 Forward-compatibility policy was refined immediately afterward. Framing, decryption, allocation bounds, and required fields remain strict, but semantic extensions no longer break an otherwise safe session. The client decrypts and skips unknown opcodes without attempting to decode their sections; for authentication and project-transfer opcodes it decodes only the required leading fields and ignores trailing future sections. SimpleCrypt's already-declared SHA-1 integrity flag is accepted in addition to QLC+'s current CRC default, while contradictory or undefined flags remain errors. Unknown opcodes are visible at debug level only, preventing log noise. Regression packets include deliberately unknown section encodings after known fields, proving they are never interpreted. The full suite now contains 221 passing tests.
+
+Native inventory semantics were completed against the QLC+ source pinned at commit `984f0e7` on 2026-08-14. Each discovered button now carries its action type and optional function ID; each slider carries its real `LowLimit`/`HighLimit`, mode, widget style, and optional controlled function. Both retain their immediate Frame/SoloFrame metadata and nested caption path. Optional evolving metadata is best-effort and cannot reject an otherwise usable widget, while the numeric ID and concrete button/slider kind required to send an action remain validated. Ready sessions reject a caption resolved to the wrong widget kind before queueing output. Button delivery follows QLC+ semantics rather than applying one generic pulse: Toggle, Blackout, StopAll, absent/default, and future actions receive a press only, while Flash receives a press followed by the configured scene pulse delay and release. This preserves SoloFrame behavior and avoids toggling Toggle or Blackout twice. The transport-neutral JSON remains unchanged because these facts come authoritatively from the transferred project. The full suite now contains 224 passing tests.
 
 ### Phase 8b — Raspberry Pi 5 production target
 

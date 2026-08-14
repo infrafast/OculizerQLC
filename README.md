@@ -502,6 +502,8 @@ Native packets and transferred workspace XML are decoded with fixed memory limit
 
 The native client is forward-compatible within those safety boundaries: unknown opcodes and additional fields are ignored, while the required fields of commands used by Oculizer remain validated.
 
+Button type, function association, Frame/SoloFrame hierarchy, and slider metadata are discovered from the active QLC+ project; they are not duplicated in `qlc_config.json`. Native scene activation follows the discovered action: Toggle, Blackout, and StopAll receive one press, while Flash receives a timed press and release using the routing `pulse_seconds` value.
+
 An empty `native.encryption_key` in `config/qlc_config.json` uses QLC+'s built-in key. If QLC+ has a custom key, configure the same value there or override it at startup with `--qlc-encryptionkey KEY`. The native server uses port `9998` by default. Use `--qlc-host` and `--qlc-port` to override it. Native dry-run opens no connection:
 
 ```bash

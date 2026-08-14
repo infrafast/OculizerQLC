@@ -61,6 +61,14 @@ class NativeWidget:
     kind: str
     low: float = 0.0
     high: float = 255.0
+    action_type: str | None = None
+    function_id: int | None = None
+    slider_mode: str | None = None
+    widget_style: str | None = None
+    parent_frame_id: int | None = None
+    parent_frame_caption: str | None = None
+    parent_frame_kind: str | None = None
+    frame_path: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -331,6 +339,32 @@ def _tag(element: ET.Element) -> str:
     return element.tag.rsplit("}", 1)[-1].lower()
 
 
+def _attributes(element: ET.Element) -> dict[str, str]:
+    return {key.lower(): value for key, value in element.attrib.items()}
+
+
+def _optional_uint(raw_value: str | None, description: str) -> int | None:
+    if raw_value is None or not raw_value.strip():
+        return None
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise QLCNativeError(f"Invalid QLC+ {description} {raw_value!r}") from exc
+    if not 0 <= value <= 0xFFFFFFFF:
+        raise QLCNativeError(f"QLC+ {description} is outside the unsigned 32-bit range")
+    return value
+
+
+def _metadata_uint(raw_value: str | None, description: str) -> int | None:
+    """Parse optional evolving metadata without rejecting a usable widget."""
+    try:
+        value = _optional_uint(raw_value, description)
+    except QLCNativeError as exc:
+        logger.debug("Ignoring %s", exc)
+        return None
+    return None if value == 0xFFFFFFFF else value
+
+
 def parse_project_inventory(xml_data: bytes, maximum_size: int = 16 * 1024 * 1024):
     """Return normalized-caption button/slider inventories from QLC+ XML."""
     from oculizer.light.qlc_websocket import normalize_caption
@@ -352,35 +386,89 @@ def parse_project_inventory(xml_data: bytes, maximum_size: int = 16 * 1024 * 102
         raise QLCNativeError(f"Invalid QLC+ project XML: {exc}") from exc
     inventories = {"button": {}, "slider": {}}
     virtual_consoles = [element for element in root.iter() if _tag(element) == "virtualconsole"]
-    elements = (element for console in virtual_consoles for element in console.iter())
-    for element in elements:
-        kind = _tag(element)
-        if kind not in inventories:
-            continue
-        raw_id = element.attrib.get("ID", element.attrib.get("id"))
-        caption = element.attrib.get("Caption", element.attrib.get("caption", ""))
-        if raw_id is None or not caption.strip():
-            continue
-        try:
-            widget_id = int(raw_id)
-        except ValueError as exc:
-            raise QLCNativeError(f"Invalid QLC+ {kind} widget ID {raw_id!r}") from exc
-        low, high = 0.0, 255.0
-        if kind == "slider":
-            for child in element.iter():
-                attrs = {key.lower(): value for key, value in child.attrib.items()}
-                if "low" in attrs and "high" in attrs:
+
+    def walk(container, parent_frame=None, frame_path=()):
+        for element in container:
+            kind = _tag(element)
+            attrs = _attributes(element)
+            if kind in ("frame", "soloframe"):
+                frame_caption = attrs.get("caption", "").strip()
+                frame = {
+                    "id": _metadata_uint(attrs.get("id"), f"{kind} ID"),
+                    "caption": frame_caption or None,
+                    "kind": kind,
+                }
+                next_path = frame_path + ((frame_caption,) if frame_caption else ())
+                walk(element, frame, next_path)
+                continue
+            if kind not in inventories:
+                # Permit future transparent grouping elements without treating
+                # their metadata as a known widget contract.
+                walk(element, parent_frame, frame_path)
+                continue
+            raw_id = attrs.get("id")
+            caption = attrs.get("caption", "")
+            if raw_id is None or not caption.strip():
+                continue
+            widget_id = _optional_uint(raw_id, f"{kind} widget ID")
+            if widget_id is None:
+                raise QLCNativeError(f"QLC+ {kind} widget ID is empty")
+            low, high = 0.0, 255.0
+            action_type = "toggle" if kind == "button" else None
+            function_id = slider_mode = widget_style = None
+            if kind == "button":
+                for child in element:
+                    child_kind = _tag(child)
+                    child_attrs = _attributes(child)
+                    if child_kind == "action":
+                        action_type = (child.text or "").strip().lower() or None
+                    elif child_kind == "function":
+                        function_id = _metadata_uint(
+                            child_attrs.get("id"), f"button {caption!r} function ID",
+                        )
+            else:
+                widget_style = attrs.get("widgetstyle")
+                for child in element:
+                    child_kind = _tag(child)
+                    child_attrs = _attributes(child)
+                    if child_kind == "slidermode":
+                        slider_mode = (child.text or "").strip().lower() or None
+                    elif child_kind == "adjust":
+                        function_id = _metadata_uint(
+                            child_attrs.get("function"), f"slider {caption!r} function ID",
+                        )
+                for child in element.iter():
+                    child_attrs = _attributes(child)
+                    if "lowlimit" in child_attrs and "highlimit" in child_attrs:
+                        range_values = child_attrs["lowlimit"], child_attrs["highlimit"]
+                    elif "low" in child_attrs and "high" in child_attrs:
+                        range_values = child_attrs["low"], child_attrs["high"]
+                    else:
+                        continue
                     try:
-                        low, high = float(attrs["low"]), float(attrs["high"])
+                        low, high = map(float, range_values)
                     except ValueError as exc:
                         raise QLCNativeError(f"Invalid slider range for {caption!r}") from exc
                     break
-            if not low < high:
-                raise QLCNativeError(f"Invalid slider range for {caption!r}: {low}..{high}")
-        key = normalize_caption(caption)
-        if key in inventories[kind]:
-            raise QLCNativeError(f"Duplicate QLC+ {kind} caption {caption!r}")
-        inventories[kind][key] = NativeWidget(widget_id, caption, kind, low, high)
+                if not low < high:
+                    raise QLCNativeError(f"Invalid slider range for {caption!r}: {low}..{high}")
+            key = normalize_caption(caption)
+            if key in inventories[kind]:
+                raise QLCNativeError(f"Duplicate QLC+ {kind} caption {caption!r}")
+            inventories[kind][key] = NativeWidget(
+                widget_id, caption, kind, low, high,
+                action_type=action_type,
+                function_id=function_id,
+                slider_mode=slider_mode,
+                widget_style=widget_style,
+                parent_frame_id=parent_frame["id"] if parent_frame else None,
+                parent_frame_caption=parent_frame["caption"] if parent_frame else None,
+                parent_frame_kind=parent_frame["kind"] if parent_frame else None,
+                frame_path=frame_path,
+            )
+
+    for console in virtual_consoles:
+        walk(console)
     return inventories["button"], inventories["slider"]
 
 
@@ -389,7 +477,7 @@ class QLCNativeClient:
 
     def __init__(self, host: str, port: int = 9998, encryption_key: str = "",
                  reconnect_seconds: float = 2.0, maximum_project_size: int = 16 * 1024 * 1024,
-                 dry_run: bool = False):
+                 dry_run: bool = False, button_release_seconds: float = 0.1):
         self.host = host
         self.port = port
         self.encryption_key = encryption_key
@@ -397,6 +485,7 @@ class QLCNativeClient:
         self.reconnect_seconds = reconnect_seconds
         self.maximum_project_size = maximum_project_size
         self.dry_run = dry_run
+        self.button_release_seconds = max(0.0, float(button_release_seconds))
         self.socket: socket.socket | None = None
         self._stop = threading.Event()
         self._outbound = threading.Event()
@@ -550,15 +639,34 @@ class QLCNativeClient:
             logger.info("QLC+ native dry-run: activate button caption '%s'", caption)
             return True
         with self._lock:
+            key = normalize_caption(caption)
+            if self.state == NativeState.READY and key not in self.buttons:
+                if key in self.sliders:
+                    logger.error(
+                        "QLC+ native caption %r resolves to a slider, not a button", caption,
+                    )
+                else:
+                    logger.error("QLC+ native button caption %r is absent", caption)
+                return False
             self._pending_scene = caption
         self._outbound.set()
         return True
 
     def set_slider_level(self, caption: str, value: float) -> bool:
+        from oculizer.light.qlc_websocket import normalize_caption
         if self.dry_run:
             logger.info("QLC+ native dry-run: slider '%s' = %.3f", caption, value)
             return True
         with self._lock:
+            key = normalize_caption(caption)
+            if self.state == NativeState.READY and key not in self.sliders:
+                if key in self.buttons:
+                    logger.error(
+                        "QLC+ native caption %r resolves to a button, not a slider", caption,
+                    )
+                else:
+                    logger.error("QLC+ native slider caption %r is absent", caption)
+                return False
             self._pending_parameters[caption] = max(0.0, min(1.0, float(value)))
         self._outbound.set()
         return True
@@ -579,6 +687,15 @@ class QLCNativeClient:
                         VC_BUTTON_SET_PRESSED, self.key,
                         _section_int(widget.widget_id), _section_bool(True),
                     ))
+                    if widget.action_type == "flash":
+                        # Flash is the only QLC+ button action whose release has
+                        # a distinct required meaning. Toggle and Blackout would
+                        # execute again if False were sent after True.
+                        if not self._stop.wait(self.button_release_seconds):
+                            self.socket.sendall(_packet(
+                                VC_BUTTON_SET_PRESSED, self.key,
+                                _section_int(widget.widget_id), _section_bool(False),
+                            ))
                 if self._pending_scene == scene:
                     self._pending_scene = None
             for caption, value in parameters.items():

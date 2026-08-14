@@ -158,12 +158,88 @@ class QLCNativeTests(unittest.TestCase):
     def test_project_inventory_discovers_buttons_sliders_and_ranges(self):
         buttons, sliders = parse_project_inventory(b'''<!DOCTYPE Workspace>
         <Workspace><VirtualConsole>
-          <Frame ID="1" Caption="Scenes"><Button ID="71" Caption="Party" /></Frame>
-          <Slider ID="72" Caption="Master"><Value Low="10" High="210" /></Slider>
+          <Frame ID="1" Caption="Scenes">
+            <SoloFrame ID="2" Caption="Exclusive">
+              <Button ID="71" Caption="Party">
+                <Function ID="42"/><Action>Toggle</Action>
+              </Button>
+            </SoloFrame>
+            <Slider ID="72" Caption="Master" WidgetStyle="Fader">
+              <SliderMode>Playback</SliderMode>
+              <Level LowLimit="10" HighLimit="210" Value="50"/>
+              <Adjust Function="43" Attribute="0"/>
+            </Slider>
+          </Frame>
+        </VirtualConsole></Workspace>''')
+        button = buttons["party"]
+        slider = sliders["master"]
+        self.assertEqual(button.widget_id, 71)
+        self.assertEqual(button.action_type, "toggle")
+        self.assertEqual(button.function_id, 42)
+        self.assertEqual(button.parent_frame_kind, "soloframe")
+        self.assertEqual(button.parent_frame_id, 2)
+        self.assertEqual(button.frame_path, ("Scenes", "Exclusive"))
+        self.assertEqual(slider.widget_id, 72)
+        self.assertEqual((slider.low, slider.high), (10.0, 210.0))
+        self.assertEqual(slider.slider_mode, "playback")
+        self.assertEqual(slider.widget_style, "Fader")
+        self.assertEqual(slider.function_id, 43)
+        self.assertEqual(slider.parent_frame_kind, "frame")
+        self.assertEqual(slider.frame_path, ("Scenes",))
+
+    def test_optional_metadata_does_not_reject_usable_widgets(self):
+        buttons, _ = parse_project_inventory(b'''<Workspace><VirtualConsole>
+          <Frame ID="future" Caption="Scenes"><Button ID="71" Caption="Party">
+            <Function ID="not-yet-readable"/><Action>FutureAction</Action>
+          </Button></Frame>
         </VirtualConsole></Workspace>''')
         self.assertEqual(buttons["party"].widget_id, 71)
-        self.assertEqual(sliders["master"].widget_id, 72)
-        self.assertEqual((sliders["master"].low, sliders["master"].high), (10.0, 210.0))
+        self.assertIsNone(buttons["party"].parent_frame_id)
+        self.assertIsNone(buttons["party"].function_id)
+        self.assertEqual(buttons["party"].action_type, "futureaction")
+
+    def test_ready_inventory_rejects_wrong_widget_kind_without_queueing(self):
+        client = QLCNativeClient("127.0.0.1")
+        client.state = NativeState.READY
+        client.buttons = {"party": NativeWidget(1, "Party", "button")}
+        client.sliders = {"master": NativeWidget(2, "Master", "slider")}
+        self.assertFalse(client.activate_button("Master"))
+        self.assertFalse(client.set_slider_level("Party", 0.5))
+        self.assertIsNone(client._pending_scene)
+        self.assertEqual(client._pending_parameters, {})
+
+    def test_button_release_is_sent_only_for_flash_action(self):
+        connection = self.FragmentedSocket(b"", fragment_size=4096)
+        client = QLCNativeClient("127.0.0.1", button_release_seconds=0)
+        client.socket = connection
+        client.state = NativeState.READY
+        actions = ("toggle", "blackout", "stopall", "futureaction")
+        client.buttons = {
+            action: NativeWidget(index, action, "button", action_type=action)
+            for index, action in enumerate(actions, 1)
+        }
+        client.buttons["flash"] = NativeWidget(9, "Flash", "button", action_type="flash")
+
+        for index, action in enumerate(actions, 1):
+            self.assertTrue(client.activate_button(action))
+            client._flush_pending()
+            _, sections = _recv_packet(
+                self.FragmentedSocket(connection.sent[-1]), DEFAULT_KEY,
+            )
+            self.assertEqual(sections, [index, True])
+        self.assertEqual(len(connection.sent), len(actions))
+
+        self.assertTrue(client.activate_button("Flash"))
+        client._flush_pending()
+        self.assertEqual(len(connection.sent), len(actions) + 2)
+        _, press_sections = _recv_packet(
+            self.FragmentedSocket(connection.sent[-2]), DEFAULT_KEY,
+        )
+        _, release_sections = _recv_packet(
+            self.FragmentedSocket(connection.sent[-1]), DEFAULT_KEY,
+        )
+        self.assertEqual(press_sections, [9, True])
+        self.assertEqual(release_sections, [9, False])
 
     def test_project_inventory_ignores_non_virtual_console_elements(self):
         buttons, sliders = parse_project_inventory(b'''<Workspace>

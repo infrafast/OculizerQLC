@@ -394,6 +394,7 @@ def create_qlc_native_backend(
         QLCNativeClient(
             config.host, config.port, config.encryption_key,
             config.reconnect_seconds, config.maximum_project_size, config.dry_run,
+            button_release_seconds=qlc_config.routing.pulse_seconds,
         ),
         qlc_config.routing,
         controls=qlc_config.controls,
