@@ -45,6 +45,13 @@ class FastDetectionConfig:
     speech: FastSpeechConfig = FastSpeechConfig()
 
 @dataclass(frozen=True)
+class WebConfig:
+    enabled: bool = True
+    bind: str = "0.0.0.0"
+    port: int = 8080
+    graph_enabled: bool = True
+
+@dataclass(frozen=True)
 class MasterModulationConfig:
     enabled: bool = False
     parameter: str = "master"
@@ -173,6 +180,8 @@ def load_runtime_config(path: str | Path | None = None) -> dict[str, Any]:
         raise ValueError("audio.master_modulation.refresh_seconds must be greater than zero")
     _parse_frequency_modulation(audio.get("frequency_modulation", {}))
     configured_fast_detection(config)
+    configured_scene_max_duration(config)
+    configured_web(config)
     return config
 
 def _parse_frequency_modulation(raw: Any) -> FrequencyModulationConfig:
@@ -315,6 +324,24 @@ def configured_frequency_modulation(config: dict[str, Any]) -> FrequencyModulati
     return _parse_frequency_modulation(config.get("audio", {}).get("frequency_modulation", {}))
 
 
+def configured_web(config: dict[str, Any]) -> WebConfig:
+    raw = config.get("web", {})
+    if not isinstance(raw, dict):
+        raise ValueError("web must be an object")
+    defaults = WebConfig()
+    enabled = raw.get("enabled", defaults.enabled)
+    bind = raw.get("bind", defaults.bind)
+    port = raw.get("port", defaults.port)
+    graph_enabled = raw.get("graph_enabled", defaults.graph_enabled)
+    if not isinstance(enabled, bool) or not isinstance(graph_enabled, bool):
+        raise ValueError("web enable flags must be boolean")
+    if not isinstance(bind, str) or not bind.strip() or len(bind) > 255:
+        raise ValueError("web.bind must be a non-empty host or address")
+    if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+        raise ValueError("web.port must be between 1 and 65535")
+    return WebConfig(enabled=enabled, bind=bind.strip(), port=port, graph_enabled=graph_enabled)
+
+
 def configured_dynamic_controls(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Return validated named dynamic-control profiles."""
     defaults = {
@@ -350,3 +377,14 @@ def configured_dynamic_controls(config: dict[str, Any]) -> dict[str, dict[str, A
             parsed[key] = (count, float(seconds))
         result[name] = parsed
     return result
+
+
+def configured_scene_max_duration(config: dict[str, Any]) -> float:
+    control = config.get("control", {})
+    if not isinstance(control, dict):
+        raise ValueError("control must be an object")
+    value = control.get("scene_max_duration_seconds", 40.0)
+    if (isinstance(value, bool) or not isinstance(value, (int, float))
+            or not 0.5 <= value <= 3600):
+        raise ValueError("control.scene_max_duration_seconds must be between 0.5 and 3600")
+    return float(value)

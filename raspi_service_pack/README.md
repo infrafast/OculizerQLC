@@ -22,6 +22,9 @@ when reconfiguring an existing service:
 | `--audio-input SELECTOR` | An Oculizer device selector such as `default` | `default` |
 | `--dynamic-control NAME` | `off` or a profile declared in `config/oculizer.json` | `normal` |
 | `--service-user USER` | Existing Linux account used to run Oculizer | invoking sudo user, or `pi` |
+| `--no-web` | Do not start the embedded Web child | Web enabled |
+| `--web-bind ADDRESS` | Embedded Web listen address | `0.0.0.0` |
+| `--web-port PORT` | Embedded Web TCP port | `8080` |
 | `--check` | Validate the host without changing it | disabled |
 | `--non-interactive` | Explicit automation marker; installation is already non-interactive | disabled |
 
@@ -36,6 +39,11 @@ For example, install or reconfigure the native-only service:
 ```bash
 sudo ./raspi_service_pack/install.sh --audio-input default --dynamic-control normal --service-user pi
 ```
+
+After installation, open the embedded interface from the local network at
+`http://raspberrypi.local:8080` or the Raspberry Pi address. It is owned by the
+existing `oculizer.service`; no second systemd service is installed or exposed
+to raspiLightGUI.
 
 Every successful installation regenerates `/etc/oculizer/deployment.json`
 from the options supplied on that invocation. Options that are omitted take
@@ -96,6 +104,17 @@ oculizer-service noauto
 oculizer-service last-state
 oculizer-service health
 ```
+
+For a one-off start or restart without creating the Web child:
+
+```bash
+oculizer-service start --no-web
+oculizer-service restart --no-web
+```
+
+For a persistent no-Web installation, reinstall with
+`sudo ./raspi_service_pack/install.sh --no-web`. A normal later start clears
+the one-off override and follows the installed deployment setting.
 
 `oculizer-service auto` enables systemd boot startup. It is unrelated to `oculizerctl auto`, which resumes automatic scene prediction inside an already running process.
 

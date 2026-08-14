@@ -112,6 +112,39 @@ The headless and interactive applications use the same inference, routing,
 one-input audio pipeline, native connection, configuration, and runtime-control
 implementation.
 
+By default the headless runtime also owns a lightweight Web child at port
+`8080`. Open it from the local network, for example:
+
+```text
+http://raspberrypi.local:8080
+```
+
+The Web interface shows the active and predicted scenes, route state, QLC+
+connection, RMS, queue depth, recent logs, and an optional 60-second graph. It
+also provides pause/auto/manual controls and an editor for the main audio,
+detection, and modulation settings. Hover a setting to see its purpose, hard
+limits, and recommended range.
+
+**Apply configuration** validates and saves the complete edit atomically.
+Safe detection and modulation values take effect immediately. Audio device,
+prediction scheduling, Web listener, and other startup-owned changes are
+marked as requiring a restart. The service view can confirm that restart from
+the page; an interactive target displays its exact relaunch command.
+
+The Web server is not started by `oculize.py`. The service-owned Web page can
+still select an independently running interactive instance through its local
+control socket. Disable the Web child completely when starting headless mode:
+
+```bash
+./.venv/bin/python oculizer_service.py --no-web
+```
+
+Change its listener when needed:
+
+```bash
+./.venv/bin/python oculizer_service.py --web-bind 0.0.0.0 --web-port 8080
+```
+
 ## Scene-change dynamics
 
 Dynamic-control profiles do not change predictions. They decide how quickly

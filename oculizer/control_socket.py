@@ -34,7 +34,14 @@ class _ControlHandler(socketserver.StreamRequestHandler):
                 response = {"ok": True, "result": result}
             except Exception as exc:
                 response = {"ok": False, "error": str(exc), "error_type": type(exc).__name__}
-        self.wfile.write(json.dumps(response, separators=(",", ":")).encode("utf-8") + b"\n")
+        encoded = json.dumps(response, separators=(",", ":")).encode("utf-8") + b"\n"
+        if len(encoded) > MAX_REQUEST_BYTES:
+            encoded = json.dumps({
+                "ok": False,
+                "error": "control response is too large",
+                "error_type": "ResponseTooLargeError",
+            }, separators=(",", ":")).encode("utf-8") + b"\n"
+        self.wfile.write(encoded)
 
 
 class _ThreadingUnixServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):

@@ -8,14 +8,33 @@ run_systemctl() {
   sudo -n /usr/bin/systemctl "$@" "$SERVICE"
 }
 
-case "${1:-}" in
+command=${1:-}
+option=${2:-}
+if [[ -n $option && $option != --no-web ]]; then
+  echo "oculizer-service: unsupported option '$option'" >&2
+  exit 1
+fi
+
+case "$command" in
   start)
+    if [[ $option == --no-web ]]; then
+      sudo -n /usr/bin/systemctl set-environment OCULIZER_NO_WEB=1
+      trap 'sudo -n /usr/bin/systemctl unset-environment OCULIZER_NO_WEB' EXIT
+    else
+      sudo -n /usr/bin/systemctl unset-environment OCULIZER_NO_WEB
+    fi
     run_systemctl start
     ;;
   stop)
     run_systemctl stop
     ;;
   restart)
+    if [[ $option == --no-web ]]; then
+      sudo -n /usr/bin/systemctl set-environment OCULIZER_NO_WEB=1
+      trap 'sudo -n /usr/bin/systemctl unset-environment OCULIZER_NO_WEB' EXIT
+    else
+      sudo -n /usr/bin/systemctl unset-environment OCULIZER_NO_WEB
+    fi
     run_systemctl restart
     ;;
   status)
@@ -33,10 +52,13 @@ case "${1:-}" in
       exit 1
     fi
     export OCULIZER_CONTROL_SOCKET="${XDG_RUNTIME_DIR:-/tmp}/oculizer-$(id -u).sock"
+    [[ $option == --no-web ]] && export OCULIZER_NO_WEB=1
     echo "QLC+ readiness passed; starting Oculizer. Press Ctrl+C to stop."
     exec /usr/bin/python3 /usr/local/lib/oculizer-deploy/run_oculizer.py
     ;;
   auto)
+    [[ -z $option ]] || { echo "oculizer-service: --no-web is not supported with auto; reinstall with install.sh --no-web" >&2; exit 1; }
+    sudo -n /usr/bin/systemctl unset-environment OCULIZER_NO_WEB
     sudo -n /usr/bin/systemctl enable --now "$SERVICE"
     echo "Oculizer auto-start enabled and service started."
     ;;
@@ -52,7 +74,7 @@ case "${1:-}" in
     exec /usr/local/bin/oculizerctl status
     ;;
   *)
-    echo "Usage: oculizer-service {start|stop|restart|status|logs|run-auto|auto|noauto|last-state|health}" >&2
+    echo "Usage: oculizer-service {start|restart|run-auto} [--no-web] | {stop|status|logs|auto|noauto|last-state|health}" >&2
     exit 1
     ;;
 esac

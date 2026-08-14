@@ -4,13 +4,20 @@ import argparse
 import logging
 import signal
 import sys
+import os
 from pathlib import Path
 
+from oculizer.config_editor import ConfigurationStore
 from oculizer.headless import HeadlessOculizerService
 from oculizer.control_socket import default_control_socket_path
 from oculizer.light import Oculizer
-from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
+from oculizer.runtime_config import DEFAULT_CONFIG_PATH, configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_max_duration, configured_silence, configured_speech, configured_web, load_runtime_config
 from oculizer.scenes import LogicalSceneRegistry
+from oculizer.telemetry import BoundedLogHandler
+from oculizer.web_supervisor import WebChildSupervisor
+
+
+LOG_BUFFER = BoundedLogHandler()
 
 
 def configure_service_streams() -> None:
@@ -37,10 +44,13 @@ def parse_args():
                         help="Number of recent predictions used for smoothing (default: 10)")
     parser.add_argument("--dynamic-control", default="off", metavar="PROFILE",
                         help="Apply a named dynamic-control profile (default: off)")
-    parser.add_argument("--scene-max-duration", type=float, default=40.0, metavar="SECONDS",
-                        help="Base automatic music-scene duration before ±30%% variation (default: 40 seconds)")
+    parser.add_argument("--scene-max-duration", type=float, default=None, metavar="SECONDS",
+                        help="Override the configured base automatic music-scene duration")
     parser.add_argument("--control-socket", default=default_control_socket_path(), help="Unix runtime control socket path")
     parser.add_argument("--no-control-socket", action="store_true", help="Disable the local runtime control socket")
+    parser.add_argument("--no-web", action="store_true", help="Disable the embedded Web child completely")
+    parser.add_argument("--web-bind", default=None, help="Embedded Web bind host/address")
+    parser.add_argument("--web-port", type=int, default=None, help="Embedded Web TCP port")
     parser.add_argument("--qlc-host", default=None)
     parser.add_argument("--qlc-port", type=int, default=None)
     parser.add_argument("--qlc-encryptionkey", default=None,
@@ -54,6 +64,9 @@ def parse_args():
         config = load_runtime_config(args.config)
     except ValueError as exc:
         parser.error(str(exc))
+    args.config = str(
+        Path(args.config).expanduser().resolve() if args.config else DEFAULT_CONFIG_PATH.resolve()
+    )
     if args.input_device is None:
         args.input_device = configured_audio_input(config)
     args.silence_config = configured_silence(config)
@@ -63,6 +76,18 @@ def parse_args():
     args.frequency_config = configured_frequency_modulation(config)
     args.fast_detection_config = configured_fast_detection(config)
     args.dynamic_controls = configured_dynamic_controls(config)
+    if args.scene_max_duration is None:
+        args.scene_max_duration = configured_scene_max_duration(config)
+    args.web_config = configured_web(config)
+    if args.web_bind is None:
+        args.web_bind = args.web_config.bind
+    if args.web_port is None:
+        args.web_port = args.web_config.port
+    args.web_enabled = args.web_config.enabled and not args.no_web
+    if args.web_enabled and args.no_control_socket:
+        parser.error("--no-control-socket requires --no-web because the Web child uses the control socket")
+    if not 1 <= args.web_port <= 65535:
+        parser.error("--web-port must be between 1 and 65535")
     if args.dynamic_control != "off" and args.dynamic_control not in args.dynamic_controls:
         parser.error("--dynamic-control must be 'off' or a profile from control.dynamic_controls")
     if args.audio_file:
@@ -96,6 +121,13 @@ def build_service(args) -> HeadlessOculizerService:
         qlc_encryption_key=args.qlc_encryptionkey,
     )
     oculizer.restrict_scenes_to_backend()
+    web_supervisor = None
+    if args.web_enabled:
+        web_supervisor = WebChildSupervisor(
+            args.control_socket,
+            bind=args.web_bind,
+            port=args.web_port,
+        )
     return HeadlessOculizerService(
         oculizer,
         silence_config=args.silence_config,
@@ -107,6 +139,14 @@ def build_service(args) -> HeadlessOculizerService:
         off_cache_size=args.scene_cache_size,
         scene_max_duration=args.scene_max_duration,
         control_socket_path=None if args.no_control_socket else args.control_socket,
+        config_store=ConfigurationStore(args.config),
+        log_provider=LOG_BUFFER.tail,
+        launch_info={
+            "mode": "service" if os.environ.get("INVOCATION_ID") else "headless",
+            "restart_capability": "service" if os.environ.get("INVOCATION_ID") else "manual",
+            "config_path": args.config,
+        },
+        web_supervisor=web_supervisor,
     )
 
 
@@ -118,6 +158,7 @@ def main() -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         stream=sys.stdout,
     )
+    logging.getLogger().addHandler(LOG_BUFFER)
     try:
         service = build_service(args)
     except (OSError, ValueError) as exc:

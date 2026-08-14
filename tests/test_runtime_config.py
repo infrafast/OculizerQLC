@@ -5,10 +5,18 @@ from pathlib import Path
 from unittest.mock import patch
 
 from oculizer.light.control import Oculizer
-from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, load_runtime_config
+from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_max_duration, configured_silence, load_runtime_config
 
 
 class RuntimeConfigTests(unittest.TestCase):
+    def test_scene_max_duration_defaults_and_validates(self):
+        self.assertEqual(configured_scene_max_duration({}), 40.0)
+        self.assertEqual(configured_scene_max_duration({
+            "control": {"scene_max_duration_seconds": 75},
+        }), 75.0)
+        with self.assertRaisesRegex(ValueError, "scene_max_duration_seconds"):
+            configured_scene_max_duration({"control": {"scene_max_duration_seconds": 0}})
+
     def test_loads_default_and_custom_dynamic_controls(self):
         defaults = configured_dynamic_controls({})
         self.assertEqual(defaults["normal"], {

@@ -5,11 +5,14 @@ import threading
 import curses
 import argparse
 import signal
+import shlex
+import sys
 from contextlib import redirect_stderr, redirect_stdout
 from curses import wrapper
 from oculizer import Oculizer
 from oculizer.scenes import LogicalSceneRegistry
-from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
+from oculizer.config_editor import ConfigurationStore
+from oculizer.runtime_config import DEFAULT_CONFIG_PATH, configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_scene_max_duration, configured_silence, configured_speech, load_runtime_config
 from oculizer.automatic import AutomaticSceneRouter, PolicyConflictError
 from oculizer.control_socket import ControlSocketServer, default_control_socket_path
 from oculizer.modulation import FrequencyBandModulator, MasterModulator
@@ -246,11 +249,24 @@ class AudioOculizerController:
         )
         self.master_modulator = MasterModulator(self.oculizer, config=master_config)
         self.frequency_modulator = FrequencyBandModulator(self.oculizer, config=frequency_config)
+        self.log_messages = deque(maxlen=50)
+        resolved_config_path = str(
+            Path(config_path).resolve() if config_path else DEFAULT_CONFIG_PATH.resolve()
+        )
         self.runtime_control = RuntimeControl(
             self.oculizer, self.scene_router, self.master_modulator,
             self.frequency_modulator, dynamic_controls=dynamic_controls,
             active_dynamic_control=dynamic_control, off_cache_size=off_cache_size,
             health_check=lambda: self.oculizer.is_alive(),
+            config_store=ConfigurationStore(resolved_config_path),
+            log_provider=lambda limit: list(self.log_messages)[-limit:],
+            launch_info={
+                "mode": "interactive",
+                "restart_capability": "manual",
+                "config_path": resolved_config_path,
+                "restart_command": shlex.join([str(Path(sys.executable).resolve()), *sys.argv]),
+                "working_directory": str(Path.cwd()),
+            },
         )
         self.control_server = ControlSocketServer(control_socket_path, self.runtime_control) if control_socket_path else None
         
@@ -264,7 +280,6 @@ class AudioOculizerController:
         self.toggle_override_active = False
         
         # Set up logging for curses display
-        self.log_messages = deque(maxlen=9)
         self.log_handler = self.LogHandler(self.log_messages)
         logging.getLogger().addHandler(self.log_handler)
     
@@ -834,8 +849,8 @@ Scene Cache Size:
                       help='Number of recent predictions to cache for smoothing (default: 10). 1=instant, 25=heavy smoothing')
     parser.add_argument('--dynamic-control', default='off', metavar='PROFILE',
                       help="Apply a named dynamic-control profile (default: off)")
-    parser.add_argument('--scene-max-duration', type=float, default=40.0, metavar='SECONDS',
-                      help='Base automatic music-scene duration before ±30%% variation (default: 40 seconds)')
+    parser.add_argument('--scene-max-duration', type=float, default=None, metavar='SECONDS',
+                      help='Override the configured base automatic music-scene duration')
     parser.add_argument('--control-socket', default=default_control_socket_path(), help='Unix runtime control socket path')
     parser.add_argument('--no-control-socket', action='store_true', help='Disable the local runtime control socket')
     parser.add_argument('--test', action='store_true',
@@ -857,6 +872,9 @@ Scene Cache Size:
         config = load_runtime_config(args.config)
     except ValueError as exc:
         parser.error(str(exc))
+    args.config = str(
+        Path(args.config).expanduser().resolve() if args.config else DEFAULT_CONFIG_PATH.resolve()
+    )
     if args.input_device is None:
         args.input_device = configured_audio_input(config)
     args.silence_config = configured_silence(config)
@@ -866,6 +884,8 @@ Scene Cache Size:
     args.frequency_config = configured_frequency_modulation(config)
     args.fast_detection_config = configured_fast_detection(config)
     args.dynamic_controls = configured_dynamic_controls(config)
+    if args.scene_max_duration is None:
+        args.scene_max_duration = configured_scene_max_duration(config)
     if args.dynamic_control != 'off' and args.dynamic_control not in args.dynamic_controls:
         parser.error("--dynamic-control must be 'off' or a profile from control.dynamic_controls")
     if args.audio_file:

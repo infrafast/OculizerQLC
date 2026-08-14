@@ -5,6 +5,8 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 DEFAULT_AUDIO_INPUT=default
 DEFAULT_DYNAMIC_CONTROL=normal
+DEFAULT_WEB_BIND=0.0.0.0
+DEFAULT_WEB_PORT=8080
 CONFIG_DIR=/etc/oculizer
 CONFIG_FILE=$CONFIG_DIR/deployment.json
 HELPER_DIR=/usr/local/lib/oculizer-deploy
@@ -16,6 +18,9 @@ audio_input=$DEFAULT_AUDIO_INPUT
 dynamic_control=$DEFAULT_DYNAMIC_CONTROL
 service_user=${SUDO_USER:-pi}
 check_only=false
+web_enabled=true
+web_bind=$DEFAULT_WEB_BIND
+web_port=$DEFAULT_WEB_PORT
 
 usage() {
   cat <<'EOF'
@@ -27,6 +32,9 @@ Options:
   --audio-input SELECTOR    Oculizer input selector (default: default)
   --dynamic-control NAME    Startup dynamic-control profile (default: normal)
   --service-user USER       Runtime account (default: invoking sudo user or pi)
+  --no-web                  Disable the embedded Web interface
+  --web-bind ADDRESS        Web listen address (default: 0.0.0.0)
+  --web-port PORT           Web TCP port (default: 8080)
   --check                   Validate the host and configuration without changes
   --non-interactive         Accepted for automation; installation is non-interactive
   -h, --help                Show this help
@@ -43,12 +51,18 @@ while (($#)); do
     --audio-input) (($# >= 2)) || fail "--audio-input requires a value"; audio_input=$2; shift 2 ;;
     --dynamic-control) (($# >= 2)) || fail "--dynamic-control requires a value"; dynamic_control=$2; shift 2 ;;
     --service-user) (($# >= 2)) || fail "--service-user requires a value"; service_user=$2; shift 2 ;;
+    --no-web) web_enabled=false; shift ;;
+    --web-bind) (($# >= 2)) || fail "--web-bind requires a value"; web_bind=$2; shift 2 ;;
+    --web-port) (($# >= 2)) || fail "--web-port requires a value"; web_port=$2; shift 2 ;;
     --check) check_only=true; shift ;;
     --non-interactive) shift ;;
     -h|--help) usage; exit 0 ;;
     *) fail "unknown option: $1" ;;
   esac
 done
+
+[[ $web_port =~ ^[0-9]+$ ]] && ((web_port >= 1 && web_port <= 65535)) || fail "--web-port must be between 1 and 65535"
+[[ -n $web_bind ]] || fail "--web-bind must not be empty"
 
 [[ $(uname -m) == aarch64 || $(uname -m) == arm64 ]] || fail "this installer currently requires Linux ARM64"
 [[ -r /etc/os-release ]] || fail "cannot identify the operating system"
@@ -67,6 +81,10 @@ echo "  repository:      $REPO_ROOT"
 echo "  service user:    $service_user"
 echo "  audio input:     $audio_input"
 echo "  dynamic control: $dynamic_control"
+echo "  embedded Web:   $web_enabled"
+if $web_enabled; then
+  echo "  Web listener:   $web_bind:$web_port"
+fi
 
 if $check_only; then
   command -v python3 >/dev/null || fail "python3 is missing"
@@ -92,18 +110,21 @@ install -d -m 0755 "$CONFIG_DIR" "$HELPER_DIR"
 if [[ -e $CONFIG_FILE ]]; then
   cp -a "$CONFIG_FILE" "$CONFIG_FILE.previous"
 fi
-python3 - "$CONFIG_FILE" "$REPO_ROOT" "$service_user" "$audio_input" "$dynamic_control" <<'PY'
+python3 - "$CONFIG_FILE" "$REPO_ROOT" "$service_user" "$audio_input" "$dynamic_control" "$web_enabled" "$web_bind" "$web_port" <<'PY'
 import json
 import os
 import sys
 
-path, repository, user, audio_input, dynamic_control = sys.argv[1:]
+path, repository, user, audio_input, dynamic_control, web_enabled, web_bind, web_port = sys.argv[1:]
 payload = {
     "repository": repository,
     "service_user": user,
     "audio_input": audio_input,
     "dynamic_control": dynamic_control,
     "control_socket": "/run/oculizer/control.sock",
+    "web_enabled": web_enabled == "true",
+    "web_bind": web_bind,
+    "web_port": int(web_port),
 }
 temporary = path + ".tmp"
 with open(temporary, "w", encoding="utf-8") as handle:
@@ -136,6 +157,8 @@ commands = (
     "/usr/bin/systemctl restart oculizer.service",
     "/usr/bin/systemctl enable --now oculizer.service",
     "/usr/bin/systemctl disable oculizer.service",
+    "/usr/bin/systemctl set-environment OCULIZER_NO_WEB=1",
+    "/usr/bin/systemctl unset-environment OCULIZER_NO_WEB",
 )
 text = "Cmnd_Alias OCULIZER_SERVICE = " + ", ".join(commands) + "\n"
 text += f"{user} ALL=(root) NOPASSWD: OCULIZER_SERVICE\n"

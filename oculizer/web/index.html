@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Oculizer</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <div><h1>Oculizer</h1><span id="connection" class="pill pending">Connecting</span></div>
+    <label>Runtime
+      <select id="target"><option value="service">Service</option><option value="interactive">Interactive / local</option></select>
+    </label>
+  </header>
+  <main>
+    <section class="hero">
+      <article><span>Current scene</span><strong id="scene">—</strong></article>
+      <article><span>Prediction</span><strong id="prediction">—</strong></article>
+      <article><span>Route</span><strong id="route">—</strong></article>
+      <article><span>QLC+</span><strong id="lighting">—</strong></article>
+    </section>
+    <section class="controls panel">
+      <h2>Show control</h2>
+      <button data-command="auto">Auto</button>
+      <button data-command="pause">Pause</button>
+      <select id="dynamic"></select><button id="apply-dynamic">Apply preset</button>
+      <input id="manual-scene" placeholder="Scene caption"><button id="apply-scene">Select scene</button>
+    </section>
+    <section class="panel graph-panel">
+      <div class="section-title"><h2>Audio and scenes</h2><label><input type="checkbox" id="graph-enabled" checked> Graph</label></div>
+      <canvas id="graph" height="180"></canvas>
+      <div class="metrics"><span>RMS <b id="rms">—</b></span><span>Queue <b id="queue">—</b></span></div>
+    </section>
+    <section class="panel">
+      <div class="section-title"><h2>Configuration</h2><span id="config-path"></span></div>
+      <form id="config-form"><div id="fields"></div><div class="apply-row"><button type="submit">Apply configuration</button><button type="button" id="restart" hidden>Restart Oculizer</button><span id="apply-result"></span></div></form>
+    </section>
+    <section class="panel"><h2>Recent logs</h2><pre id="logs"></pre></section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

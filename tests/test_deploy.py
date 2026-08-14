@@ -21,6 +21,8 @@ class DeploymentTests(unittest.TestCase):
             text=True,
         )
         self.assertIn("--check", result.stdout)
+        self.assertIn("--no-web", result.stdout)
+        self.assertIn("--web-bind", result.stdout)
 
     def test_service_command_exposes_manual_and_boot_modes(self):
         result = subprocess.run(
@@ -53,6 +55,19 @@ class DeploymentTests(unittest.TestCase):
         self.assertNotIn("--qlc-config", command)
         self.assertIn("/opt/Oculizer QLC/config/oculizer.json", command)
         self.assertIn("/run/oculizer/control.sock", command)
+        self.assertIn("--web-bind", command)
+        self.assertIn("--web-port", command)
+
+    def test_deployment_can_disable_embedded_web_child(self):
+        command = build_oculizer_command({
+            "repository": "/opt/OculizerQLC",
+            "audio_input": "default",
+            "dynamic_control": "normal",
+            "control_socket": "/run/oculizer/control.sock",
+            "web_enabled": False,
+        })
+        self.assertIn("--no-web", command)
+        self.assertNotIn("--web-bind", command)
 
     def test_foreground_run_can_override_system_control_socket(self):
         config = {

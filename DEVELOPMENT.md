@@ -1143,32 +1143,32 @@ The selector chooses a running target rather than inventing arbitrary configurat
 
 ### Milestone 11.1 — shared schema, atomic configuration, and telemetry API
 
-- [ ] create the Phase 10 restoration tag and record clean test/resource baselines;
-- [ ] introduce the shared editable-field catalog and field/cross-field validation without changing configuration semantics;
-- [ ] implement revision-aware atomic persistence, backup, rollback, and hot-versus-restart-required reporting;
-- [ ] factor the shared runtime snapshot and bounded redacted log ring;
-- [ ] extend the control socket compatibly and prove existing `oculizerctl` and raspiLightGUI status behavior unchanged;
-- [ ] test concurrency, stale edits, invalid configuration, partial failure, payload limits, permissions, and secret redaction.
+- [x] create the Phase 10 restoration tag and record clean test/resource baselines;
+- [x] introduce the shared editable-field catalog and field/cross-field validation without changing configuration semantics;
+- [x] implement revision-aware atomic persistence, backup, rollback, and hot-versus-restart-required reporting;
+- [x] factor the shared runtime snapshot and bounded redacted log ring;
+- [x] extend the control socket compatibly and prove existing `oculizerctl` and raspiLightGUI status behavior unchanged;
+- [x] test concurrency, stale edits, invalid configuration, partial failure, payload limits, permissions, and secret redaction.
 
 Validation gate: apply and rollback against foreground headless and systemd runtimes; invalid or concurrent edits change nothing; predictions, routing, QLC+ output, existing controls, and service status remain identical.
 
 ### Milestone 11.2 — embedded isolated Web application
 
-- [ ] add the Oculizer-owned HTTP child process, bounded supervision/backoff, responsive UI, Service/Interactive target selector, explanations/tooltips, hard/recommended limits, field errors, and hot/restart-required badges;
-- [ ] implement unauthenticated apply, pause/auto/manual-scene controls, runtime/prediction view, and bounded log view through the shared services only;
-- [ ] add launch-mode/capability reporting and a confirmed restart workflow: service-helper restart for systemd, verified clean re-exec for interactive mode, or an exact manual command when automatic restart is unavailable;
-- [ ] add the optional Canvas RMS/scene timeline with bounded low-rate sampling and persistent enable/disable setting;
-- [ ] test Host/origin checks, malformed requests, disconnected targets, timeouts, target/config identity, Web-child crash/restart without disturbing Oculizer, and Web disablement with `--no-web`;
+- [x] add the Oculizer-owned HTTP child process, bounded supervision/backoff, responsive UI, Service/Interactive target selector, explanations/tooltips, hard/recommended limits, field errors, and hot/restart-required badges;
+- [x] implement unauthenticated apply, pause/auto/manual-scene controls, runtime/prediction view, and bounded log view through the shared services only;
+- [x] add launch-mode/capability reporting and a confirmed restart workflow: controlled systemd exit/restart or an exact manual interactive relaunch command when automatic restart is unavailable;
+- [x] add the optional Canvas RMS/scene timeline with bounded low-rate sampling and persistent enable/disable setting;
+- [x] test Host/origin checks, malformed requests, disconnected targets, timeouts, target/config identity, Web-child crash/restart without disturbing Oculizer, and Web disablement with `--no-web`;
 - [ ] measure Web-disabled and Web-enabled CPU, RSS, thread count, inference time, and queue depth on Raspberry Pi 5.
 
 Validation gate: validate from a second LAN device, including help, bounds, rejected edits, hot apply, restart-required reporting, prediction/log freshness, graph disablement, and uninterrupted lighting during Web refresh/restart.
 
 ### Milestone 11.3 — Raspberry Pi service-pack integration and documentation
 
-- [ ] extend the single existing service launcher and deployment configuration with Web bind/port/enabled settings; do not install another unit or add a second status surface;
-- [ ] add canonical `--no-web` headless/service-helper behavior for a deliberately Oculizer-only run, while keeping Web-child failure isolated from the audio engine;
-- [ ] preserve uninstall, upgrade, backup, ownership, state restoration, absolute-path behavior, and raspiLightGUI compatibility for the single unit;
-- [ ] document LAN/local use, target semantics, hot versus restart-required fields, confirmed restart/reconnect behavior, recovery, and graph resource controls in `README.md`;
+- [x] extend the single existing service launcher and deployment configuration with Web bind/port/enabled settings; do not install another unit or add a second status surface;
+- [x] add canonical `--no-web` headless/service-helper behavior for a deliberately Oculizer-only run, while keeping Web-child failure isolated from the audio engine;
+- [x] preserve uninstall, upgrade, backup, ownership, state restoration, absolute-path behavior, and raspiLightGUI compatibility for the single unit;
+- [x] document LAN/local use, target semantics, hot versus restart-required fields, confirmed restart/reconnect behavior, recovery, and graph resource controls in `README.md`;
 - [ ] record architecture, tests, and Raspberry Pi measurements here in English with the implementation.
 
 Final acceptance requires a sustained LAN run with bounded queues/log/history, no inference or QLC+ regression, isolated/recovered Web-child failure, correct service and interactive restart proposals, working `--no-web`, and accepted Raspberry Pi resource use.
@@ -1178,6 +1178,35 @@ Operator decisions recorded on 2026-08-14: the selector targets the service or l
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-14 — Phase 11 embedded Web implementation awaiting Raspberry Pi acceptance
+
+Delivered behavior:
+
+- created annotated restoration tag `phase10-one-input-accepted` at accepted commit `4b98607` before changing runtime behavior;
+- added one shared 64-field operator catalog with descriptions, hard bounds, recommended ranges, units, and hot/restart ownership; neither QLC+ encryption data nor the full scene catalog is exposed;
+- added revision-aware configuration reads and atomic validated writes with stale-edit rejection, recoverable `.previous` backup, runtime rollback, and exact hot/restart-required results;
+- hot-applied silence, speech, master, frequency-band, Web-graph, and global scene-duration settings while retaining audio device, prediction scheduling/model, listener, and connection settings as restart-owned;
+- added compatible telemetry, bounded/redacted log-tail, configuration, apply, and restart commands to the existing owner-only Unix control socket, including bounded response enforcement;
+- factored terminal-independent runtime status for scene, raw/stable prediction, route reason, RMS, queue depth, dynamic controls, audio health, QLC+ state, configuration identity, and launch mode;
+- added the headless-owned lightweight Web child with no independent systemd unit, bounded one-second supervision checks, delayed restart backoff, clean ownership shutdown, and complete `--no-web` omission;
+- added the responsive vanilla HTML/CSS/Canvas interface with Service/Interactive target selection, pause/auto/manual scene and dynamic-profile controls, configuration form/tooltips, field errors, restart reporting, recent logs, and a browser-only bounded 60-second RMS/scene graph;
+- added a confirmed service restart path that lets the existing systemd `Restart=always` policy relaunch cleanly after the HTTP acknowledgement; interactive targets display their exact verified executable/argument command instead of unsafe automatic re-exec;
+- extended the single Raspberry Pi service deployment with Web enabled/bind/port settings plus persistent installer and one-off `oculizer-service start|restart|run-auto --no-web` controls; no second service/status surface was introduced;
+- made package exports lazy so the lightweight Web child does not import Torch, librosa, predictors, or the audio engine merely to use the control-socket client.
+
+Validation performed:
+
+- the complete retained suite passes: 193 tests;
+- focused coverage includes atomic persistence and backup, cross-field validation, stale revision conflict, unknown/secret rejection, runtime/file rollback, hot policy replacement, response and request limits, concurrent control clients, Host/origin checks, static/API behavior, Web-child crash/restart isolation, `--no-web`, service launcher generation, shell syntax, and existing interactive/service CLI behavior;
+- the public schema is about 19.5 KiB, safely below the 64 KiB control-response limit;
+- `git diff --check`, Python compilation, installer/helper shell syntax, and both CLI help surfaces pass;
+- no audio input, resampler, FFT, prediction worker, model, routing algorithm, QLC+ controller, or inference timing setting was added or changed by the Web child.
+
+Remaining acceptance:
+
+- reinstall and validate on Raspberry Pi 5, including browser access, live apply, invalid-value rejection, restart-required audio change/reconnect, Web-child isolation, `--no-web`, raspiLightGUI status, and sustained CPU/RSS/queue measurements;
+- keep the three resource/production checkboxes open until that operator evidence is recorded.
 
 ### 2026-08-14 — Milestone 10.1 one-input audio implementation
 

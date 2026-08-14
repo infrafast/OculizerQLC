@@ -57,6 +57,27 @@ def make_control():
     ), engine, master, frequency
 
 
+class ConfigStore:
+    def __init__(self):
+        self.callback = None
+
+    def schema(self):
+        return [{"path": "audio.silence.duration_seconds"}]
+
+    def read(self):
+        return {"revision": "abc", "values": {}}
+
+    def apply(self, changes, expected_revision, live_apply):
+        self.callback = live_apply
+        config = {
+            "audio": {
+                "silence": {"duration_seconds": changes["audio.silence.duration_seconds"]},
+            }
+        }
+        live_apply(config, {"audio.silence.duration_seconds"})
+        return {"revision": "def", "hot_applied": list(changes), "restart_required": []}
+
+
 class RuntimeControlTests(unittest.TestCase):
     def test_pause_only_suspends_prediction_and_runtime_updates(self):
         control, engine, master, frequency = make_control()
@@ -115,3 +136,39 @@ class RuntimeControlTests(unittest.TestCase):
         self.assertEqual(result["scene_cache_size"], 25)
         self.assertIsNone(result["scene_rate_limit"])
         self.assertIsNone(result["scene_throttle"])
+
+    def test_status_exposes_bounded_telemetry_without_changing_legacy_fields(self):
+        control, engine, _master, _frequency = make_control()
+        engine.current_audio_rms = 0.125
+        engine.latest_prediction = "wave"
+        engine.max_queue_depth_seen = 7
+
+        result = control.handle({"command": "telemetry"})
+
+        self.assertEqual(result["mode"], "auto")
+        self.assertEqual(result["audio_rms"], 0.125)
+        self.assertEqual(result["latest_prediction"], "wave")
+        self.assertEqual(result["prediction_queue_max_seen"], 7)
+
+    def test_configuration_commands_use_store_and_hot_apply_router_policy(self):
+        control, _engine, _master, _frequency = make_control()
+        store = ConfigStore()
+        control.config_store = store
+
+        self.assertEqual(control.handle({"command": "config-schema"})["fields"][0]["path"],
+                         "audio.silence.duration_seconds")
+        self.assertEqual(control.handle({"command": "config-get"})["revision"], "abc")
+        result = control.handle({
+            "command": "config-apply",
+            "expected_revision": "abc",
+            "changes": {"audio.silence.duration_seconds": 1.25},
+        })
+        self.assertEqual(result["revision"], "def")
+        self.assertEqual(control.router.silence_config.duration_seconds, 1.25)
+
+    def test_logs_are_bounded_and_validate_limit(self):
+        control, _engine, _master, _frequency = make_control()
+        control.log_provider = lambda limit: ["line"] * limit
+        self.assertEqual(len(control.handle({"command": "logs", "limit": 3})["records"]), 3)
+        with self.assertRaisesRegex(ValueError, "between 1 and 100"):
+            control.handle({"command": "logs", "limit": 101})

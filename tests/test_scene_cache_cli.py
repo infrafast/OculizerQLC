@@ -92,6 +92,17 @@ class SceneCacheCliTests(unittest.TestCase):
         with patch("sys.argv", ["oculizer_service.py", "--scene-cache-size", "6"]):
             self.assertEqual(oculizer_service.parse_args().scene_cache_size, 6)
 
+    def test_web_is_headless_only_and_can_be_disabled(self):
+        with patch("sys.argv", ["oculizer_service.py"]):
+            args = oculizer_service.parse_args()
+        self.assertTrue(args.web_enabled)
+        with patch("sys.argv", ["oculizer_service.py", "--no-web"]):
+            args = oculizer_service.parse_args()
+        self.assertFalse(args.web_enabled)
+        with patch("sys.argv", ["oculize.py", "--no-web"]), \
+                redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            oculize.parse_args()
+
 
 if __name__ == "__main__":
     unittest.main()

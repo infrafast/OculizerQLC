@@ -13,6 +13,8 @@ class EchoControl:
     def handle(self, request):
         if request.get("command") == "fail":
             raise ValueError("bad command")
+        if request.get("command") == "huge":
+            return {"value": "x" * 70000}
         return request
 
 
@@ -89,3 +91,9 @@ class ControlSocketTests(unittest.TestCase):
             ))
 
         self.assertEqual({result["index"] for result in results}, set(range(20)))
+
+    def test_oversized_response_is_replaced_by_bounded_error(self):
+        self.server = ControlSocketServer(self.path, EchoControl()).start()
+
+        with self.assertRaisesRegex(RuntimeError, "response is too large"):
+            send_control_request(self.path, {"command": "huge"})

@@ -11,7 +11,21 @@ os.environ.setdefault(
     str(Path(tempfile.gettempdir()) / "oculizer-numba-cache"),
 )
 
-from oculizer.light import Oculizer
-from oculizer.scenes import LogicalSceneRegistry
-from oculizer.config import audio_parameters
-from oculizer import utils
+__all__ = ("Oculizer", "LogicalSceneRegistry", "audio_parameters", "utils")
+
+
+def __getattr__(name):
+    """Keep lightweight submodules from importing the audio/ML stack."""
+    if name == "Oculizer":
+        from oculizer.light import Oculizer
+        return Oculizer
+    if name == "LogicalSceneRegistry":
+        from oculizer.scenes import LogicalSceneRegistry
+        return LogicalSceneRegistry
+    if name == "audio_parameters":
+        from oculizer.config import audio_parameters
+        return audio_parameters
+    if name == "utils":
+        from oculizer import utils
+        return utils
+    raise AttributeError(name)
