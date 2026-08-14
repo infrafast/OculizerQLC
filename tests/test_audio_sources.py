@@ -1,11 +1,13 @@
 import json
+import queue
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 import wave
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 
@@ -104,7 +106,6 @@ class WavFileAudioSourceTests(unittest.TestCase):
                 )
 
             self.assertIsNone(engine.device_idx)
-            self.assertIsNone(engine.normalizer)
             self.assertEqual(engine.audio_source.path, path.resolve())
             engine.stop()
 
@@ -160,21 +161,85 @@ class SoundDeviceAudioSourceTests(unittest.TestCase):
 
 
 class OculizerShutdownTests(unittest.TestCase):
-    def test_stop_requests_source_shutdown_without_closing_prediction_stream(self):
+    def test_stop_requests_shared_source_shutdown(self):
         engine = object.__new__(Oculizer)
         engine.running = Mock()
         engine.audio_source = Mock()
         engine.prediction_thread = None
-        engine.prediction_stream = Mock()
         engine.backend = Mock()
 
         engine.stop()
 
         engine.running.clear.assert_called_once_with()
         engine.audio_source.request_stop.assert_called_once_with()
-        engine.prediction_stream.stop.assert_not_called()
-        engine.prediction_stream.close.assert_not_called()
         engine.backend.close.assert_called_once_with()
+
+    def test_shared_callback_feeds_prediction_and_fft_after_resampling(self):
+        engine = object.__new__(Oculizer)
+        engine.running = Mock()
+        engine.running.is_set.return_value = True
+        engine.average_dual_channels = False
+        engine.capture_sample_rate = 8000
+        engine.sample_rate = 16000
+        engine.scene_prediction_enabled = True
+        engine.prediction_audio_queue = queue.Queue(maxsize=2)
+        engine.block_size = 1024
+        engine.hop_length = 512
+        engine.current_audio_rms = None
+        engine.current_mel_spectrum = None
+        engine.current_mel_sample_rate = None
+        captured = np.array([0.25, -0.5], dtype=np.float32)
+        spectrum = np.array([[1.0], [3.0]], dtype=np.float32)
+
+        with (
+            patch("oculizer.light.control.librosa.resample", return_value=captured) as resample,
+            patch("oculizer.light.control.librosa.feature.melspectrogram", return_value=spectrum) as mel,
+        ):
+            engine.audio_callback(np.array([[0.1], [-0.2]], dtype=np.float32), 2, None, None)
+
+        resample.assert_called_once()
+        self.assertEqual(resample.call_args.kwargs["orig_sr"], 8000)
+        self.assertEqual(resample.call_args.kwargs["target_sr"], 16000)
+        np.testing.assert_array_equal(engine.prediction_audio_queue.get_nowait(), captured)
+        np.testing.assert_array_equal(mel.call_args.kwargs["y"], captured)
+        np.testing.assert_array_equal(engine.current_mel_spectrum, np.array([1.0, 3.0]))
+        self.assertEqual(engine.current_mel_sample_rate, 16000)
+
+    def test_live_runtime_opens_one_shared_audio_source(self):
+        engine = object.__new__(Oculizer)
+        engine.running = threading.Event()
+        engine.audio_processing_enabled = True
+        engine.audio_file = None
+        engine.device_idx = 3
+        engine.average_dual_channels = False
+        engine.channels = 1
+        engine.sample_rate = 16000
+        engine.block_size = 1024
+        engine.scene_prediction_enabled = True
+        engine.prediction_thread = None
+        engine.prediction_processing_thread = Mock()
+        engine.process_audio_and_lights = Mock()
+        engine.update_scene_prediction = Mock()
+
+        source = MagicMock()
+        source.__enter__.side_effect = lambda: (engine.running.clear(), source)[1]
+        source_type = Mock(return_value=source)
+        with (
+            patch("oculizer.light.control.sd.query_devices", return_value={
+                "name": "Shared input", "default_samplerate": 48000,
+            }),
+            patch("oculizer.audio.sources.SoundDeviceAudioSource", source_type),
+        ):
+            engine.run()
+
+        source_type.assert_called_once_with(
+            device=3,
+            channels=1,
+            sample_rate=48000,
+            block_size=3072,
+            callback=engine.audio_callback,
+        )
+        self.assertIs(engine.audio_source, source)
 
 
 if __name__ == "__main__":

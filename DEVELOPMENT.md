@@ -1031,7 +1031,7 @@ Final acceptance gate: the operator validates macOS interactive use and Raspberr
 
 ## Forward roadmap — Phase 10: single audio-input simplification
 
-Status: **Milestone 10.1 approved; implementation pending**
+Status: **Milestone 10.1 implemented; live macOS/Raspberry Pi acceptance pending**
 
 Phase 10 removes the single-stream/dual-stream concept completely. Oculizer will have one live audio capture device, selected only by `--input-device` or `audio.input_device` when the CLI override is absent. The same captured samples must continue to feed FFT/reactivity, RMS and frequency modulation, prediction buffering, EfficientAT inference, and silence/speech routing exactly as in the Phase 9 accepted single-input path.
 
@@ -1050,17 +1050,17 @@ The behavioral baseline to preserve is:
 
 ### Milestone 10.1 — remove separate prediction capture
 
-- [ ] remove interactive `--single-stream`, `--dual-stream`, `--prediction-device`, and `--prediction-channels` options and all platform-specific defaults, argument state, help text, startup selection, and stream-mode logging associated with them;
-- [ ] remove headless/service `--prediction-device` and `--prediction-channels`, their validation/conversion, and constructor forwarding;
-- [ ] reduce `AudioOculizerController`, `main`, and `Oculizer` constructor signatures to one input device and remove `dual_stream`, `scene_prediction_device`, `prediction_channels_spec`, `prediction_channel_indices`, and `prediction_stream` state;
-- [ ] delete the separate prediction-device resolver, prediction-channel parser, prediction-only callback, device-specific channel auto-detection, 48 kHz secondary `InputStream`, duplicate cleanup, and every branch that starts or stops that stream;
-- [ ] always start the existing prediction worker beside the one shared live/WAV source when prediction is enabled, and always feed its bounded queue from the existing shared capture callback;
-- [ ] simplify interactive diagnostics to report the one input or WAV source without a `SINGLE`, `DUAL`, or generic stream-mode label;
-- [ ] keep `--test` only as the existing lighting-disabled diagnostic mode, but run its live audio through the same one-input capture/FFT/prediction pipeline instead of its historical prediction-only secondary-stream branch;
-- [ ] retain `--average-dual-channels` in this milestone: despite its historical name, it selects and averages channels 1–2 of the one input device and is not a second stream. Renaming or redesigning input-channel selection would be a separate user-facing change and could alter FFT/prediction samples;
-- [ ] remove or rewrite tests that protect dual-stream behavior, add structural tests proving one source/callback feeds both consumers, and retain coverage for live input selection, WAV input, sample-rate conversion, buffering, prediction, fast events, modulation, clean shutdown, interactive CLI, headless CLI, service deployment, and QLC+ Native integration;
-- [ ] update `README.md`, current architecture descriptions, CLI examples/help, developer instructions, and service documentation so no supported workflow or current description exposes a stream mode or separate prediction input;
-- [ ] run dead-code and repository searches proving no runtime `single_stream`, `dual_stream`, `scene_prediction_device`, `prediction_stream`, `prediction_channels`, `--single-stream`, `--dual-stream`, `--prediction-device`, or `--prediction-channels` dependency remains outside historical implementation records.
+- [x] remove interactive `--single-stream`, `--dual-stream`, `--prediction-device`, and `--prediction-channels` options and all platform-specific defaults, argument state, help text, startup selection, and stream-mode logging associated with them;
+- [x] remove headless/service `--prediction-device` and `--prediction-channels`, their validation/conversion, and constructor forwarding;
+- [x] reduce `AudioOculizerController`, `main`, and `Oculizer` constructor signatures to one input device and remove `dual_stream`, `scene_prediction_device`, `prediction_channels_spec`, `prediction_channel_indices`, and `prediction_stream` state;
+- [x] delete the separate prediction-device resolver, prediction-channel parser, prediction-only callback, device-specific channel auto-detection, 48 kHz secondary `InputStream`, duplicate cleanup, and every branch that starts or stops that stream;
+- [x] always start the existing prediction worker beside the one shared live/WAV source when prediction is enabled, and always feed its bounded queue from the existing shared capture callback;
+- [x] simplify interactive diagnostics to report the one input or WAV source without a `SINGLE`, `DUAL`, or generic stream-mode label;
+- [x] keep `--test` only as the existing lighting-disabled diagnostic mode, but run its live audio through the same one-input capture/FFT/prediction pipeline instead of its historical prediction-only secondary-stream branch;
+- [x] retain `--average-dual-channels` in this milestone: despite its historical name, it selects and averages channels 1–2 of the one input device and is not a second stream. Renaming or redesigning input-channel selection would be a separate user-facing change and could alter FFT/prediction samples;
+- [x] remove or rewrite tests that protect dual-stream behavior, add structural tests proving one source/callback feeds both consumers, and retain coverage for live input selection, WAV input, sample-rate conversion, buffering, prediction, fast events, modulation, clean shutdown, interactive CLI, headless CLI, service deployment, and QLC+ Native integration;
+- [x] update `README.md`, current architecture descriptions, CLI examples/help, developer instructions, and service documentation so no supported workflow or current description exposes a stream mode or separate prediction input;
+- [x] run dead-code and repository searches proving no runtime `single_stream`, `dual_stream`, `scene_prediction_device`, `prediction_stream`, `prediction_channels`, `--single-stream`, `--dual-stream`, `--prediction-device`, or `--prediction-channels` dependency remains outside historical implementation records.
 
 ### Risks, caveats, and controls
 
@@ -1093,6 +1093,38 @@ Operator decision: Milestone 10.1 was approved on 2026-08-14. Two-channel averag
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-14 — Milestone 10.1 one-input audio implementation
+
+Delivered behavior:
+
+- removed all interactive and headless single/dual-stream selection and separate prediction-device/channel CLI options;
+- reduced the controller and engine constructors to one `input_device`, one `SoundDeviceAudioSource`, one capture callback, one bounded prediction queue, and the existing prediction worker;
+- removed the secondary PortAudio callback/stream, channel parser, device resolver, auto-detection, state, startup branches, cleanup, and stream-mode display/logging;
+- folded lighting-disabled `--test` operation onto the normal shared capture/FFT/prediction path;
+- removed the unused standalone `AudioListener` and `RealTimeScenePredictor` capture implementations and their package exports, leaving `oculizer.audio.sources.SoundDeviceAudioSource` as the only live `sd.InputStream` owner;
+- retained channel 1 as the default and retained opt-in `--average-dual-channels` for deliberate channel 1–2 averaging;
+- preserved WAV input, sample-rate conversion points, prediction buffering, EfficientAT processing, fast priority events, routing, modulation, and QLC+ Native behavior.
+
+Validation performed:
+
+- recorded a clean pre-change baseline of 176 tests and completed the refactored suite with 176 passing tests; obsolete dual-mode tests were replaced by CLI rejection, one-source construction, and shared post-resampling sample-flow coverage;
+- both help surfaces expose `--input-device` and no removed stream/prediction-device option; all four removed options are explicitly rejected by both entry points;
+- compile and dead-code searches confirm one retained runtime `sd.InputStream`, owned only by `SoundDeviceAudioSource`, with removed identifiers present only in rejection tests and historical records;
+- the v6 `mixvoicemusic.wav` comparison exactly reproduced all 42 raw predictions and all 44 fast semantic predictions from the accepted retained report;
+- a direct comparison against `phase9-native-only-accepted` exactly reproduced all 42 v4 raw predictions, all 44 v4 fast semantic predictions, and the complete deterministic routing profile output.
+
+Remaining acceptance:
+
+- validate interactive live and WAV input on macOS, including clean `Ctrl+C`;
+- reinstall/restart on Raspberry Pi, validate service input and QLC+ behavior, then repeat the bounded queue and resource snapshot before marking Phase 10 complete.
+
+### 2026-08-14 — User dynamic-control visualization restored
+
+- restored the concise dynamic-control comparison to the user README after the native-only documentation rewrite had dropped it;
+- retained the existing `fascination.wav` v6 graph because Phase 10 reproduced the accepted raw predictions and complete deterministic routing outputs exactly, so regenerating it would not change the result;
+- documented only the user-facing distinction: identical predictions yield progressively fewer ordinary scene changes from `responsive` to `normal` to `calm`, while `silent` and `announcement` remain priority routes;
+- corrected the adjacent runtime-control example to the current `dynamic-control calm` command.
 
 ### 2026-08-14 — Interactive WAV display compatibility
 

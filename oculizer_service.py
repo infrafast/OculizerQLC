@@ -24,10 +24,8 @@ def configure_service_streams() -> None:
 def parse_args():
     parser = argparse.ArgumentParser(description="Run Oculizer without a terminal interface")
     parser.add_argument("--config", default=None, help="General configuration (default: config/oculizer.json)")
-    parser.add_argument("--input-device", default=None, help="Prediction audio input selector")
+    parser.add_argument("--input-device", default=None, help="Shared audio input selector")
     parser.add_argument("--audio-file", default=None, help="Loop a local PCM WAV file instead of opening an audio device")
-    parser.add_argument("--prediction-device", default=None, help="Optional separate prediction input")
-    parser.add_argument("--prediction-channels", default=None)
     from oculizer.scene_predictors import list_available_versions
     parser.add_argument(
         "--predictor-version",
@@ -67,8 +65,6 @@ def parse_args():
     args.dynamic_controls = configured_dynamic_controls(config)
     if args.dynamic_control != "off" and args.dynamic_control not in args.dynamic_controls:
         parser.error("--dynamic-control must be 'off' or a profile from control.dynamic_controls")
-    if args.audio_file and args.prediction_device:
-        parser.error("--audio-file cannot be combined with --prediction-device")
     if args.audio_file:
         audio_file = Path(args.audio_file).expanduser().resolve()
         if not audio_file.is_file():
@@ -78,8 +74,6 @@ def parse_args():
         parser.error("--scene-cache-size must be between 1 and 100")
     if not 0.5 <= args.scene_max_duration <= 3600:
         parser.error("--scene-max-duration must be between 0.5 and 3600 seconds")
-    if isinstance(args.prediction_device, str) and args.prediction_device.isdigit():
-        args.prediction_device = int(args.prediction_device)
     return args
 
 
@@ -89,10 +83,8 @@ def build_service(args) -> HeadlessOculizerService:
         scene_manager,
         input_device=args.input_device,
         scene_prediction_enabled=True,
-        scene_prediction_device=args.prediction_device,
         predictor_version=args.predictor_version,
         scene_cache_size=args.scene_cache_size,
-        prediction_channels=args.prediction_channels,
         config_path=args.config,
         qlc_host=args.qlc_host,
         qlc_port=args.qlc_port,

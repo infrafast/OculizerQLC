@@ -11,7 +11,6 @@ os.environ.setdefault(
     str(Path(tempfile.gettempdir()) / "oculizer-numba-cache"),
 )
 
-from oculizer.audio import AudioListener
 from oculizer.light import Oculizer
 from oculizer.scenes import LogicalSceneRegistry
 from oculizer.config import audio_parameters

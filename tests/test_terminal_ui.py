@@ -38,7 +38,6 @@ class TerminalInitializationTests(unittest.TestCase):
             controller = oculize.AudioOculizerController(
                 screen,
                 input_device="default",
-                dual_stream=False,
                 qlc_encryption_key="secret-key",
             )
 

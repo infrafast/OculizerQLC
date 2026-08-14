@@ -53,6 +53,18 @@ Select BlackHole on macOS:
 ./.venv/bin/python oculize.py --input-device blackhole
 ```
 
+Oculizer opens one audio capture device. The same captured signal feeds RMS,
+FFT/reactivity, frequency modulation, silence/speech detection, and scene
+prediction. By default channel 1 is used. For an interface where channels 1
+and 2 carry the stereo program, average those two channels explicitly:
+
+```bash
+./.venv/bin/python oculize.py --input-device scarlett --average-dual-channels
+```
+
+Two-channel averaging is intentionally not the default because mono devices
+and inputs with unrelated signals on channel 2 must continue to work.
+
 List available audio devices:
 
 ```bash
@@ -97,7 +109,20 @@ Run the non-interactive process directly:
 ```
 
 The headless and interactive applications use the same inference, routing,
-native connection, configuration, and runtime-control implementation.
+one-input audio pipeline, native connection, configuration, and runtime-control
+implementation.
+
+## Scene-change dynamics
+
+Dynamic-control profiles do not change predictions. They decide how quickly
+ordinary predicted scenes are accepted: `responsive` follows them closely,
+`normal` retains scenes longer, and `calm` changes least often. Priority
+`silent` and `announcement` events remain immediate in every profile.
+
+![Dynamic-control comparison](docs/dynamic_control_comparison.svg)
+
+On this reference track, identical predictions produced 80 changes with
+`off`/`responsive`, 55 with `normal`, and 34 with `calm`.
 
 ## QLC+ Native setup
 
@@ -180,7 +205,7 @@ While either runtime is active:
 ./oculizerctl.py scene ambient1
 ./oculizerctl.py pause
 ./oculizerctl.py auto
-./oculizerctl.py preset calm
+./oculizerctl.py dynamic-control calm
 ./oculizerctl.py master 0.5
 ./oculizerctl.py bass 0.8
 ```
