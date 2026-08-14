@@ -8,6 +8,7 @@ import os
 import socket
 import struct
 import threading
+import time
 import zlib
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -27,6 +28,7 @@ BOOL_TYPE = 0
 INT_TYPE = 1
 STRING_TYPE = 3
 BYTEARRAY_TYPE = 4
+STATE_LOG_REPEAT_SECONDS = 30.0
 
 _CRC_TABLE = (
     0x0000, 0x1081, 0x2102, 0x3183, 0x4204, 0x5285, 0x6306, 0x7387,
@@ -282,6 +284,7 @@ class QLCNativeClient:
         self._pending_scene: str | None = None
         self._pending_parameters: dict[str, float] = {}
         self._last_error: str | None = None
+        self._state_log_times: dict[NativeState, float] = {}
 
     def start(self) -> None:
         if self.dry_run:
@@ -292,14 +295,32 @@ class QLCNativeClient:
         self._thread = threading.Thread(target=self._run, name="qlc-native", daemon=True)
         self._thread.start()
 
-    def _set_state(self, state: NativeState) -> None:
-        if state != self.state:
-            self.state = state
-            logger.info("QLC+ native state: %s", state.value)
+    def _set_state(self, state: NativeState) -> bool:
+        """Update state and rate-limit repeated reconnect-cycle messages."""
+        if state == self.state:
+            return False
+        self.state = state
+        now = time.monotonic()
+        last_logged = self._state_log_times.get(state)
+        reconnect_cycle_state = state in (
+            NativeState.CONNECTING, NativeState.DISCONNECTED,
+        )
+        if (reconnect_cycle_state and last_logged is not None
+                and now - last_logged < STATE_LOG_REPEAT_SECONDS):
+            return False
+        self._state_log_times[state] = now
+        logger.info("QLC+ native state: %s", state.value)
+        if state == NativeState.READY:
+            # A later outage is a new incident and must be visible immediately,
+            # even when the preceding reconnect cycle ended less than 30s ago.
+            self._state_log_times.pop(NativeState.CONNECTING, None)
+            self._state_log_times.pop(NativeState.DISCONNECTED, None)
+            self._last_error = None
+        return True
 
     def _connect(self) -> None:
-        self._set_state(NativeState.CONNECTING)
-        logger.info("QLC+ native: connecting to %s:%d", self.host, self.port)
+        if self._set_state(NativeState.CONNECTING):
+            logger.info("QLC+ native: connecting to %s:%d", self.host, self.port)
         self.socket = socket.create_connection((self.host, self.port), timeout=10)
         self.socket.settimeout(None)
         auth_key = format(self.key, "x").encode("ascii")
@@ -309,8 +330,8 @@ class QLCNativeClient:
             _section_bytearray(auth_key),
             _section_string("OculizerQLC"),
         ))
-        self._set_state(NativeState.WAITING_AUTHORIZATION)
-        logger.warning("QLC+ native: authorize 'OculizerQLC' in the QLC+ GUI")
+        if self._set_state(NativeState.WAITING_AUTHORIZATION):
+            logger.warning("QLC+ native: authorize 'OculizerQLC' in the QLC+ GUI")
         project = bytearray()
         expected_project_size = None
         while True:
