@@ -1029,6 +1029,67 @@ Validation gate: the retained automated suite passes; a repository search finds 
 
 Final acceptance gate: the operator validates macOS interactive use and Raspberry Pi service use, including representative concert audio, silence/speech transitions, manual/runtime control, continuous sliders, QLC+ restart, and raspiLightGUI status. If accepted, native-only becomes the supported product and the rollback tag is retained as historical recovery. If rejected for a fundamental reason, return to `pre-native-only-unplug`/`ca9b38e` as a whole.
 
+## Forward roadmap — Phase 10: single audio-input simplification
+
+Status: **Milestone 10.1 approved; implementation pending**
+
+Phase 10 removes the single-stream/dual-stream concept completely. Oculizer will have one live audio capture device, selected only by `--input-device` or `audio.input_device` when the CLI override is absent. The same captured samples must continue to feed FFT/reactivity, RMS and frequency modulation, prediction buffering, EfficientAT inference, and silence/speech routing exactly as in the Phase 9 accepted single-input path.
+
+### Restore point and invariant baseline
+
+The annotated tag `phase9-native-only-accepted` at commit `5b08601` is the restore point before this refactor. It contains the accepted Raspberry Pi 5 native-only service, interactive runtime, QLC+ reconnect behavior, and resource measurements. If the cleanup changes prediction results, timing policy, priority routing, modulation, native lighting behavior, or service lifecycle and cannot be corrected within this milestone, restore that tag as a whole rather than reintroducing selected dual-stream fragments.
+
+The behavioral baseline to preserve is:
+
+- exactly one live `SoundDeviceAudioSource` and one PortAudio capture stream;
+- `--input-device` resolves `default`, a portable alias, a full/partial device name, or an input-device index through the existing main-device resolver;
+- the capture callback performs the existing source-rate-to-analysis-rate conversion before both prediction queue insertion and mel-spectrum calculation;
+- the prediction cache remains expressed at the existing shared analysis sample rate and is resampled to the predictor's 48 kHz input immediately before EfficientAT semantic scoring or scene inference;
+- prediction windowing, cadence, bounded queue, freshness flush, cache voting, fast silence/speech decisions, WAV loop reset, pause/resume behavior, and QLC+ intentions remain unchanged;
+- `--audio-file` remains the alternative to a live device and continues through the same downstream shared analysis/prediction path without opening PortAudio.
+
+### Milestone 10.1 — remove separate prediction capture
+
+- [ ] remove interactive `--single-stream`, `--dual-stream`, `--prediction-device`, and `--prediction-channels` options and all platform-specific defaults, argument state, help text, startup selection, and stream-mode logging associated with them;
+- [ ] remove headless/service `--prediction-device` and `--prediction-channels`, their validation/conversion, and constructor forwarding;
+- [ ] reduce `AudioOculizerController`, `main`, and `Oculizer` constructor signatures to one input device and remove `dual_stream`, `scene_prediction_device`, `prediction_channels_spec`, `prediction_channel_indices`, and `prediction_stream` state;
+- [ ] delete the separate prediction-device resolver, prediction-channel parser, prediction-only callback, device-specific channel auto-detection, 48 kHz secondary `InputStream`, duplicate cleanup, and every branch that starts or stops that stream;
+- [ ] always start the existing prediction worker beside the one shared live/WAV source when prediction is enabled, and always feed its bounded queue from the existing shared capture callback;
+- [ ] simplify interactive diagnostics to report the one input or WAV source without a `SINGLE`, `DUAL`, or generic stream-mode label;
+- [ ] keep `--test` only as the existing lighting-disabled diagnostic mode, but run its live audio through the same one-input capture/FFT/prediction pipeline instead of its historical prediction-only secondary-stream branch;
+- [ ] retain `--average-dual-channels` in this milestone: despite its historical name, it selects and averages channels 1–2 of the one input device and is not a second stream. Renaming or redesigning input-channel selection would be a separate user-facing change and could alter FFT/prediction samples;
+- [ ] remove or rewrite tests that protect dual-stream behavior, add structural tests proving one source/callback feeds both consumers, and retain coverage for live input selection, WAV input, sample-rate conversion, buffering, prediction, fast events, modulation, clean shutdown, interactive CLI, headless CLI, service deployment, and QLC+ Native integration;
+- [ ] update `README.md`, current architecture descriptions, CLI examples/help, developer instructions, and service documentation so no supported workflow or current description exposes a stream mode or separate prediction input;
+- [ ] run dead-code and repository searches proving no runtime `single_stream`, `dual_stream`, `scene_prediction_device`, `prediction_stream`, `prediction_channels`, `--single-stream`, `--dual-stream`, `--prediction-device`, or `--prediction-channels` dependency remains outside historical implementation records.
+
+### Risks, caveats, and controls
+
+1. **Sample-rate equivalence.** The accepted shared path captures at the device's native rate, converts to the analysis rate, queues those converted samples, then converts the prediction window to 48 kHz. Removing the secondary path must not “optimize” or relocate either conversion: doing so could change model inputs, RMS thresholds, FFT bands, latency, and scene selections.
+2. **Channel semantics.** The removed `--prediction-channels` selected channels only from a separate device. The retained default shared path flattens channel 1 unless `--average-dual-channels` opens and averages channels 1–2. Do not silently replace this with averaging every available channel or a new channel abstraction.
+3. **Diagnostic `--test` mode.** Its current implementation depends entirely on the secondary prediction stream and skips the normal FFT stream. It must be folded onto the shared capture pipeline while retaining disabled lighting output. This is the only intentional internal execution-path change beyond deletion and needs focused live/mock coverage.
+4. **WAV input.** WAV already follows the shared queue and must remain device-independent. Removing the `audio-file`/prediction-device conflict check is correct because the conflicting option disappears, but missing/invalid WAV errors, real-time looping, temporal-state reset, and interactive display must remain covered.
+5. **Shutdown ownership.** The accepted CoreAudio/PortAudio rule is that the runtime thread owns stream closure. Delete secondary-stream cleanup without changing `SoundDeviceAudioSource` ownership, or the prior macOS double-close crash could return.
+6. **CLI compatibility is deliberately broken.** Removed flags must fail clearly as unknown arguments rather than being accepted and ignored. Update service examples and verify the installed Raspberry Pi launcher supplies only `--input-device`; the deployment JSON field `audio_input` and `audio.input_device` configuration remain valid.
+7. **Misleading historical names.** `average_dual_channels` refers to two channels in one stream, not dual streams. Keeping it minimizes scope and preserves audio samples; document that distinction. A future rename may use a compatibility window, but it is not required for this milestone.
+8. **Inference isolation.** Predictor implementations and training scripts do not own audio capture and should not need modification. Any change inside v4/v6 prediction algorithms, model artefacts, clustering, semantic scoring, or routing policy is out of scope and should be treated as a regression risk.
+9. **Embedded performance.** The cleanup should remove one possible PortAudio stream and dead branches without adding any worker, queue, copy, FFT, resampler, or abstraction. Raspberry Pi CPU/RSS should remain equal or improve; a material regression blocks acceptance.
+
+### Validation gate
+
+Before implementation, record the clean Phase 9 test baseline. During implementation, use focused tests first and then run the complete retained suite. Acceptance requires:
+
+- both CLI help screens expose `--input-device` and none of the four removed options;
+- removed options are rejected, not silently ignored;
+- a mocked live device opens exactly one `SoundDeviceAudioSource` and no direct secondary `sd.InputStream`;
+- one callback block feeds both the prediction queue and the existing FFT/RMS state with the same post-conversion samples;
+- fixed WAV/model comparisons preserve raw v4/v6 predictions, fast silence/speech decisions, scene transition timing, and modulation behavior;
+- interactive live input, interactive WAV input, headless foreground operation, systemd service operation, `oculizerctl`, clean `Ctrl+C`/SIGTERM shutdown, and QLC+ Native control pass on their relevant platforms;
+- Raspberry Pi 5 queue depth remains bounded and sustained CPU, RSS, temperature, and inference time do not regress materially from the Phase 9 acceptance reference (151% CPU, 834,288 KiB RSS, 24 threads, approximately 460 ms average inference, queue 13–16 with maximum 17, 55.4 degrees Celsius, no throttling).
+
+No implementation work begins until the operator explicitly approves Milestone 10.1.
+
+Operator decision: Milestone 10.1 was approved on 2026-08-14. Two-channel averaging remains opt-in because enabling it by default would change the accepted channel-1 signal, require two input channels, and break valid mono/default Raspberry Pi devices. This milestone must preserve the current default while retaining `--average-dual-channels` for interfaces whose first two channels should deliberately be combined.
+
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
