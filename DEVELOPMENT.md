@@ -1031,7 +1031,7 @@ Final acceptance gate: the operator validates macOS interactive use and Raspberr
 
 ## Forward roadmap — Phase 10: single audio-input simplification
 
-Status: **Milestone 10.1 implemented; live macOS/Raspberry Pi acceptance pending**
+Status: **Complete — one-input audio architecture accepted on macOS and Raspberry Pi**
 
 Phase 10 removes the single-stream/dual-stream concept completely. Oculizer will have one live audio capture device, selected only by `--input-device` or `audio.input_device` when the CLI override is absent. The same captured samples must continue to feed FFT/reactivity, RMS and frequency modulation, prediction buffering, EfficientAT inference, and silence/speech routing exactly as in the Phase 9 accepted single-input path.
 
@@ -1114,10 +1114,27 @@ Validation performed:
 - the v6 `mixvoicemusic.wav` comparison exactly reproduced all 42 raw predictions and all 44 fast semantic predictions from the accepted retained report;
 - a direct comparison against `phase9-native-only-accepted` exactly reproduced all 42 v4 raw predictions, all 44 v4 fast semantic predictions, and the complete deterministic routing profile output.
 
-Remaining acceptance:
+Final acceptance:
 
-- validate interactive live and WAV input on macOS, including clean `Ctrl+C`;
-- reinstall/restart on Raspberry Pi, validate service input and QLC+ behavior, then repeat the bounded queue and resource snapshot before marking Phase 10 complete.
+- the operator validated interactive operation on macOS after the refactor, completing the live/WAV and clean-shutdown gate;
+- automated parity, macOS interactive behavior, Raspberry Pi service behavior, and embedded resource measurements are accepted;
+- Phase 10 is complete. `phase9-native-only-accepted` remains the pre-refactor restoration point.
+
+Raspberry Pi live validation:
+
+- the reinstalled service opened only the configured `default` input, capturing channel 1 at 44.1 kHz and retaining the accepted 16 kHz shared analysis rate;
+- the log explicitly confirmed that scene prediction uses the shared audio input and that only the existing prediction worker started;
+- v6 retained its four-second window and one-second interval, with observed inference of 470.4–483.8 ms;
+- queue depth remained stable at 15 with a maximum of 16, matching the Phase 9 operating range, and automatic prediction continued normally;
+- no stream-mode, secondary-device, prediction-channel, or second-stream activity appeared.
+
+Raspberry Pi resource validation after the refactor:
+
+- at 1 minute 52 seconds of service uptime, CPU was 145%, versus 151% at the Phase 9 reference;
+- RSS was 832,288 KiB (10.0%), versus 834,288 KiB (10.1%); virtual size was 3,692,768 KiB and the process retained 24 threads;
+- temperature was 53.2 degrees Celsius, versus 55.4 degrees Celsius at the reference, with `get_throttled=0x0` in both cases;
+- the small improvements are consistent with code-path reduction but are not claimed as a benchmark because uptime, ambient conditions, and input content differ;
+- no embedded CPU, memory, threading, queue, thermal, or throttling regression was observed. Raspberry Pi acceptance is complete.
 
 ### 2026-08-14 — User dynamic-control visualization restored
 
