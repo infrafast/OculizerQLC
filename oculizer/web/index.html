@@ -20,10 +20,10 @@
     </section>
     <section class="controls panel">
       <h2>Show control</h2>
-      <button data-command="auto">Auto</button>
-      <button data-command="pause">Pause</button>
+      <button id="mode-auto" class="mode-button" data-command="auto" aria-pressed="false">Auto</button>
+      <button id="mode-pause" class="mode-button" data-command="pause" aria-pressed="false">Pause</button>
       <select id="dynamic"></select><button id="apply-dynamic">Apply preset</button>
-      <input id="manual-scene" placeholder="Scene caption"><button id="apply-scene">Select scene</button>
+      <input id="manual-scene" placeholder="Scene caption"><button id="apply-scene" class="mode-button" aria-pressed="false">Select scene</button>
     </section>
     <section class="panel graph-panel">
       <div class="section-title"><h2>Audio and scenes</h2><label><input type="checkbox" id="graph-enabled" checked> Graph</label></div>
