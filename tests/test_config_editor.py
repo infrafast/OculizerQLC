@@ -116,6 +116,7 @@ class ConfigurationStoreTests(unittest.TestCase):
         self.assertEqual(before["sources"]["deployment"], str(deployment.resolve()))
         schema = {field["path"]: field for field in store.schema()}
         self.assertEqual(schema["audio.input_device"]["source"], "deployment")
+        self.assertEqual(schema["audio.input_device"]["section"], "Service startup")
         self.assertEqual(schema["audio.silence.threshold"]["source"], "application")
 
         result = store.apply({

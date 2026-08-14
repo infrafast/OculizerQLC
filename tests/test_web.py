@@ -59,11 +59,15 @@ class WebServerTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn(b"Oculizer", body)
         self.assertIn("default-src 'self'", dict(headers)["Content-Security-Policy"])
-        self.assertIn(b"Local headless", body)
+        self.assertIn(b"Service runtime", body)
+        self.assertNotIn(b'id="target"', body)
         status, _headers, javascript = self.request("GET", "/app.js")
         self.assertEqual(status, 200)
         self.assertIn(b"config-section", javascript)
         self.assertIn(b"p.changed", javascript)
+        self.assertIn(b"priority_speech", javascript)
+        self.assertIn(b"laneEnds", javascript)
+        self.assertNotIn(b"details.open=", javascript)
 
     def test_status_and_config_apply_bridge_to_bounded_control_socket(self):
         status, _headers, body = self.request("GET", "/api/status")

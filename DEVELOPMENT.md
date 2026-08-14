@@ -1115,12 +1115,7 @@ The Web process must add no audio stream, FFT, resampler, inference call, contin
 - use `0.75 s` as the initial Raspberry Pi recommended minimum for prediction or fast-detection intervals, not as a universal hard rule. Review every exposed field individually and provide meaningful hard bounds plus narrower recommended bounds wherever operational evidence or algorithm constraints justify them; input controls and mouseover help must show the same metadata;
 - never return the QLC+ encryption key to the browser. Secret editing is excluded from the first milestone.
 
-The selector chooses a running target rather than inventing arbitrary configuration stores:
-
-- **Service** selects the systemd/headless instance, its deployment-configured application file, and control socket;
-- **Local headless** selects a foreground `oculizer_service.py` instance discovered through the existing per-user control socket and its application file; `oculize.py` neither hosts Web nor appears as a named Web target;
-- display the resolved process, socket, configuration path, connection state, and writability. Never accept an arbitrary filesystem path from HTTP;
-- if both targets use the same `config/oculizer.json`, say so explicitly. The selector determines which live process receives the update; it does not imply two independent configurations.
+The Web child controls only the headless runtime that owns it. Do not expose a runtime selector: service and local headless launches intentionally share application configuration, while only the installed service has a deployment overlay. Group overlay-backed values in a collapsed **Service startup** section and show both trusted resolved paths. Never accept an arbitrary filesystem path from HTTP. `oculize.py` neither hosts nor appears in the Web interface.
 
 ### Shared telemetry and low-resource UI
 
@@ -1154,11 +1149,11 @@ Validation gate: apply and rollback against foreground headless and systemd runt
 
 ### Milestone 11.2 — embedded isolated Web application
 
-- [x] add the Oculizer-owned HTTP child process, bounded supervision/backoff, responsive UI, Service/Local-headless target selector, explanations/tooltips, hard/recommended limits, field errors, and hot/restart-required badges;
+- [x] add the Oculizer-owned HTTP child process, bounded supervision/backoff, responsive UI, collapsed logical configuration groups, explanations/tooltips, hard/recommended limits, field errors, and hot/restart-required badges;
 - [x] implement unauthenticated apply, pause/auto/manual-scene controls, runtime/prediction view, and bounded log view through the shared services only;
 - [x] add launch-mode/capability reporting and a restart workflow: controlled confirmed systemd exit/restart or the exact local-headless manual relaunch command;
 - [x] add the optional Canvas RMS/scene timeline with bounded low-rate sampling and persistent enable/disable setting;
-- [x] test Host/origin checks, malformed requests, disconnected targets, timeouts, target/config identity, Web-child crash/restart without disturbing Oculizer, and Web disablement with `--no-web`;
+- [x] test Host/origin checks, malformed requests, disconnected runtime behavior, timeouts, config identity, Web-child crash/restart without disturbing Oculizer, and Web disablement with `--no-web`;
 - [ ] measure Web-disabled and Web-enabled CPU, RSS, thread count, inference time, and queue depth on Raspberry Pi 5.
 
 Validation gate: validate from a second LAN device, including help, bounds, rejected edits, hot apply, restart-required reporting, prediction/log freshness, graph disablement, and uninterrupted lighting during Web refresh/restart.
@@ -1173,7 +1168,7 @@ Validation gate: validate from a second LAN device, including help, bounds, reje
 
 Final acceptance requires a sustained LAN run with bounded queues/log/history, no inference or QLC+ regression, isolated/recovered Web-child failure, correct service and local-headless restart proposals, working `--no-web`, and accepted Raspberry Pi resource use.
 
-Operator decisions recorded on 2026-08-14: the selector targets the installed service or a local foreground headless runtime even when they share one JSON file; field limits are reviewed individually and `0.75 s` is a Raspberry Pi cadence recommendation/example; LAN control deliberately has neither password nor prominent warning; hot-safe fields apply immediately while audio-device and other startup-owned changes are saved with a launch-mode-aware restart proposal; the Web server is an isolated child embedded in the headless Oculizer lifecycle, never an independent service, and is omitted completely with `--no-web`. Phase 11 implementation may begin from Milestone 11.1.
+Operator decisions recorded on 2026-08-14: the Web child controls its owning headless runtime and exposes the shared application configuration plus a collapsed service-only deployment section when applicable; field limits are reviewed individually and `0.75 s` is a Raspberry Pi cadence recommendation/example; LAN control deliberately has neither password nor prominent warning; hot-safe fields apply immediately while audio-device and other startup-owned changes are saved with a launch-mode-aware restart proposal; the Web server is an isolated child embedded in the headless Oculizer lifecycle, never an independent service, and is omitted completely with `--no-web`. Phase 11 implementation may begin from Milestone 11.1.
 
 ## Implementation log
 
@@ -1190,7 +1185,7 @@ Delivered behavior:
 - added compatible telemetry, bounded/redacted log-tail, configuration, apply, and restart commands to the existing owner-only Unix control socket, including bounded response enforcement;
 - factored terminal-independent runtime status for scene, raw/stable prediction, route reason, RMS, queue depth, dynamic controls, audio health, QLC+ state, configuration identity, and launch mode;
 - added the headless-owned lightweight Web child with no independent systemd unit, bounded one-second supervision checks, delayed restart backoff, clean ownership shutdown, and complete `--no-web` omission;
-- added the responsive vanilla HTML/CSS/Canvas interface with Service/Local-headless target selection, pause/auto/manual scene and dynamic-profile controls, grouped collapsible configuration sections/tooltips, field errors, restart reporting, current input-device inventory, recent logs, and a browser-only bounded 60-second RMS/scene graph;
+- added the responsive vanilla HTML/CSS/Canvas interface with pause/auto/manual scene and dynamic-profile controls, collapsed logical configuration sections/tooltips, field errors, restart reporting, current input-device inventory, recent logs, and a browser-only bounded 60-second RMS/scene graph;
 - added a confirmed service restart path that lets the existing systemd `Restart=always` policy relaunch cleanly after the HTTP acknowledgement; local headless targets display their exact executable/argument command instead of unsafe automatic re-exec;
 - extended the single Raspberry Pi service deployment with Web enabled/bind/port settings plus persistent installer and one-off `oculizer-service start|restart|run-auto --no-web` controls; no second service/status surface was introduced;
 - made package exports lazy so the lightweight Web child does not import Torch, librosa, predictors, or the audio engine merely to use the control-socket client.
@@ -1206,15 +1201,15 @@ Validation performed:
 Post-validation UI adjustments:
 
 - grouped all 64 editable fields into 12 logical native `<details>` sections, opening only Audio input and Silence detection initially to keep the page compact;
-- changed the second runtime label and contract from Interactive/local to Local headless, and reload schema, values, presets, audio devices, status, graph history, and logs when the target changes;
-- added an on-demand PortAudio input inventory to the selected runtime and render `audio.input_device` as a dropdown containing only input-capable devices plus the OS default selector; device enumeration runs only during explicit configuration loading and adds no continuous work;
+- removed the runtime selector after live validation confirmed that service and local headless modes intentionally share `config/oculizer.json`; each Web child now presents only its owning runtime, with service-only values isolated in the deployment section;
+- added an on-demand PortAudio input inventory to the owning runtime and render `audio.input_device` as a dropdown containing only input-capable devices plus the OS default selector; device enumeration runs only during explicit configuration loading and adds no continuous work;
 - record graph scene labels only on actual transitions, so a surviving current scene is not relabeled at the moving left edge after its original transition leaves the 60-second window;
-- added focused section classification, input-device inventory, target-label, collapsible-rendering, and transition-label regression coverage before rerunning the complete suite.
+- added focused section classification, input-device inventory, single-runtime rendering, collapsible-rendering, and transition-label regression coverage before rerunning the complete suite.
 
 Service configuration-source correction:
 
 - the installed launcher now identifies `/etc/oculizer/deployment.json` explicitly to the runtime configuration store;
-- Service-target reads overlay effective `audio.input_device`, Web enabled, bind, and port values from deployment keys, while Local-headless reads those fields from its application JSON;
+- an installed service overlays effective `audio.input_device`, Web enabled, bind, and port values from deployment keys, while a local headless launch reads those fields from its application JSON;
 - one Apply partitions changed fields between deployment and application documents, validates the complete application configuration, writes `.previous` backups, replaces both files under one lock, rolls both back after any persistence/live-apply failure, and computes its stale-edit revision across both byte streams;
 - the Web schema labels every field as `service deployment` or `application config` and the header lists both resolved paths;
 - the installer makes `/etc/oculizer` and `deployment.json` writable only by the configured service account/group (`0750` directory, `0640` file), enabling atomic same-directory replacement without broad permissions;

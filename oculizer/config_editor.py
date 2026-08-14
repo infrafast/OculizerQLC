@@ -257,6 +257,8 @@ class ConfigurationStore:
                 if self.deployment_path is not None and field.path in DEPLOYMENT_FIELD_PATHS
                 else "application"
             )
+            if public["source"] == "deployment":
+                public["section"] = "Service startup"
             result.append(public)
         return result
 

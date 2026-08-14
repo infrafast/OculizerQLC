@@ -10,9 +10,9 @@ import json
 from pathlib import Path
 import signal
 import threading
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse
 
-from oculizer.control_socket import default_control_socket_path, send_control_request
+from oculizer.control_socket import send_control_request
 
 
 MAX_BODY_BYTES = 65536
@@ -60,13 +60,7 @@ class OculizerWebHandler(BaseHTTPRequestHandler):
         self._send(status, json.dumps(value, separators=(",", ":"), ensure_ascii=False))
 
     def _socket_for_request(self):
-        query = parse_qs(urlparse(self.path).query)
-        target = query.get("target", ["service"])[0]
-        if target == "service":
-            return self.server.control_socket
-        if target == "local":
-            return default_control_socket_path()
-        raise ValueError("target must be service or local")
+        return self.server.control_socket
 
     def _request_control(self, request):
         return send_control_request(self._socket_for_request(), request, timeout=2.0)

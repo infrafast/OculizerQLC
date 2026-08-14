@@ -131,17 +131,15 @@ prediction scheduling, Web listener, and other startup-owned changes are
 marked as requiring a restart. The service view can confirm that restart from
 the page; a local headless target displays its exact relaunch command.
 
-The Web server is not started by `oculize.py`. Its runtime selector switches
-between the installed **Service** and a **Local headless**
-`oculizer_service.py` process when both are available; changing the target
-reloads all settings, presets, status, devices, and logs from that runtime.
-For the Service target, machine/startup values such as audio input and Web
-listener are read from and written to `/etc/oculizer/deployment.json`; analysis,
+The Web server is not started by `oculize.py` and controls the headless runtime
+that owns it. Machine/startup values such as audio input and Web listener are
+grouped under **Service startup** and read from or written to
+`/etc/oculizer/deployment.json`; analysis,
 detection, modulation, routing, and scene values use the repository's
 `config/oculizer.json`. A single Apply validates, backs up, and updates the
-appropriate source for every changed field. Local headless uses only its
-selected application configuration. Each field and the configuration header
-show their effective source.
+appropriate source for every changed field. The application configuration is
+intentionally shared by service and local headless launches. Each field and
+the configuration header show its effective source.
 Disable the Web child completely when starting headless mode:
 
 ```bash
