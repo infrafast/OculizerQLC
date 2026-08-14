@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">OculizerQLC native-only workflow</title>
+  <desc id="desc">Audio enters Oculizer analysis, event detection, inference and routing. Scene and modulation intentions travel through the QLC Plus native protocol to its Virtual Console, functions and DMX output. Operator control enters Oculizer through its interactive interface or oculizerctl.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071525"/>
+      <stop offset="1" stop-color="#102f42"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#65d7ff"/>
+    </marker>
+    <style>
+      .title { fill:#f4fbff; font:700 26px system-ui,sans-serif }
+      .label { fill:#f4fbff; font:700 18px system-ui,sans-serif }
+      .detail { fill:#b9d7e5; font:14px system-ui,sans-serif }
+      .box { fill:#123c52; stroke:#65d7ff; stroke-width:2 }
+      .qlc { fill:#314a36; stroke:#83df91; stroke-width:2 }
+      .operator { fill:#3b3154; stroke:#c3a2ff; stroke-width:2 }
+      .flow { fill:none; stroke:#65d7ff; stroke-width:3; marker-end:url(#arrow) }
+      .control { fill:none; stroke:#c3a2ff; stroke-width:2.5; stroke-dasharray:7 5; marker-end:url(#arrow) }
+    </style>
+  </defs>
+  <rect width="1200" height="420" rx="24" fill="url(#background)"/>
+  <text x="60" y="55" class="title">OculizerQLC — simplified native-only workflow</text>
+
+  <rect x="55" y="140" width="180" height="120" rx="16" class="box"/>
+  <text x="145" y="180" text-anchor="middle" class="label">Audio source</text>
+  <text x="145" y="210" text-anchor="middle" class="detail">Live input</text>
+  <text x="145" y="232" text-anchor="middle" class="detail">or looped WAV</text>
+
+  <rect x="310" y="105" width="340" height="190" rx="18" class="box"/>
+  <text x="480" y="143" text-anchor="middle" class="label">Oculizer</text>
+  <text x="480" y="177" text-anchor="middle" class="detail">Audio analysis + fast events</text>
+  <text x="480" y="202" text-anchor="middle" class="detail">Scene inference + transition policy</text>
+  <text x="480" y="227" text-anchor="middle" class="detail">Manual / automatic routing</text>
+  <text x="480" y="252" text-anchor="middle" class="detail">Master · bass · mid · high</text>
+
+  <rect x="735" y="105" width="410" height="190" rx="18" class="qlc"/>
+  <text x="940" y="143" text-anchor="middle" class="label">QLC+ 5</text>
+  <text x="940" y="177" text-anchor="middle" class="detail">Native protocol · TCP 9998</text>
+  <text x="940" y="202" text-anchor="middle" class="detail">Virtual Console widgets</text>
+  <text x="940" y="227" text-anchor="middle" class="detail">Scenes · Chasers · Functions</text>
+  <text x="940" y="252" text-anchor="middle" class="detail">Fixture patching → DMX output</text>
+
+  <path d="M235 200 H300" class="flow"/>
+  <path d="M650 200 H725" class="flow"/>
+  <text x="687" y="183" text-anchor="middle" class="detail">intentions</text>
+
+  <rect x="310" y="335" width="340" height="55" rx="14" class="operator"/>
+  <text x="480" y="369" text-anchor="middle" class="label">Operator UI · oculizerctl · service</text>
+  <path d="M480 335 V305" class="control"/>
+</svg>

@@ -22,6 +22,7 @@
 *.gif
 *.bmp
 *.svg
+!docs/native_only_workflow.svg
 !docs/dynamic_control_comparison.svg
 !docs/mixvoicemusic.svg
 !reports/phase_8a1_baseline_mixvoicemusic.svg

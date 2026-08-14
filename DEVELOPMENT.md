@@ -8,35 +8,38 @@ All repository documentation must remain in English. This applies to `README.md`
 
 User requests and development conversations may be written in French or any other language. Their language must not be copied into repository documentation: translate the relevant information into English before updating either Markdown file. Do not switch the documentation language to match the language of a request.
 
-## QLC+ transport parity policy
+## QLC+ Native-only product policy
 
-Every QLC+ feature must be designed and implemented symmetrically for both the OSC and WebSocket transports unless the user explicitly limits its scope. This includes scene intentions, special routes, continuous controls, pause/resume behavior, reload, shutdown, validation, and error reporting.
+Decision accepted on 2026-08-14: OculizerQLC will specialize around the QLC+ 5 native protocol. Phase 9 removes direct Enttec/DMX, OSC, and QLC+ WebSocket output from this repository. QLC+ remains the sole owner of fixtures, universes, functions, Virtual Console behavior, and final DMX output. Its Web Server may continue running for other applications, but Oculizer will neither configure nor consume it.
 
-Coding agents must follow these rules for every new or modified QLC+ feature:
+Coding agents must apply these rules from Phase 9 onward:
 
-- define transport-neutral behavior at the `LightingBackend` or a shared service layer, then keep OSC and WebSocket code limited to protocol adaptation;
-- compute shared signals and decisions only once and reuse them across transports, as with the RMS-derived master value and the bass/mid/high frequency values;
-- factor common resolution, normalization, throttling, state, and lifecycle logic instead of independently reimplementing it in each backend;
-- preserve equivalent user-visible semantics even when the wire gestures differ, such as an OSC press/release versus a WebSocket action derived from the discovered widget type;
-- add paired tests that prove both transports receive the same logical intention or normalized value, plus transport-specific protocol tests where required;
-- update `README.md` and this development guide in the same change, documenting any remaining difference or limitation;
-- do not silently omit one transport. If protocol capabilities, QLC+ behavior, embedded resource cost, compatibility, or usability prevent safe parity, stop and clearly report the constraint and proposed compromise before considering the feature complete.
+- implement lighting behavior once through the native QLC+ client; do not reintroduce a selectable backend or transport-parity layer;
+- keep audio capture, fast events, inference, automatic routing, manual override, dynamic controls, normalized master/bass/mid/high production, runtime control, interactive/headless operation, WAV testing, and model selection independent from native network I/O;
+- discover widget IDs, types, actions, ranges, Frames, and function associations from the active QLC+ project; persist only stable logical captions and explicit caption overrides;
+- keep network queues and retained intentions bounded so QLC+ failure or authorization wait never blocks audio or inference;
+- treat `--dry-run` as a complete network-free application mode rather than a transport-specific option;
+- update `README.md` and this guide in the same change, including service and Raspberry Pi commands;
+- warn before adding CPU- or memory-intensive behavior on the Raspberry Pi 5 target, and prefer deletion/factoring over compatibility shims;
+- do not retain obsolete Enttec, OSC, WebSocket, fixture-profile, DMX-scene, or fallback code merely to preserve old command lines. This is an intentional breaking migration with an explicit rollback commit.
 
-Transport symmetry does not require duplicating code or sending identical bytes. It requires one shared feature contract with the smallest practical protocol-specific adapters.
+The historical transport-parity work remains valuable validation evidence below, but it is no longer a forward requirement.
 
 ## Product objective
 
-Build a hybrid system in which:
+Build a specialized system in which:
 
 - Oculizer captures and analyzes music;
 - the model predicts a semantic scene;
 - the operator can manually override a scene;
-- Oculizer sends events and a small number of continuous modulations over OSC;
+- Oculizer sends scene-button intentions and a small number of continuous modulations through the QLC+ native protocol;
 - QLC+ 5 owns lighting functions, fixture patching, and DMX output.
 
-During development, Oculizer and QLC+ run on the same Mac. In production, both will run locally on a Raspberry Pi 5 with Raspberry Pi OS. The default OSC address must therefore be `127.0.0.1`, while remaining configurable.
+During development, Oculizer and QLC+ run on the same Mac. In production, both run locally on a Raspberry Pi 5 with Raspberry Pi OS. The native endpoint therefore defaults to `127.0.0.1:9998`, while remaining configurable.
 
-## Verified current state
+## Verified pre-unplug checkpoint
+
+Commit `ca9b38e` is the accepted, pushed rollback point before Phase 9. It has 224 passing automated tests and live Raspberry Pi validation for QLC+ native authorization, project inventory, scene buttons, Frame/SoloFrame behavior, enabled sliders, service and interactive runtime control, QLC+ restart/reconnect, and automatic control-socket discovery. The lists and diagrams below describe legacy capabilities still present at that checkpoint; Phase 9 deliberately removes the non-native subset.
 
 ### Implemented
 
@@ -56,15 +59,15 @@ During development, Oculizer and QLC+ run on the same Mac. In production, both w
 - DMXKing/Enttec USB DMX Pro serial controller;
 - startup progress messages.
 
-### Not implemented
+### Historical limitations at the original baseline
 
 - QLC+ state feedback or synchronization;
 - external runtime control of the headless service;
 - Raspberry Pi production service units.
 
-Never describe these items as available before they have been implemented and validated.
+These original limitations were subsequently implemented where recorded in the roadmap and implementation log. They are retained only as historical context.
 
-## Current architecture
+## Legacy direct-DMX architecture scheduled for deletion
 
 ```text
 oculize.py / toggle.py
@@ -110,12 +113,26 @@ Consequences:
 
 The migration must introduce an abstraction at the intent level (`activate_scene`, `set_parameter`, and `blackout`) instead of merely replacing the serial port with UDP.
 
-## QLC+ 5 target architecture
+## Accepted Phase 9 target architecture
 
 ```text
-                 ┌─ events: scene, flash, blackout ──────┐
-Audio → Oculizer ┤                                        ├→ OSC → QLC+ 5 → DMX
-                 └─ values: master, bass, speed, etc. ───┘
+Live input or WAV
+        │
+        ▼
+Audio analysis ──► silence / announcement priority events
+        │
+        ├────────► artistic scene inference (v4/v5/v6/future v7)
+        │
+        └────────► normalized master / bass / mid / high
+                         │
+                         ▼
+                automatic/manual router
+                         │
+                         ▼
+             QLC+ 5 native client (TCP 9998)
+                         │
+                         ▼
+       QLC+ Virtual Console → Functions → patched DMX output
 ```
 
 QLC+ must own:
@@ -131,9 +148,11 @@ Oculizer must own:
 - prediction;
 - operator override;
 - conversion of selected audio features into normalized values;
-- mapping between logical names and OSC paths.
+- mapping between logical names and optional QLC+ caption overrides.
 
-### Proposed initial OSC contract
+### Historical OSC contract — superseded by Phase 9
+
+The following contract documents the migration path that proved the logical-intention architecture. It must not be carried into the native-only runtime or its configuration.
 
 The exact contract must be tested in QLC+ before it is frozen. Proposed baseline:
 
@@ -162,9 +181,11 @@ Proposed defaults:
 
 OSC paths will be assigned to external controls in the QLC+ Virtual Console. They must not contain internal numeric QLC+ IDs when stable logical names are possible.
 
-## Roadmap and validation gates
+## Historical roadmap and accepted validation gates
 
 A step is complete only after implementation, relevant automated tests, and real QLC+ validation where required.
+
+Phases 0 through 8b explain how the current rollback checkpoint was reached. They are not parallel forward paths. Any unchecked item that remains useful has been merged into the single Phase 9 roadmap below; otherwise it is superseded by the native-only decision.
 
 ### Phase 0 — Minimal OSC contract and QLC+ workspace
 
@@ -884,9 +905,154 @@ POSIX signals remain reserved for process lifecycle (`SIGINT` and `SIGTERM`) and
 
 Control state is initially process-local and is not restored after a crash or reboot. A restarted service follows deterministic safe startup and then enters `auto`; it must never replay a stale forced scene from a leftover socket or state file. Persistent operator state may be reconsidered only with an explicit safe-start policy.
 
+<a id="phase-9-native-only"></a>
+
+## Forward roadmap — Phase 9: native-only specialization
+
+Status: **approved on 2026-08-14 — implementation not started**
+
+This is the only forward implementation path. It absorbs the useful remaining Phase 8a.3 gates and supersedes all plans to maintain multiple lighting transports. The implementation may remove legacy code aggressively after each migration gate is proven, but must not alter artistic inference behavior or the accepted native QLC+ runtime contract.
+
+### Rollback point
+
+The complete pre-unplug reference is pushed commit [`ca9b38e`](https://github.com/infrafast/OculizerQLC/commit/ca9b38e), “L’inventaire natif QLC+ est maintenant complété.” It contains the operator-accepted native inventory behavior and 224-test baseline. Before the first deletion commit, create the annotated tag `pre-native-only-unplug` at this exact commit and push it. If a milestone regresses inference, fast events, native scene/slider control, service lifecycle, or sustained Raspberry Pi operation and cannot be corrected within the milestone, restore this commit rather than partially resurrecting individual legacy backends.
+
+### Scope and deletion boundary
+
+Remove all Oculizer-owned lighting output alternatives and their exclusive assets:
+
+- direct Enttec/DMX controller, virtual controller, fixture objects, DMX mapping/rendering, effects and orchestrators that exist only to generate fixture channels;
+- QLC+ OSC client, packet sender/test script, OSC paths/actions/configuration, and OSC-specific tests and CLI aliases;
+- QLC+ WebSocket client/backend, WebSocket dependency and transport tests; QLC+'s independently managed Web Server remains untouched for other consumers;
+- `profiles/`, `profiles/profile_fallbacks.json`, `oculizer/custom_profiles/`, profile selection/defaults, fallback-generation scripts, and profile compatibility tests;
+- legacy DMX fixture payloads under `scenes/` after every scene description, reviewed design behavior, and duration override has been migrated and verified;
+- backend selection constants/factories, `--output`, `--profile`, `--qlc-config`, `--osc-*`, `--filter-osc`, `--dmx-*`, `--filter-dmx`, and equivalent installer/deployment fields;
+- `PyDMXControl`, `pyserial`, and `websocket-client` when an import audit proves no retained feature uses them;
+- standalone utilities whose only purpose was choosing or exercising a legacy backend. Preserve manual control itself through the integrated selector and `oculizerctl`; either simplify `toggle.py` to a native-only tool with a demonstrated distinct use or remove it.
+
+Do not delete prediction model mappings, model artefacts, training/analysis scripts, audio sources, fast event detection, automatic routing policies, runtime control, curses/RMS visualization, dynamic-control reports, or WAV test references merely because their historical tests used a legacy dry-run transport.
+
+### Target configuration and CLI
+
+`config/oculizer.json` becomes the only application configuration. Move only the surviving semantics from `config/qlc_config.json` under a validated top-level `lighting` object, provisionally:
+
+```json
+{
+  "lighting": {
+    "native": {
+      "host": "127.0.0.1",
+      "port": 9998,
+      "encryption_key": "",
+      "reconnect_seconds": 2.0,
+      "maximum_project_size": 16777216
+    },
+    "controls": {
+      "master": "master",
+      "bass": "bass",
+      "mid": "mid",
+      "high": "high"
+    },
+    "routing": {
+      "pulse_seconds": 0.1,
+      "fallback_scene": "ambient1",
+      "caption_overrides": {}
+    },
+    "scene_metadata": {
+      "wave": {
+        "description": "All blue RGB lights with a slow sine wave pattern",
+        "design_behavior": "normal"
+      },
+      "bass_hopper_blue": {
+        "description": "User-facing artistic description migrated from the legacy scene",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      }
+    }
+  }
+}
+```
+
+The final schema may improve these names during implementation, but it must follow these rules:
+
+- remove `transport`, `websocket`, every `OSCPath`/`OSCaction`, and the duplicated routing registry; retain a compact `scene_metadata` catalog for design guidance rather than transport authorization;
+- use the selected predictor mapping as the authority for predicted logical scene names, plus configured silence/speech scenes and explicit manual additions where needed;
+- derive the normal QLC+ caption from the logical name and store only exceptions in `caption_overrides`;
+- migrate the description of all 127 current scenes and all 23 `max_duration_seconds` overrides before deleting the legacy scene JSON files, and prove exact before/after equality with a migration test;
+- assign every migrated scene exactly one user-facing `design_behavior` value: `static` for a deliberately fixed look, `normal` for an autonomous/time-based animation or movement, and `responsive` for a design intended to react materially to audio/modulation values;
+- derive the initial behavior proposal from the current modulators, orchestrator, energy/strobe/movement values, and description, then require one explicit human-review pass because many legacy scenes mix fixed, time-driven, and MFFT-driven fixtures;
+- keep `description` and `design_behavior` informational: they guide the QLC+ designer and must not silently alter prediction, transition rate, dynamic-control selection, slider modulation, or scene duration;
+- preserve the global default scene duration and randomized anti-monopoly policy;
+- replace `--qlc-dry-run` with `--dry-run`. Dry-run must construct the normal native-only application, emit logical button/slider intentions, open no native or other network socket, and remain usable with live or WAV audio;
+- remove `--output` rather than silently accepting ignored values. Other supported audio, predictor/model, dynamic-control, interactive/headless, graph, WAV, control-socket, and service options remain operational;
+- remove `--qlc-config`; `--config PATH` selects the complete configuration. Native connection overrides may retain clear `--qlc-*` names or adopt unambiguous native names, but must have one documented spelling and one implementation.
+
+### Caveats and risk controls
+
+1. **Hidden coupling in `SceneManager`.** Native routing still reads legacy scene files for catalog membership and duration overrides. Migrate catalog and duration policy first, introduce a lightweight logical scene registry, and only then remove `SceneManager`'s fixture/profile behavior and `scenes/`.
+2. **Missing or renamed QLC+ widgets.** Removing the explicit scene list means the active project inventory becomes the lighting authority. Validate every predicted/special/manual caption when inventory becomes ready, report missing and duplicate targets without crashing audio, apply only the configured fallback where safe, and expose inventory diagnostics through status or logs.
+3. **Native protocol availability.** With no OSC/WebSocket fallback, authorization, opcode compatibility, and QLC+ restart behavior are production-critical. Retain bounded intentions, asynchronous connection, forward-compatible parsing, pinned action codes, reconnect tests, and explicit `lighting_state`; never block inference while QLC+ is unavailable.
+4. **Intentional command/config break.** Existing service deployments contain `output` and launch with `--qlc-config`. Update installer, helper, unit, help, examples, and `/etc/oculizer/deployment.json` generation atomically. Back up the old deployment file, reject removed CLI flags clearly, and require service reinstallation before restart.
+5. **Loss or misinterpretation of useful metadata during deletion.** All 127 scene files contain descriptions and 23 contain duration overrides; predictor mappings contain the semantic cluster assignments and must remain. Generate and test the complete compact metadata catalog before deletion. Behavior classification needs human review and is advisory only: using `responsive` as a routing or dynamic-control input would introduce an inference regression. Retain human analysis reports when they document inference behavior even after fixture payloads are removed.
+6. **Interactive/manual regression.** Removing profiles and backend selection must not remove the curses graph, integrated selector, manual override, `oculizerctl scene`, pause/auto, or configuration reload. Replace their scene source with the native logical registry and active inventory.
+7. **Dry-run regression.** Native inventory is unavailable without a connection. Dry-run validates configuration and emitted logical captions, not live widget existence; document that boundary and cover it without network mocks that accidentally connect.
+8. **Inference and v7 isolation.** Training and runtime predictors output logical labels and do not need a lighting transport. Keep `scripts/train_predictor_v6.py` and the future v7 workflow free of native imports. Run fixed WAV/model comparisons before and after the unplug and require identical raw predictions, priority silence/speech decisions, transition timing, and scene-duration policy for the same seed/configuration.
+9. **Embedded resources.** This phase should reduce installation size, imports, branches, and maintenance cost. Do not replace deleted backends with new polling, duplicate FFT work, an unbounded inventory, or a compatibility framework. Measure Raspberry Pi CPU/RSS and queue depth against the rollback baseline.
+10. **Historical tests and documentation.** A lower test count after deleting backend-only tests is not itself a regression. Preserve or replace every test that protects retained behavior, then remove obsolete assertions and rewrite current user documentation while keeping the implementation log as historical evidence.
+
+### Milestone 9.1 — configuration and runtime cutover
+
+- [ ] add the validated `lighting` section to `oculizer.json` and an exact migration test for native settings, captions, fallback, pulse timing, controls, all 127 descriptions, all 127 reviewed `design_behavior` values, and all 23 duration overrides;
+- [ ] make native QLC+ the unconditional lighting path in interactive and headless runtimes;
+- [ ] replace the DMX-oriented `SceneManager` dependency with a lightweight logical scene registry derived from predictor mappings, special scenes, duration overrides, explicit additions, and native inventory;
+- [ ] make `--config` and `--dry-run` the single configuration/dry-run contract while preserving every non-backend runtime option;
+- [ ] compare v4/v6 raw predictions and the accepted fast-event/dynamic-control WAV references against commit `ca9b38e`.
+
+Validation gate: macOS dry-run and live Native operation must pass for automatic scenes, `silent`, `announcement`, fallback, manual override, master/bass/mid/high, pause/auto, reload, WAV input, and clean shutdown before deletion begins.
+
+### Milestone 9.2 — legacy unplug and code reduction
+
+- [ ] delete Enttec/DMX, OSC, and WebSocket implementations, assets, profiles, legacy scene payloads, dependencies, scripts, CLI branches, factories, and backend-only tests listed in scope;
+- [ ] collapse `LightingBackend`/factory indirection into a focused native lighting controller while retaining clean separation between routing intent and network I/O;
+- [ ] move caption normalization out of the deleted WebSocket module and retain native protocol isolation;
+- [ ] remove dead fixture/effect/orchestrator imports and prove that no retained module imports deleted packages or reads deleted folders;
+- [ ] decide `toggle.py` by demonstrated user value: native-only simplification or removal, with integrated/manual control retained either way.
+
+Validation gate: the retained automated suite passes; a repository search finds no runtime Enttec, OSC, WebSocket, fixture-profile, `OSCPath`, `OSCaction`, or output-selection dependency outside historical documentation; raw inference comparison remains identical.
+
+### Milestone 9.3 — deployment, documentation, and production acceptance
+
+- [ ] make the Raspberry Pi installer native-only, remove `--output`, generate the new deployment schema, preserve backup/permissions/systemd/raspiLightGUI lifecycle compatibility, and update every wrapper and readiness helper;
+- [ ] reinstall over the accepted Raspberry Pi deployment and validate manual/automatic service operation, `oculizerctl`, QLC+ late start/restart/authorization, inventory refresh, logs, and foreground diagnostics;
+- [ ] replace all current README commands and troubleshooting guidance with the native-only CLI and configuration; keep historical details only in this implementation log;
+- [ ] publish the simplified local workflow diagram showing Audio → Oculizer inference/router → QLC+ Native → Virtual Console/Functions/DMX;
+- [ ] measure CPU, RSS, queue depth, startup time, reconnect log volume, and a sustained live/WAV session against the rollback checkpoint.
+
+Final acceptance gate: the operator validates macOS interactive use and Raspberry Pi service use, including representative concert audio, silence/speech transitions, manual/runtime control, continuous sliders, QLC+ restart, and raspiLightGUI status. If accepted, native-only becomes the supported product and the rollback tag is retained as historical recovery. If rejected for a fundamental reason, return to `pre-native-only-unplug`/`ca9b38e` as a whole.
+
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-14 — Native-only specialization approved and planned
+
+Decision and evaluation:
+
+- accepted QLC+ Native as the only future lighting integration and superseded the multi-backend parity policy;
+- selected pushed commit `ca9b38e` as the complete rollback checkpoint and required a `pre-native-only-unplug` tag before destructive implementation;
+- inventoried the deletion boundary across Enttec/DMX, OSC, WebSocket, 13 profile files, eight custom-profile assets, 127 legacy scene JSON files, backend selection, service deployment, dependencies, scripts, and backend-only tests;
+- identified that all 127 legacy scene files supply user-facing descriptions and 23 supply native scene-duration overrides, so compact metadata migration, behavior classification/review, and exact parity tests must precede deletion;
+- confirmed that predictor training/mappings, including a future v7, operate on logical scene labels and need no lighting transport, but required fixed inference comparisons to prevent accidental coupling regressions;
+- consolidated all useful remaining roadmap work into the single three-milestone Phase 9 path with configuration/runtime, unplug/reduction, and deployment/acceptance gates;
+- replaced the remote multi-output README image with the repository-owned native-only SVG workflow.
+
+Validation performed at planning time:
+
+- repository-wide dependency and CLI inventory;
+- current configuration/scene/profile asset counts, confirmation that all 127 scenes have descriptions, modulator/type inventory for later behavior classification, and duration-override extraction;
+- confirmation that the rollback commit is pushed on `origin/main`;
+- XML validation of the new workflow asset and Markdown link checks remain part of the documentation handoff below.
+
+Remaining work: Phase 9 implementation has not started. Current commands and service configuration remain valid until Milestone 9.1 deliberately changes them.
 
 ### 2026-08-13 — Phase 8b Raspberry Pi production acceptance
 

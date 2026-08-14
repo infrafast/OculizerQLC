@@ -2,12 +2,13 @@
 
 OculizerQLC is a music-reactive lighting controller based on the original Oculizer project available here: https://github.com/LandryBulls/Oculizer. It analyzes audio in real time, automatically selects lighting scenes, and lets an operator take manual control when needed.
 
-This fork enrich and supports two lighting outputs:
+The accepted product direction is now QLC+ 5 Native only: Oculizer owns audio analysis, inference, routing, and normalized modulations, while QLC+ owns its Virtual Console, Functions, fixture patching, and final DMX output. The current rollback checkpoint still contains legacy Enttec, OSC, and WebSocket code; Phase 9 removes it before native-only is declared production-complete.
 
-- direct DMX through an Enttec/DMXKing-compatible interface;
-- QLC+ 5 through OSC, with QLC+ responsible for scenes, chasers, and DMX output.
+![OculizerQLC simplified native-only workflow](docs/native_only_workflow.svg)
 
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/78e758ab-2950-49af-b60f-a08bb41b6d21" />
+> **Migration checkpoint:** commands below still describe the recoverable pre-unplug build where output selection exists. The approved [Phase 9 plan](DEVELOPMENT.md#phase-9-native-only) removes those choices, merges the surviving native configuration into `config/oculizer.json`, and replaces `--qlc-dry-run` with `--dry-run`. User commands will be rewritten as each cutover milestone lands; do not assume the planned CLI is already available.
+
+The migration will preserve a compact user-facing entry for every logical scene: its artistic `description`, a reviewed `design_behavior` (`static`, `normal`, or `responsive`), and its optional maximum duration. These metadata guide QLC+ workspace design and do not change inference or routing behavior.
 
 
 It can use a live audio device or continuously loop an uncompressed PCM WAV file for simulation and testing before live show. Interactive and headless operation share the same live control commands.
