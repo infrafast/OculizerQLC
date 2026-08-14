@@ -191,7 +191,8 @@ class AudioOculizerController:
                  audio_file=None, osc_log_filters=(),
                  dmx_dry_run=False, filter_dmx=False, graph_enabled=True,
                  dynamic_control="off", dynamic_controls=None, scene_max_duration=40.0,
-                 control_socket_path=None, fast_detection_config=None):
+                 control_socket_path=None, fast_detection_config=None,
+                 qlc_encryption_key=None):
         dynamic_controls = dynamic_controls or {}
         off_cache_size = scene_cache_size
         dynamic_policy = ({"cache": scene_cache_size, "rate": None, "throttle": None}
@@ -240,8 +241,9 @@ class AudioOculizerController:
             dmx_dry_run=dmx_dry_run,
             filter_dmx=filter_dmx,
             fast_detection_config=fast_detection_config,
+            qlc_encryption_key=qlc_encryption_key,
         )
-        if output in ('qlc-osc', 'qlc-websocket'):
+        if output in ('qlc-osc', 'qlc-websocket', 'qlc-native'):
             self.oculizer.restrict_scenes_to_backend()
         self.scene_router = AutomaticSceneRouter(
             self.oculizer,

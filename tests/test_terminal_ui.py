@@ -1,3 +1,4 @@
+import logging
 import unittest
 from unittest.mock import Mock, patch
 
@@ -5,6 +6,33 @@ import oculize
 
 
 class TerminalInitializationTests(unittest.TestCase):
+    def test_interactive_native_forwards_encryption_key(self):
+        screen = Mock()
+        scene_manager = Mock()
+        oculizer = Mock()
+
+        with (
+            patch("oculize.curses.curs_set"),
+            patch("oculize.SceneManager", return_value=scene_manager),
+            patch("oculize.Oculizer", return_value=oculizer) as constructor,
+            patch("oculize.AutomaticSceneRouter"),
+            patch("oculize.MasterModulator"),
+            patch("oculize.FrequencyBandModulator"),
+            patch("oculize.RuntimeControl"),
+        ):
+            controller = oculize.AudioOculizerController(
+                screen,
+                profile=None,
+                input_device="default",
+                dual_stream=False,
+                output="qlc-native",
+                qlc_encryption_key="secret-key",
+            )
+
+        self.addCleanup(logging.getLogger().removeHandler, controller.log_handler)
+        self.assertEqual(constructor.call_args.kwargs["qlc_encryption_key"], "secret-key")
+        oculizer.restrict_scenes_to_backend.assert_called_once_with()
+
     def test_loading_screen_describes_active_components(self):
         screen = Mock()
         screen.getmaxyx.return_value = (24, 100)
