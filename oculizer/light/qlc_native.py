@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import re
 import socket
 import struct
 import threading
@@ -143,8 +144,10 @@ def _decrypt(ciphertext: bytes, key: int,
     if len(ciphertext) < 3 or ciphertext[0] != 3:
         raise ValueError("Unsupported QLC+ SimpleCrypt payload")
     flags = ciphertext[1]
-    if flags & ~0x03:
+    if flags & ~0x07:
         raise ValueError(f"Unsupported QLC+ SimpleCrypt flags 0x{flags:02x}")
+    if flags & 0x02 and flags & 0x04:
+        raise ValueError("Conflicting QLC+ SimpleCrypt integrity flags")
     data = bytearray(ciphertext[2:])
     previous = 0
     parts = _key_parts(key)
@@ -159,6 +162,13 @@ def _decrypt(ciphertext: bytes, key: int,
         data = data[2:]
         if _simplecrypt_crc(bytes(data)) != expected:
             raise ValueError("QLC+ SimpleCrypt CRC mismatch")
+    elif flags & 0x04:
+        if len(data) < 20:
+            raise ValueError("Truncated QLC+ SimpleCrypt SHA-1 hash")
+        expected = bytes(data[:20])
+        data = data[20:]
+        if hashlib.sha1(bytes(data)).digest() != expected:
+            raise ValueError("QLC+ SimpleCrypt SHA-1 mismatch")
     if flags & 0x01:
         if len(data) < 4:
             raise ValueError("Truncated QLC+ compressed payload size")
@@ -269,8 +279,36 @@ def _parse_sections(payload: bytes, count: int) -> list[object]:
     return result
 
 
-def _recv_packet(sock: socket.socket, key: int) -> tuple[int, list[object]]:
-    """Read exactly one bounded packet from a TCP byte stream."""
+def _parse_section_prefix(payload: bytes, count: int, limit: int) -> list[object]:
+    """Decode required leading sections while allowing future trailing fields."""
+    if count < limit:
+        raise ValueError(
+            f"QLC+ packet has {count} sections; at least {limit} are required"
+        )
+    position = 0
+    result = []
+    for _ in range(limit):
+        # Reuse the strict decoder by locating one complete known section.
+        kind = payload[position] if position < len(payload) else None
+        if kind == BOOL_TYPE:
+            end = position + 2
+        elif kind == INT_TYPE:
+            end = position + 5
+        elif kind in (STRING_TYPE, BYTEARRAY_TYPE):
+            if len(payload) - position < 3:
+                raise ValueError("Truncated QLC+ variable-length section")
+            end = position + 3 + struct.unpack(">H", payload[position + 1:position + 3])[0]
+        else:
+            raise ValueError(f"Unsupported required QLC+ section type {kind}")
+        if end > len(payload):
+            raise ValueError("Truncated required QLC+ section")
+        result.extend(_parse_sections(payload[position:end], 1))
+        position = end
+    return result
+
+
+def _recv_frame(sock: socket.socket, key: int) -> tuple[int, int, bytes]:
+    """Read and decrypt exactly one bounded frame without interpreting sections."""
     header = _recv_exact(sock, HEADER_LEN)
     if header[:2] != PROTOCOL_ID:
         raise ValueError("Invalid QLC+ native packet header")
@@ -280,7 +318,13 @@ def _recv_packet(sock: socket.socket, key: int) -> tuple[int, list[object]]:
     if payload_size < 3:
         raise ValueError("Invalid QLC+ native encrypted payload size")
     encrypted = _recv_exact(sock, payload_size)
-    return opcode, _parse_sections(_decrypt(encrypted, key), count)
+    return opcode, count, _decrypt(encrypted, key)
+
+
+def _recv_packet(sock: socket.socket, key: int) -> tuple[int, list[object]]:
+    """Read one frame and strictly decode all its sections."""
+    opcode, count, payload = _recv_frame(sock, key)
+    return opcode, _parse_sections(payload, count)
 
 
 def _tag(element: ET.Element) -> str:
@@ -294,8 +338,14 @@ def parse_project_inventory(xml_data: bytes, maximum_size: int = 16 * 1024 * 102
     if len(xml_data) > maximum_size:
         raise QLCNativeError("QLC+ project exceeds configured native inventory limit")
     lowered = xml_data.lower()
-    if b"<!doctype" in lowered or b"<!entity" in lowered:
-        raise QLCNativeError("QLC+ project XML declarations are not allowed")
+    if b"<!entity" in lowered:
+        raise QLCNativeError("QLC+ project XML entities are not allowed")
+    declarations = re.findall(br"<!doctype\b[^>]*>", lowered)
+    if (b"<!doctype" in lowered and not declarations) or any(
+        re.fullmatch(br"<!doctype\s+workspace\s*>", declaration) is None
+        for declaration in declarations
+    ):
+        raise QLCNativeError("QLC+ project external or extended DTD is not allowed")
     try:
         root = ET.fromstring(xml_data)
     except ET.ParseError as exc:
@@ -410,24 +460,30 @@ class QLCNativeClient:
         expected_project_size = None
         project_started = False
         while True:
-            opcode, sections = _recv_packet(self.socket, self.key)
+            opcode, section_count, payload = _recv_frame(self.socket, self.key)
+            if opcode not in (NET_PROJECT_TRANSFER, NET_AUTHENTICATION_REPLY):
+                logger.debug("QLC+ native: ignoring unsupported opcode 0x%04x", opcode)
+                continue
             if opcode == NET_PROJECT_TRANSFER:
                 self._set_state(NativeState.DOWNLOADING_PROJECT)
-                if not sections or not isinstance(sections[0], int):
+                leading = _parse_section_prefix(payload, section_count, 1)
+                if not isinstance(leading[0], int):
                     raise QLCNativeError("Invalid QLC+ native project-transfer sequence")
-                sequence = int(sections[0])
+                sequence = int(leading[0])
                 if sequence == 0:
-                    if project_started or len(sections) not in (2, 3):
+                    if project_started:
                         raise QLCNativeError("Invalid QLC+ native project-transfer start")
+                    sections = _parse_section_prefix(payload, section_count, 2)
                     if not isinstance(sections[1], int):
                         raise QLCNativeError("Invalid QLC+ native project size")
-                    if len(sections) == 3 and not isinstance(sections[2], bytes):
-                        raise QLCNativeError("Invalid QLC+ native project chunk")
                     project_started = True
                     expected_project_size = int(sections[1])
                     if expected_project_size > self.maximum_project_size:
                         raise QLCNativeError("QLC+ native project is too large")
-                    if len(sections) > 2:
+                    if expected_project_size:
+                        sections = _parse_section_prefix(payload, section_count, 3)
+                        if not isinstance(sections[2], bytes):
+                            raise QLCNativeError("Invalid QLC+ native project chunk")
                         project.extend(sections[2])
                     if expected_project_size == 0:
                         with self._lock:
@@ -435,8 +491,8 @@ class QLCNativeClient:
                         self._set_state(NativeState.READY)
                         return
                 elif sequence in (1, 2):
-                    if (not project_started or len(sections) != 2
-                            or not isinstance(sections[1], bytes)):
+                    sections = _parse_section_prefix(payload, section_count, 2)
+                    if not project_started or not isinstance(sections[1], bytes):
                         raise QLCNativeError("Invalid QLC+ native project chunk")
                     project.extend(sections[1])
                 else:
@@ -455,11 +511,15 @@ class QLCNativeClient:
                     self._flush_pending()
                     return
                 continue
-            if opcode != NET_AUTHENTICATION_REPLY:
-                continue
+            sections = _parse_section_prefix(payload, section_count, 1)
             if not sections or sections[0] != "Success":
                 raise QLCNativeError("QLC+ native authorization was refused")
-            access_mask = int(sections[1]) if len(sections) > 1 else 0
+            access_mask = 0
+            if section_count > 1:
+                sections = _parse_section_prefix(payload, section_count, 2)
+                if not isinstance(sections[1], int):
+                    raise QLCNativeError("Invalid QLC+ native authorization access mask")
+                access_mask = int(sections[1])
             logger.info("QLC+ native authorization accepted (access mask: %d)", access_mask)
             if not access_mask & 0x04:
                 logger.warning("QLC+ native access mask does not include Virtual Console control")

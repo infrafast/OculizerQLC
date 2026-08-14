@@ -13,6 +13,7 @@ from oculizer.light.qlc_native import (
     VC_BUTTON_SET_PRESSED,
     _decrypt,
     _encrypt,
+    _key_parts,
     _packet,
     _parse_sections,
     _recv_packet,
@@ -107,6 +108,18 @@ class QLCNativeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "safe limit|oversized"):
             _decrypt(compressed, DEFAULT_KEY, maximum_size=128)
 
+    def test_simplecrypt_accepts_declared_sha1_integrity_mode(self):
+        payload = _section_string("future-compatible")
+        clear = bytearray(b"\x5a" + hashlib.sha1(payload).digest() + payload)
+        previous = 0
+        parts = _key_parts(DEFAULT_KEY)
+        for index in range(len(clear)):
+            encrypted = clear[index] ^ parts[index % 8] ^ previous
+            clear[index] = encrypted
+            previous = encrypted
+        ciphertext = b"\x03\x04" + bytes(clear)
+        self.assertEqual(_decrypt(ciphertext, DEFAULT_KEY), payload)
+
     def test_reconnect_state_logs_are_rate_limited_without_hiding_state(self):
         client = QLCNativeClient("127.0.0.1")
         with (
@@ -143,7 +156,8 @@ class QLCNativeTests(unittest.TestCase):
         self.assertEqual(_session_key("ronron"), expected)
 
     def test_project_inventory_discovers_buttons_sliders_and_ranges(self):
-        buttons, sliders = parse_project_inventory(b'''<Workspace><VirtualConsole>
+        buttons, sliders = parse_project_inventory(b'''<!DOCTYPE Workspace>
+        <Workspace><VirtualConsole>
           <Frame ID="1" Caption="Scenes"><Button ID="71" Caption="Party" /></Frame>
           <Slider ID="72" Caption="Master"><Value Low="10" High="210" /></Slider>
         </VirtualConsole></Workspace>''')
@@ -162,6 +176,7 @@ class QLCNativeTests(unittest.TestCase):
     def test_project_inventory_rejects_unsafe_or_invalid_xml(self):
         samples = (
             b'<!DOCTYPE Workspace [<!ENTITY x "value">]><Workspace>&x;</Workspace>',
+            b'<!DOCTYPE Workspace SYSTEM "workspace.dtd"><Workspace />',
             b'<Workspace><VirtualConsole><Slider ID="1" Caption="Bad"><Value Low="5" High="5" /></Slider></VirtualConsole></Workspace>',
             b'<Workspace><VirtualConsole><Button ID="x" Caption="Bad" /></VirtualConsole></Workspace>',
         )
@@ -194,6 +209,34 @@ class QLCNativeTests(unittest.TestCase):
             client._connect()
         self.assertEqual(client.state, NativeState.READY)
         self.assertEqual(tuple(client.buttons), ("new",))
+
+    def test_session_ignores_unknown_opcode_and_trailing_extensions(self):
+        xml = (
+            b'<Workspace><VirtualConsole><Button ID="9" Caption="Compatible" />'
+            b'</VirtualConsole></Workspace>'
+        )
+        future_section = b"\x7f\xde\xad\xbe\xef"
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            response = b"".join((
+                _packet(0xFE10, DEFAULT_KEY, future_section),
+                _packet(
+                    NET_AUTHENTICATION_REPLY, DEFAULT_KEY,
+                    _section_string("Success"), _section_int(127), future_section,
+                ),
+                _packet(
+                    NET_PROJECT_TRANSFER, DEFAULT_KEY,
+                    _section_int(0), _section_int(len(xml)),
+                    _section_bytearray(xml), future_section,
+                ),
+            ))
+        client = QLCNativeClient("127.0.0.1")
+        with patch(
+            "oculizer.light.qlc_native.socket.create_connection",
+            return_value=self.FragmentedSocket(response, fragment_size=7),
+        ):
+            client._connect()
+        self.assertEqual(client.state, NativeState.READY)
+        self.assertEqual(tuple(client.buttons), ("compatible",))
 
     def test_authentication_refusal_is_explicit(self):
         with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
