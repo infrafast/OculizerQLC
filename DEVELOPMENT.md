@@ -746,6 +746,8 @@ Interactive native startup was corrected on 2026-08-14 after Raspberry Pi expose
 
 The service-pack user documentation was also expanded on 2026-08-14 with the complete installer option contract, native/WebSocket/OSC examples, reconfiguration behavior, deployment-file inspection, backup location, and explicit restart requirement. It records the important installer rule that omitted options revert to documented defaults rather than inheriting values from the previous `/etc/oculizer/deployment.json`.
 
+WAV startup validation was hardened on 2026-08-14 after a duplicated relative path produced a full headless traceback after the native transport had already begun connecting. Both interactive and headless argument parsers now expand and resolve `--audio-file`, reject a missing file before initializing QLC+, audio, or inference, and report the exact absolute path through the normal concise CLI error. The headless entry point also converts expected `ValueError`/`OSError` construction failures into one startup error and exit status `2`, while unexpected programming errors still retain their traceback. Regression coverage verifies both entry points and the headless fallback.
+
 ### Phase 8b — Raspberry Pi 5 production target
 
 Status: **complete — functional, service, audio, resource, and operator validation accepted on Raspberry Pi 5**

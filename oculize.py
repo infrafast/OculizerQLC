@@ -19,6 +19,7 @@ from oculizer.rms_graph import RmsGraph, SCENE_COLOR_FAMILIES, scene_visual
 import logging
 from collections import deque, OrderedDict
 import math
+from pathlib import Path
 
 COLOR_PAIRS = {
     'title': (curses.COLOR_WHITE, curses.COLOR_BLACK),
@@ -1046,6 +1047,11 @@ Scene Cache Size:
         args.profile = default_profile
     if args.audio_file and args.prediction_device:
         parser.error('--audio-file cannot be combined with --prediction-device')
+    if args.audio_file:
+        audio_file = Path(args.audio_file).expanduser().resolve()
+        if not audio_file.is_file():
+            parser.error(f'--audio-file does not exist: {audio_file}')
+        args.audio_file = str(audio_file)
     if args.dmx_dry_run and args.output != 'enttec':
         parser.error('--dmx-dry-run requires --output enttec')
     if args.filter_dmx and not args.dmx_dry_run:

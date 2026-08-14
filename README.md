@@ -186,6 +186,11 @@ python oculize.py \
 
 `--audio-file` cannot be combined with `--prediction-device`. MP3 and online streams are not currently supported.
 
+Relative WAV paths are resolved from the current working directory. A missing
+file is rejected before QLC+, audio capture, or prediction starts, and the error
+prints the resolved absolute path without a Python traceback. Use an absolute
+path for service diagnostics when the working directory may be ambiguous.
+
 ### Silence and speech scenes
 
 Oculizer can recognize sustained silence and dominant spoken voice independently of the normal music-scene prediction. Each event activates a dedicated logical scene: silence selects `silent`, while speech selects `announcement` so that lighting remains suitable when someone speaks between songs.

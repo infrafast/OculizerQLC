@@ -1,4 +1,7 @@
+import io
 import unittest
+from contextlib import redirect_stderr
+from pathlib import Path
 from unittest.mock import patch
 
 import oculize
@@ -6,6 +9,27 @@ import oculizer_service
 
 
 class SceneCacheCliTests(unittest.TestCase):
+    def test_both_entry_points_reject_missing_audio_file_cleanly(self):
+        missing = Path("missing-test-audio.wav").resolve()
+        for module, program in (
+            (oculize, "oculize.py"),
+            (oculizer_service, "oculizer_service.py"),
+        ):
+            stderr = io.StringIO()
+            with self.subTest(program=program), \
+                    patch("sys.argv", [program, "--audio-file", str(missing)]), \
+                    redirect_stderr(stderr), \
+                    self.assertRaises(SystemExit) as exit_error:
+                module.parse_args()
+            self.assertEqual(exit_error.exception.code, 2)
+            self.assertIn(f"--audio-file does not exist: {missing}", stderr.getvalue())
+
+    def test_headless_startup_reports_expected_input_error_without_traceback(self):
+        with patch("oculizer_service.parse_args", return_value=object()), \
+                patch("oculizer_service.configure_service_streams"), \
+                patch("oculizer_service.build_service", side_effect=ValueError("invalid WAV")):
+            self.assertEqual(oculizer_service.main(), 2)
+
     def test_both_entry_points_accept_no_named_dynamic_controls(self):
         empty_controls = {"control": {"dynamic_controls": {}}}
         with patch("sys.argv", ["oculize.py"]), \

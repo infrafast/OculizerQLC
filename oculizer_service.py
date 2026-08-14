@@ -4,6 +4,7 @@ import argparse
 import logging
 import signal
 import sys
+from pathlib import Path
 
 from oculizer.headless import HeadlessOculizerService
 from oculizer.control_socket import default_control_socket_path
@@ -92,6 +93,11 @@ def parse_args():
         parser.error("--filter-dmx requires --dmx-dry-run")
     if args.audio_file and args.prediction_device:
         parser.error("--audio-file cannot be combined with --prediction-device")
+    if args.audio_file:
+        audio_file = Path(args.audio_file).expanduser().resolve()
+        if not audio_file.is_file():
+            parser.error(f"--audio-file does not exist: {audio_file}")
+        args.audio_file = str(audio_file)
     if not 1 <= args.scene_cache_size <= 100:
         parser.error("--scene-cache-size must be between 1 and 100")
     if not 0.5 <= args.scene_max_duration <= 3600:
@@ -152,7 +158,11 @@ def main() -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         stream=sys.stdout,
     )
-    service = build_service(args)
+    try:
+        service = build_service(args)
+    except (OSError, ValueError) as exc:
+        logging.error("Oculizer startup failed: %s", exc)
+        return 2
     signal.signal(signal.SIGTERM, service.request_stop)
     signal.signal(signal.SIGINT, service.request_stop)
     return service.run()
