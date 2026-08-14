@@ -34,6 +34,13 @@ class DeploymentTests(unittest.TestCase):
         script = (ROOT / "raspi_service_pack/oculizer-service").read_text(encoding="utf-8")
         self.assertNotIn("oculizer-qlc", script)
 
+    def test_installed_control_wrapper_delegates_socket_discovery(self):
+        script = (ROOT / "raspi_service_pack/oculizerctl-wrapper").read_text(
+            encoding="utf-8",
+        )
+        self.assertIn('oculizerctl.py" "$@"', script)
+        self.assertNotIn('--socket "$socket_path"', script)
+
     def test_oculizer_command_uses_shared_transport_configuration(self):
         command = build_oculizer_command({
             "repository": "/opt/Oculizer QLC",

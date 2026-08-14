@@ -100,3 +100,15 @@ oculizer-service health
 ```
 
 `oculizer-service auto` enables systemd boot startup. It is unrelated to `oculizerctl auto`, which resumes automatic scene prediction inside an already running process.
+
+The installed `oculizerctl` automatically discovers one active Oculizer control
+socket. It checks the environment override, this deployment's configured
+systemd socket, the user's runtime directory, and the standard per-user `/tmp`
+socket. If both a service and a foreground instance are running, select one
+explicitly, for example:
+
+```bash
+oculizerctl --socket /run/oculizer/control.sock status
+```
+
+The client never guesses when multiple active runtimes are found.

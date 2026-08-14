@@ -139,11 +139,12 @@ The installer grants the configured service account passwordless permission only
 
 `oculizer-service auto` controls systemd boot behavior. It is distinct from `oculizerctl auto`, which tells an already running Oculizer process to leave pause/manual-scene mode and resume automatic prediction.
 
-The installed `oculizerctl` wrapper uses the production socket recorded in
-`/etc/oculizer/deployment.json`. A manually launched runtime normally uses
-`/tmp/oculizer-<uid>.sock`; control it with `oculizerctl.py --socket PATH` from
-the repository. Connection errors print the exact attempted path and explain
-this distinction.
+The installed and repository-local `oculizerctl` commands automatically find
+one active runtime. Discovery checks `OCULIZER_CONTROL_SOCKET`, the production
+socket recorded in `/etc/oculizer/deployment.json`, the user's runtime
+directory, and `/tmp/oculizer-<uid>.sock`. If none is active, the command lists
+every path it tried. If several runtimes are active, it refuses to guess; place
+`--socket PATH` before the subcommand to select one explicitly.
 
 Oculizer passively waits for the separately managed local QLC+ WebSocket endpoint when that transport is selected; it does not own the QLC+ lifecycle. Do not reboot for the first validation: ensure the external QLC+ service is operational, then inspect the Oculizer log first.
 
@@ -636,7 +637,14 @@ python3 oculizerctl.py dynamic-control calm
 python3 oculizerctl.py dynamic-control off
 ```
 
-The default socket is `/tmp/oculizer-<uid>.sock`. Start the application with `--control-socket PATH` to use another path, then place `--socket PATH` before the `oculizerctl.py` subcommand. Use `--no-control-socket` to disable external control.
+`oculizerctl.py` automatically probes the environment override
+`OCULIZER_CONTROL_SOCKET`, the service deployment configuration, the user's
+runtime directory, and the normal `/tmp/oculizer-<uid>.sock` path. Exactly one
+active socket is selected. No match produces a list of attempted paths, while
+multiple matches require an explicit selection such as
+`python3 oculizerctl.py --socket /run/oculizer/control.sock status`. Start the
+application with `--control-socket PATH` to choose its socket, or use
+`--no-control-socket` to disable external control.
 
 `pause` only suspends prediction and automatic routing/modulation updates; it deliberately leaves the current QLC+ scene, blackout state, master, and frequency controls untouched. `auto` clears pause or manual override and resumes automatic operation from fresh prediction input. `scene NAME` forces a configured logical scene. Live changes last until the application restarts and do not rewrite configuration files.
 
