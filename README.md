@@ -498,6 +498,8 @@ python oculize.py --output qlc-native --qlc-config config/qlc_config.json --inpu
 
 QLC+ asks the operator to authorize the native client named `OculizerQLC`. Oculizer continues audio analysis while waiting and exposes `lighting_state: waiting-for-qlc-authorization` through `oculizerctl status`. Waiting uses a blocked network thread rather than active polling. Scene and slider intentions are bounded: only the newest scene and newest value for each continuous control are retained, then applied after authorization and project discovery.
 
+Native packets and transferred workspace XML are decoded with fixed memory limits. A malformed, truncated, oversized, or unsafe project/session is rejected and reconnected without stopping audio analysis or accumulating an unbounded network buffer.
+
 An empty `native.encryption_key` in `config/qlc_config.json` uses QLC+'s built-in key. If QLC+ has a custom key, configure the same value there or override it at startup with `--qlc-encryptionkey KEY`. The native server uses port `9998` by default. Use `--qlc-host` and `--qlc-port` to override it. Native dry-run opens no connection:
 
 ```bash

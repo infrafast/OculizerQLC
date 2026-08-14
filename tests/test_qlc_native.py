@@ -4,14 +4,109 @@ from unittest.mock import patch
 
 from oculizer.light.qlc_native import (
     DEFAULT_KEY,
+    NET_AUTHENTICATION_REPLY,
+    NET_PROJECT_TRANSFER,
     NativeState,
+    NativeWidget,
     QLCNativeClient,
+    QLCNativeError,
+    VC_BUTTON_SET_PRESSED,
+    _decrypt,
+    _encrypt,
+    _packet,
+    _parse_sections,
+    _recv_packet,
+    _section_bool,
+    _section_bytearray,
+    _section_int,
+    _section_string,
     _session_key,
     parse_project_inventory,
 )
 
 
 class QLCNativeTests(unittest.TestCase):
+    class FragmentedSocket:
+        def __init__(self, data, fragment_size=1):
+            self.data = bytearray(data)
+            self.fragment_size = fragment_size
+
+        def recv(self, size):
+            size = min(size, self.fragment_size, len(self.data))
+            result = bytes(self.data[:size])
+            del self.data[:size]
+            return result
+
+        def settimeout(self, _timeout):
+            pass
+
+        def sendall(self, data):
+            self.sent = getattr(self, "sent", []) + [data]
+
+        def shutdown(self, _how):
+            pass
+
+        def close(self):
+            pass
+
+    def test_fixed_packet_vector_matches_qlc_simplecrypt_contract(self):
+        expected = bytes.fromhex(
+            "e686f20002000c030211844609224170662d58"
+        )
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            packet = _packet(
+                VC_BUTTON_SET_PRESSED, DEFAULT_KEY,
+                _section_int(71), _section_bool(True),
+            )
+        self.assertEqual(packet, expected)
+        opcode, sections = _recv_packet(self.FragmentedSocket(expected), DEFAULT_KEY)
+        self.assertEqual(opcode, VC_BUTTON_SET_PRESSED)
+        self.assertEqual(sections, [71, True])
+
+    def test_coalesced_packets_remain_separate(self):
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            first = _packet(NET_AUTHENTICATION_REPLY, DEFAULT_KEY, _section_string("Success"))
+            second = _packet(NET_PROJECT_TRANSFER, DEFAULT_KEY, _section_int(0), _section_int(0))
+        stream = self.FragmentedSocket(first + second, fragment_size=4096)
+        self.assertEqual(_recv_packet(stream, DEFAULT_KEY), (NET_AUTHENTICATION_REPLY, ["Success"]))
+        self.assertEqual(_recv_packet(stream, DEFAULT_KEY), (NET_PROJECT_TRANSFER, [0, 0]))
+
+    def test_tcp_disconnect_during_packet_is_explicit(self):
+        with self.assertRaisesRegex(ConnectionError, "disconnected"):
+            _recv_packet(self.FragmentedSocket(b"\xe6\x86"), DEFAULT_KEY)
+
+    def test_truncated_and_malformed_sections_are_rejected(self):
+        invalid_payloads = (
+            (b"", 1),
+            (b"\x01\x00", 1),
+            (b"\x00\x02", 1),
+            (b"\x03\x00\x04ab", 1),
+            (_section_int(1) + b"extra", 1),
+        )
+        for payload, count in invalid_payloads:
+            with self.subTest(payload=payload), self.assertRaises(ValueError):
+                _parse_sections(payload, count)
+
+    def test_simplecrypt_rejects_truncation_flags_crc_and_size(self):
+        for payload in (b"", b"\x03", b"\x03\x80\x00", b"\x03\x02\x00"):
+            with self.subTest(payload=payload), self.assertRaises(ValueError):
+                _decrypt(payload, DEFAULT_KEY)
+
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            encrypted = bytearray(_packet(
+                NET_AUTHENTICATION_REPLY, DEFAULT_KEY, _section_string("Success"),
+            )[7:])
+        # SimpleCrypt's QLC-compatible CRC stops at the first NUL byte, so
+        # corrupt the first section tag rather than data after its length NUL.
+        encrypted[5] ^= 0x01
+        with self.assertRaisesRegex(ValueError, "CRC"):
+            _decrypt(bytes(encrypted), DEFAULT_KEY)
+
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            compressed = _encrypt(b"x" * 4096, DEFAULT_KEY)
+        with self.assertRaisesRegex(ValueError, "safe limit|oversized"):
+            _decrypt(compressed, DEFAULT_KEY, maximum_size=128)
+
     def test_reconnect_state_logs_are_rate_limited_without_hiding_state(self):
         client = QLCNativeClient("127.0.0.1")
         with (
@@ -55,6 +150,119 @@ class QLCNativeTests(unittest.TestCase):
         self.assertEqual(buttons["party"].widget_id, 71)
         self.assertEqual(sliders["master"].widget_id, 72)
         self.assertEqual((sliders["master"].low, sliders["master"].high), (10.0, 210.0))
+
+    def test_project_inventory_ignores_non_virtual_console_elements(self):
+        buttons, sliders = parse_project_inventory(b'''<Workspace>
+          <Engine><Button ID="1" Caption="Not a widget" /></Engine>
+          <VirtualConsole><Button ID="2" Caption="Party" /></VirtualConsole>
+        </Workspace>''')
+        self.assertEqual(tuple(buttons), ("party",))
+        self.assertEqual(sliders, {})
+
+    def test_project_inventory_rejects_unsafe_or_invalid_xml(self):
+        samples = (
+            b'<!DOCTYPE Workspace [<!ENTITY x "value">]><Workspace>&x;</Workspace>',
+            b'<Workspace><VirtualConsole><Slider ID="1" Caption="Bad"><Value Low="5" High="5" /></Slider></VirtualConsole></Workspace>',
+            b'<Workspace><VirtualConsole><Button ID="x" Caption="Bad" /></VirtualConsole></Workspace>',
+        )
+        for xml in samples:
+            with self.subTest(xml=xml), self.assertRaises(QLCNativeError):
+                parse_project_inventory(xml)
+        with self.assertRaisesRegex(QLCNativeError, "exceeds"):
+            parse_project_inventory(b"<Workspace />", maximum_size=4)
+
+    def test_project_transfer_replaces_inventory_only_after_complete_parse(self):
+        xml = (
+            b'<Workspace><VirtualConsole><Button ID="9" Caption="New" />'
+            b'</VirtualConsole></Workspace>'
+        )
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            response = b"".join((
+                _packet(
+                    NET_AUTHENTICATION_REPLY, DEFAULT_KEY,
+                    _section_string("Success"), _section_int(127),
+                ),
+                _packet(
+                    NET_PROJECT_TRANSFER, DEFAULT_KEY,
+                    _section_int(0), _section_int(len(xml)), _section_bytearray(xml),
+                ),
+            ))
+        connection = self.FragmentedSocket(response, fragment_size=3)
+        client = QLCNativeClient("127.0.0.1")
+        client.buttons = {"old": NativeWidget(1, "Old", "button")}
+        with patch("oculizer.light.qlc_native.socket.create_connection", return_value=connection):
+            client._connect()
+        self.assertEqual(client.state, NativeState.READY)
+        self.assertEqual(tuple(client.buttons), ("new",))
+
+    def test_authentication_refusal_is_explicit(self):
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            response = _packet(
+                NET_AUTHENTICATION_REPLY, DEFAULT_KEY, _section_string("Denied"),
+            )
+        client = QLCNativeClient("127.0.0.1")
+        with (
+            patch(
+                "oculizer.light.qlc_native.socket.create_connection",
+                return_value=self.FragmentedSocket(response),
+            ),
+            self.assertRaisesRegex(QLCNativeError, "authorization was refused"),
+        ):
+            client._connect()
+
+    def test_incomplete_project_does_not_replace_existing_inventory(self):
+        xml = b"<Workspace />"
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            response = b"".join((
+                _packet(
+                    NET_AUTHENTICATION_REPLY, DEFAULT_KEY,
+                    _section_string("Success"), _section_int(127),
+                ),
+                _packet(
+                    NET_PROJECT_TRANSFER, DEFAULT_KEY,
+                    _section_int(0), _section_int(len(xml) + 1), _section_bytearray(xml),
+                ),
+                _packet(
+                    NET_PROJECT_TRANSFER, DEFAULT_KEY,
+                    _section_int(2), _section_bytearray(b""),
+                ),
+            ))
+        client = QLCNativeClient("127.0.0.1")
+        old = NativeWidget(1, "Old", "button")
+        client.buttons = {"old": old}
+        with (
+            patch(
+                "oculizer.light.qlc_native.socket.create_connection",
+                return_value=self.FragmentedSocket(response, fragment_size=5),
+            ),
+            self.assertRaisesRegex(QLCNativeError, "ended before declared size"),
+        ):
+            client._connect()
+        self.assertEqual(client.buttons, {"old": old})
+
+    def test_exact_8192_byte_project_completes_without_last_sequence(self):
+        prefix = b'<Workspace><VirtualConsole><Button ID="9" Caption="Exact" />'
+        suffix = b"</VirtualConsole></Workspace>"
+        xml = prefix + (b" " * (8192 - len(prefix) - len(suffix))) + suffix
+        self.assertEqual(len(xml), 8192)
+        with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):
+            response = b"".join((
+                _packet(
+                    NET_AUTHENTICATION_REPLY, DEFAULT_KEY,
+                    _section_string("Success"), _section_int(127),
+                ),
+                _packet(
+                    NET_PROJECT_TRANSFER, DEFAULT_KEY,
+                    _section_int(0), _section_int(len(xml)), _section_bytearray(xml),
+                ),
+            ))
+        client = QLCNativeClient("127.0.0.1")
+        with patch(
+            "oculizer.light.qlc_native.socket.create_connection",
+            return_value=self.FragmentedSocket(response, fragment_size=97),
+        ):
+            client._connect()
+        self.assertEqual(tuple(client.buttons), ("exact",))
 
 
 if __name__ == "__main__":

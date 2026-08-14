@@ -29,6 +29,8 @@ INT_TYPE = 1
 STRING_TYPE = 3
 BYTEARRAY_TYPE = 4
 STATE_LOG_REPEAT_SECONDS = 30.0
+MAX_ENCRYPTED_PAYLOAD = 0xFFFF
+MAX_DECRYPTED_PAYLOAD = 1024 * 1024
 
 _CRC_TABLE = (
     0x0000, 0x1081, 0x2102, 0x3183, 0x4204, 0x5285, 0x6306, 0x7387,
@@ -136,10 +138,13 @@ def _encrypt(payload: bytes, key: int) -> bytes:
     return bytes((3, flags)) + bytes(data)
 
 
-def _decrypt(ciphertext: bytes, key: int) -> bytes:
-    if len(ciphertext) < 2 or ciphertext[0] != 3:
+def _decrypt(ciphertext: bytes, key: int,
+             maximum_size: int = MAX_DECRYPTED_PAYLOAD) -> bytes:
+    if len(ciphertext) < 3 or ciphertext[0] != 3:
         raise ValueError("Unsupported QLC+ SimpleCrypt payload")
     flags = ciphertext[1]
+    if flags & ~0x03:
+        raise ValueError(f"Unsupported QLC+ SimpleCrypt flags 0x{flags:02x}")
     data = bytearray(ciphertext[2:])
     previous = 0
     parts = _key_parts(key)
@@ -148,15 +153,36 @@ def _decrypt(ciphertext: bytes, key: int) -> bytes:
         previous = current
     data = data[1:]
     if flags & 0x02:
+        if len(data) < 2:
+            raise ValueError("Truncated QLC+ SimpleCrypt CRC")
         expected = struct.unpack(">H", data[:2])[0]
         data = data[2:]
         if _simplecrypt_crc(bytes(data)) != expected:
             raise ValueError("QLC+ SimpleCrypt CRC mismatch")
     if flags & 0x01:
+        if len(data) < 4:
+            raise ValueError("Truncated QLC+ compressed payload size")
         expected_size = struct.unpack(">I", data[:4])[0]
-        data = bytearray(zlib.decompress(data[4:]))
+        if expected_size > maximum_size:
+            raise ValueError("QLC+ decompressed payload exceeds safe limit")
+        decompressor = zlib.decompressobj()
+        try:
+            data = bytearray(decompressor.decompress(data[4:], maximum_size + 1))
+        except zlib.error as exc:
+            raise ValueError(f"Invalid QLC+ compressed payload: {exc}") from exc
+        if len(data) > maximum_size or decompressor.unconsumed_tail:
+            raise ValueError("Invalid or oversized QLC+ compressed payload")
+        try:
+            data.extend(decompressor.flush(maximum_size - len(data) + 1))
+        except zlib.error as exc:
+            raise ValueError(f"Invalid QLC+ compressed payload: {exc}") from exc
+        if (len(data) > maximum_size or not decompressor.eof
+                or decompressor.unused_data):
+            raise ValueError("Invalid or oversized QLC+ compressed payload")
         if len(data) != expected_size:
             raise ValueError("QLC+ compressed payload size mismatch")
+    elif len(data) > maximum_size:
+        raise ValueError("QLC+ decrypted payload exceeds safe limit")
     return bytes(data)
 
 
@@ -178,8 +204,12 @@ def _section_bytearray(value: bytes) -> bytes:
 
 
 def _packet(opcode: int, key: int, *sections: bytes) -> bytes:
+    if len(sections) > 0xFF:
+        raise ValueError("QLC+ packet has too many sections")
     payload = b"".join(sections)
     encrypted = _encrypt(payload, key)
+    if len(encrypted) > MAX_ENCRYPTED_PAYLOAD:
+        raise ValueError("QLC+ encrypted packet exceeds protocol limit")
     return (
         PROTOCOL_ID + struct.pack(">H", opcode) + bytes((len(sections),))
         + struct.pack(">H", len(encrypted)) + encrypted
@@ -200,20 +230,57 @@ def _parse_sections(payload: bytes, count: int) -> list[object]:
     result: list[object] = []
     position = 0
     for _ in range(count):
+        if position >= len(payload):
+            raise ValueError("Truncated QLC+ section header")
         kind = payload[position]
         position += 1
         if kind == INT_TYPE:
+            if len(payload) - position < 4:
+                raise ValueError("Truncated QLC+ integer section")
             result.append(struct.unpack(">I", payload[position:position + 4])[0])
             position += 4
+        elif kind == BOOL_TYPE:
+            if position >= len(payload):
+                raise ValueError("Truncated QLC+ boolean section")
+            value = payload[position]
+            if value not in (0, 1):
+                raise ValueError(f"Invalid QLC+ boolean value {value}")
+            result.append(bool(value))
+            position += 1
         elif kind in (STRING_TYPE, BYTEARRAY_TYPE):
+            if len(payload) - position < 2:
+                raise ValueError("Truncated QLC+ variable-length section")
             length = struct.unpack(">H", payload[position:position + 2])[0]
             position += 2
+            if len(payload) - position < length:
+                raise ValueError("Truncated QLC+ variable-length section payload")
             value = payload[position:position + length]
             position += length
-            result.append(value.decode("utf-8", errors="replace") if kind == STRING_TYPE else value)
+            if kind == STRING_TYPE:
+                try:
+                    value = value.decode("utf-8")
+                except UnicodeDecodeError as exc:
+                    raise ValueError("Invalid UTF-8 in QLC+ string section") from exc
+            result.append(value)
         else:
             raise ValueError(f"Unsupported QLC+ section type {kind}")
+    if position != len(payload):
+        raise ValueError("QLC+ packet contains trailing section data")
     return result
+
+
+def _recv_packet(sock: socket.socket, key: int) -> tuple[int, list[object]]:
+    """Read exactly one bounded packet from a TCP byte stream."""
+    header = _recv_exact(sock, HEADER_LEN)
+    if header[:2] != PROTOCOL_ID:
+        raise ValueError("Invalid QLC+ native packet header")
+    opcode = struct.unpack(">H", header[2:4])[0]
+    count = header[4]
+    payload_size = struct.unpack(">H", header[5:7])[0]
+    if payload_size < 3:
+        raise ValueError("Invalid QLC+ native encrypted payload size")
+    encrypted = _recv_exact(sock, payload_size)
+    return opcode, _parse_sections(_decrypt(encrypted, key), count)
 
 
 def _tag(element: ET.Element) -> str:
@@ -226,12 +293,17 @@ def parse_project_inventory(xml_data: bytes, maximum_size: int = 16 * 1024 * 102
 
     if len(xml_data) > maximum_size:
         raise QLCNativeError("QLC+ project exceeds configured native inventory limit")
+    lowered = xml_data.lower()
+    if b"<!doctype" in lowered or b"<!entity" in lowered:
+        raise QLCNativeError("QLC+ project XML declarations are not allowed")
     try:
         root = ET.fromstring(xml_data)
     except ET.ParseError as exc:
         raise QLCNativeError(f"Invalid QLC+ project XML: {exc}") from exc
     inventories = {"button": {}, "slider": {}}
-    for element in root.iter():
+    virtual_consoles = [element for element in root.iter() if _tag(element) == "virtualconsole"]
+    elements = (element for console in virtual_consoles for element in console.iter())
+    for element in elements:
         kind = _tag(element)
         if kind not in inventories:
             continue
@@ -253,6 +325,8 @@ def parse_project_inventory(xml_data: bytes, maximum_size: int = 16 * 1024 * 102
                     except ValueError as exc:
                         raise QLCNativeError(f"Invalid slider range for {caption!r}") from exc
                     break
+            if not low < high:
+                raise QLCNativeError(f"Invalid slider range for {caption!r}: {low}..{high}")
         key = normalize_caption(caption)
         if key in inventories[kind]:
             raise QLCNativeError(f"Duplicate QLC+ {kind} caption {caption!r}")
@@ -334,18 +408,22 @@ class QLCNativeClient:
             logger.warning("QLC+ native: authorize 'OculizerQLC' in the QLC+ GUI")
         project = bytearray()
         expected_project_size = None
+        project_started = False
         while True:
-            header = _recv_exact(self.socket, HEADER_LEN)
-            if header[:2] != PROTOCOL_ID:
-                raise ValueError("Invalid QLC+ native packet header")
-            opcode = struct.unpack(">H", header[2:4])[0]
-            count = header[4]
-            payload = _recv_exact(self.socket, struct.unpack(">H", header[5:7])[0])
-            sections = _parse_sections(_decrypt(payload, self.key), count)
+            opcode, sections = _recv_packet(self.socket, self.key)
             if opcode == NET_PROJECT_TRANSFER:
                 self._set_state(NativeState.DOWNLOADING_PROJECT)
+                if not sections or not isinstance(sections[0], int):
+                    raise QLCNativeError("Invalid QLC+ native project-transfer sequence")
                 sequence = int(sections[0])
                 if sequence == 0:
+                    if project_started or len(sections) not in (2, 3):
+                        raise QLCNativeError("Invalid QLC+ native project-transfer start")
+                    if not isinstance(sections[1], int):
+                        raise QLCNativeError("Invalid QLC+ native project size")
+                    if len(sections) == 3 and not isinstance(sections[2], bytes):
+                        raise QLCNativeError("Invalid QLC+ native project chunk")
+                    project_started = True
                     expected_project_size = int(sections[1])
                     if expected_project_size > self.maximum_project_size:
                         raise QLCNativeError("QLC+ native project is too large")
@@ -356,11 +434,20 @@ class QLCNativeClient:
                             self.buttons, self.sliders = {}, {}
                         self._set_state(NativeState.READY)
                         return
-                elif len(sections) > 1:
+                elif sequence in (1, 2):
+                    if (not project_started or len(sections) != 2
+                            or not isinstance(sections[1], bytes)):
+                        raise QLCNativeError("Invalid QLC+ native project chunk")
                     project.extend(sections[1])
+                else:
+                    raise QLCNativeError(f"Invalid QLC+ native project sequence {sequence}")
                 if len(project) > self.maximum_project_size:
                     raise QLCNativeError("QLC+ native project is too large")
+                if expected_project_size is not None and len(project) > expected_project_size:
+                    raise QLCNativeError("QLC+ native project exceeds declared size")
                 if sequence == 2 or expected_project_size == len(project):
+                    if expected_project_size != len(project):
+                        raise QLCNativeError("QLC+ native project ended before declared size")
                     buttons, sliders = parse_project_inventory(bytes(project), self.maximum_project_size)
                     with self._lock:
                         self.buttons, self.sliders = buttons, sliders

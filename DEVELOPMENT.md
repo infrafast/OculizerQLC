@@ -615,7 +615,7 @@ Automated validation:
 
 ### Phase 8a.3 — QLC+ 5 native network protocol evaluation and backend decision
 
-Status: **implementation in progress against QLC+ commit `984f0e7` — first asynchronous native backend slice implemented; live Raspberry Pi authorization, inventory, button, slider, reconnect, and coexistence validation remains required**
+Status: **implementation in progress against QLC+ commit `984f0e7` — Raspberry Pi authorization, inventory, button, enabled-slider, reconnect, coexistence, service, and runtime-control discovery validation accepted; protocol hardening, extended parity, macOS, and endurance gates remain**
 
 Rollback point before the native work: Git commit [`22bb33f`](https://github.com/LandryBulls/OculizerQLC/commit/22bb33ffa4f447f1d1c1f3f9cd6a84d83c40f032). The validated caption POC has now been absorbed into the isolated `oculizer/light/qlc_native.py` implementation; reverting to this commit removes the complete experiment and backend.
 
@@ -682,7 +682,7 @@ Runtime-discovered QLC+ type information is the preferred authority. Configurati
 
 #### Native session and coexistence caveats
 
-- [ ] implement correct TCP stream framing for split and coalesced packets, encrypted-payload lengths, malformed-packet resynchronization, and deterministic close;
+- [x] implement correct bounded TCP stream framing for split and coalesced packets and encrypted-payload lengths; reject malformed packets and deterministically close/reconnect instead of attempting unsafe in-stream resynchronization across encrypted payloads;
 - [ ] reproduce the tested QLC+ 5 SimpleCrypt CRC, compression, and native-endian float behavior exactly, with protocol code isolated and covered by fixed binary vectors;
 - [ ] handle the authentication approval prompt and timeout explicitly. A cold headless boot cannot be considered autonomous until repeated or pre-authorized client behavior has been tested on the deployed QLC+ build;
 - [x] account for systemd `Type=simple`: keep audio and prediction running while an event-driven network thread waits without a timeout, expose `waiting-for-qlc-authorization` through logs and `oculizerctl status`, and retain only bounded latest-value intentions until authorization completes;
@@ -714,7 +714,7 @@ Suggested implementation slices:
 
 Automated validation gate:
 
-- [ ] cover known binary packets, encryption/decryption, truncated/coalesced TCP data, authentication replies, exact-multiple project chunks, corrupt/oversized XML, and disconnects;
+- [x] cover known binary packets, encryption/decryption, truncated/coalesced TCP data, authentication replies, exact-multiple project chunks, corrupt/oversized XML, and disconnects;
 - [ ] cover caption normalization/collisions, widget-type mismatch, inventory replacement, missing widgets, all supported button actions, slider ranges, bounded coalescing, error suppression, and reconnect state reset;
 - [ ] prove scene changes remain activation-only and no transport failure blocks audio or prediction;
 - [ ] prove dry-run and offline validation open no UDP/TCP/WebSocket connection;
@@ -753,6 +753,10 @@ WAV startup validation was hardened on 2026-08-14 after a duplicated relative pa
 Control-client connection diagnostics were clarified on 2026-08-14. `oculizerctl` reports the exact socket path it attempted and distinguishes a missing socket, a path with no listening Oculizer process, and a response timeout. Application-level command failures remain separate.
 
 Socket selection was then centralized in `oculizerctl.py`. Unless `--socket` is supplied, the client builds an ordered, de-duplicated candidate list from `OCULIZER_CONTROL_SOCKET`, `/etc/oculizer/deployment.json`, `XDG_RUNTIME_DIR`, and the standard per-user `/tmp` path. It performs one short Unix-socket connection probe per candidate: exactly one listener is selected, no listeners produce a diagnostic listing every attempted path, and multiple listeners are treated as ambiguous and require `--socket PATH`. The installed wrapper no longer forces the production path, so the same rules cover systemd and foreground runtimes. Process-name inspection is deliberately excluded because names, interpreters, containers, and multiple instances make it unreliable. Discovery adds only a few local connections when a control command starts; it adds no background polling, persistent memory, or load to the embedded runtime.
+
+Operator acceptance on 2026-08-14 validated automatic socket discovery with both the installed systemd service and a foreground interactive runtime on Raspberry Pi. Normal single-runtime commands selected the listener without `--socket`; explicit selection remains the required deterministic behavior when more than one runtime is active. This closes the runtime-control discovery slice without changing the service lifecycle contract exposed to raspiLightGUI.
+
+Native protocol hardening on 2026-08-14 replaced ad-hoc packet reads with one bounded packet decoder that consumes exactly the encrypted length advertised by each header, so fragmented and coalesced TCP delivery require no accumulating stream buffer. The decoder now rejects truncated headers and sections, invalid booleans and UTF-8, trailing section data, unsupported SimpleCrypt flags, CRC/size inconsistencies, and compressed payloads that exceed a fixed one-megabyte plaintext ceiling. Malformed encrypted packets cause the existing bounded reconnect path rather than byte-pattern resynchronization, because the protocol exposes no authenticated framing and scanning ciphertext for `0xE686` could execute a falsely aligned action. Project transfer validates sequence shape, declared and actual sizes, chunk types, exact-8192-byte completion, and XML before replacing inventory atomically. Virtual Console discovery ignores lookalike XML outside `VirtualConsole`, rejects invalid slider ranges, and refuses DTD/entity declarations. These checks run only on native network input and add no audio pass, worker, polling loop, or persistent buffer. Fixed-vector and failure coverage increased the full suite to 219 tests.
 
 ### Phase 8b — Raspberry Pi 5 production target
 
