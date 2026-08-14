@@ -1049,6 +1049,7 @@ Validation performed:
 - exact migration tests cover native settings, captions, controls, descriptions, durations, absence of transport fields, and deterministic behavior classification;
 - native construction from `config/oculizer.json` reached dry-run ready state with 127 routes and no network connection;
 - the complete transitional suite passes: 230 tests.
+- corrected interactive SIGINT cleanup after Raspberry Pi/Python 3.13 showed that a repeated Ctrl+C could interrupt the native client's bounded thread join and print a traceback; interactive cleanup now temporarily ignores further SIGINT, the native client independently tolerates an interrupted join, and normal shutdown semantics remain unchanged on macOS and Linux.
 
 Remaining work: perform the first macOS live Native gate, replace the DMX-oriented scene registry, run fixed inference comparisons, then begin the approved legacy deletion only after operator confirmation.
 

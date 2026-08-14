@@ -728,7 +728,12 @@ class QLCNativeClient:
         self._stop.set()
         self._disconnect()
         if self._thread is not None:
-            self._thread.join(timeout=2)
+            try:
+                self._thread.join(timeout=2)
+            except KeyboardInterrupt:
+                # Keep direct client users safe too; the interactive entry
+                # point suppresses repeated SIGINT for its full cleanup.
+                logger.debug("QLC+ native shutdown wait interrupted")
         self._set_state(NativeState.STOPPED)
 
     close = stop

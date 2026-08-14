@@ -6,6 +6,21 @@ import oculize
 
 
 class TerminalInitializationTests(unittest.TestCase):
+    def test_keyboard_interrupt_cleanup_temporarily_ignores_sigint(self):
+        controller = Mock()
+        with (
+            patch("oculize.signal.getsignal", return_value="previous") as get_signal,
+            patch("oculize.signal.signal") as set_signal,
+        ):
+            oculize._stop_after_keyboard_interrupt(controller)
+
+        get_signal.assert_called_once_with(oculize.signal.SIGINT)
+        self.assertEqual(set_signal.call_args_list, [
+            unittest.mock.call(oculize.signal.SIGINT, oculize.signal.SIG_IGN),
+            unittest.mock.call(oculize.signal.SIGINT, "previous"),
+        ])
+        controller.stop.assert_called_once_with()
+
     def test_interactive_native_forwards_encryption_key(self):
         screen = Mock()
         scene_manager = Mock()

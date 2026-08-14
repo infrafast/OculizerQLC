@@ -5,6 +5,7 @@ import threading
 import curses
 import argparse
 import platform
+import signal
 from contextlib import redirect_stderr, redirect_stdout
 from curses import wrapper
 from oculizer import Oculizer, SceneManager
@@ -66,6 +67,16 @@ def setup_logging():
     # physical terminal behind curses' virtual screen and corrupt subsequent
     # differential rendering.
     logging.captureWarnings(True)
+
+
+def _stop_after_keyboard_interrupt(controller):
+    """Finish bounded cleanup without repeated Ctrl+C interrupting thread joins."""
+    previous_handler = signal.getsignal(signal.SIGINT)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    try:
+        controller.stop()
+    finally:
+        signal.signal(signal.SIGINT, previous_handler)
 
 def setup_colors():
     curses.start_color()
@@ -1135,7 +1146,7 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
     try:
         controller.start()
     except KeyboardInterrupt:
-        controller.stop()
+        _stop_after_keyboard_interrupt(controller)
     except Exception as e:
         stdscr.addstr(0, 0, f"Unhandled error: {str(e)}", curses.color_pair(COLOR_PAIRS['error']))
         stdscr.refresh()
