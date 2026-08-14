@@ -127,6 +127,8 @@ The installer grants the configured service account passwordless permission only
 
 Oculizer passively waits for the separately managed local QLC+ WebSocket endpoint when that transport is selected; it does not own the QLC+ lifecycle. Do not reboot for the first validation: ensure the external QLC+ service is operational, then inspect the Oculizer log first.
 
+With `qlc-native`, service startup is asynchronous: systemd considers Oculizer running while the native client is disconnected, waiting for QLC+ authorization, downloading the project, or ready. This is intentional and keeps the lifecycle states compatible with raspiLightGUI, where `UP`, `AUTO`, and `MANUAL` describe the Oculizer process and boot policy. Use `oculizerctl status` to inspect the separate native `lighting_state`.
+
 ## Configuration
 
 The main user configuration files are:

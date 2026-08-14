@@ -19,11 +19,18 @@ def wait_for_qlc(config, *, timeout_seconds=DEFAULT_TIMEOUT_SECONDS, connector=N
         print("QLC+ readiness: OSC startup delay complete.", flush=True)
         return True
 
+    if config["output"] == "qlc-native":
+        print(
+            "QLC+ readiness: native output selected; startup is asynchronous. "
+            "Oculizer will connect when QLC+ becomes available.",
+            flush=True,
+        )
+        return True
+
     connector = connector or socket.create_connection
     host = str(config.get("qlc_host", "127.0.0.1"))
-    native = config["output"] == "qlc-native"
-    port = int(config.get("qlc_port", 9998 if native else 9999))
-    server_name = "native server" if native else "WebSocket server"
+    port = int(config.get("qlc_port", 9999))
+    server_name = "WebSocket server"
     deadline = time.monotonic() + timeout_seconds
     print(
         f"QLC+ readiness: waiting up to {timeout_seconds:g} seconds for "
