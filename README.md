@@ -129,11 +129,13 @@ limits, and recommended range.
 Safe detection and modulation values take effect immediately. Audio device,
 prediction scheduling, Web listener, and other startup-owned changes are
 marked as requiring a restart. The service view can confirm that restart from
-the page; an interactive target displays its exact relaunch command.
+the page; a local headless target displays its exact relaunch command.
 
-The Web server is not started by `oculize.py`. The service-owned Web page can
-still select an independently running interactive instance through its local
-control socket. Disable the Web child completely when starting headless mode:
+The Web server is not started by `oculize.py`. Its runtime selector switches
+between the installed **Service** and a **Local headless**
+`oculizer_service.py` process when both are available; changing the target
+reloads all settings, presets, status, devices, and logs from that runtime.
+Disable the Web child completely when starting headless mode:
 
 ```bash
 ./.venv/bin/python oculizer_service.py --no-web

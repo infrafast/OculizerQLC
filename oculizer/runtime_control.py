@@ -196,6 +196,9 @@ class RuntimeControl:
             return {"fields": self.config_store.schema()}
         if command == "config-get":
             return self.configuration()
+        if command == "audio-devices":
+            from oculizer.audio.sources import list_audio_input_devices
+            return {"devices": list_audio_input_devices()}
         if command == "config-apply":
             return self.apply_configuration(
                 request.get("changes"), request.get("expected_revision")

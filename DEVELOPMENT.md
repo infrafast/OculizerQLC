@@ -1111,14 +1111,14 @@ The Web process must add no audio stream, FFT, resampler, inference call, contin
 - treat browser validation as convenience only. The server must reject unknown/read-only fields, validate types and cross-field relationships through the existing configuration loader, cap request sizes, and return field-specific errors without changing memory or disk;
 - make **Apply configuration** transactional: validate the complete draft, atomically persist it with a recoverable backup, hot-apply supported fields, and report the exact restart-required fields. Failed application must retain previous runtime values and must not leave a partial file;
 - do not promise live application for startup-owned values. Audio input is restart-required in the first version because safely changing it would require PortAudio teardown/reopen, device/channel/rate validation, temporal-buffer reset, and failure recovery inside the running audio engine. Predictor/model loading, unsafe prediction-buffer/window changes, native connection settings, and Web bind settings also remain restart-required unless focused implementation and tests prove otherwise;
-- after a successful save containing restart-required fields, inspect the selected runtime's reported launch mode and offer the appropriate confirmed action. A systemd runtime uses the narrowly scoped installed `oculizer-service restart`; an interactive runtime may perform a clean shutdown and re-exec only from its recorded executable, arguments, and working directory. If safe relaunch capability is unavailable, show the exact manual command instead of guessing. Send the HTTP result before restarting, tolerate the temporary disconnect, and reconnect the page automatically;
+- after a successful save containing restart-required fields, inspect the selected runtime's reported launch mode and offer the appropriate action. A systemd runtime exits cleanly into its existing restart policy after confirmation; a local headless runtime shows the exact recorded executable, arguments, and working directory needed for manual relaunch. Send the HTTP result before restarting, tolerate the temporary disconnect, and reconnect the page automatically;
 - use `0.75 s` as the initial Raspberry Pi recommended minimum for prediction or fast-detection intervals, not as a universal hard rule. Review every exposed field individually and provide meaningful hard bounds plus narrower recommended bounds wherever operational evidence or algorithm constraints justify them; input controls and mouseover help must show the same metadata;
 - never return the QLC+ encryption key to the browser. Secret editing is excluded from the first milestone.
 
 The selector chooses a running target rather than inventing arbitrary configuration stores:
 
 - **Service** selects the systemd/headless instance, its deployment-configured application file, and control socket;
-- **Interactive/local** selects a running local interactive instance discovered through the existing control-socket mechanism and its application file;
+- **Local headless** selects a foreground `oculizer_service.py` instance discovered through the existing per-user control socket and its application file; `oculize.py` neither hosts Web nor appears as a named Web target;
 - display the resolved process, socket, configuration path, connection state, and writability. Never accept an arbitrary filesystem path from HTTP;
 - if both targets use the same `config/oculizer.json`, say so explicitly. The selector determines which live process receives the update; it does not imply two independent configurations.
 
@@ -1134,7 +1134,7 @@ The selector chooses a running target rather than inventing arbitrary configurat
 ### Security, deployment, and maintenance caveats
 
 1. **Network exposure.** LAN mode is intentionally unauthenticated and must not add a password prompt or prominent UI warning. Bind to the configured interface and retain Host/origin validation, request/body/time limits, and no directory serving. Keep the security assumption as concise technical documentation: deployment is intended for the operator-controlled local network, not direct Internet exposure.
-2. **Privileges and restart.** Run the Web child unprivileged and grant no unrestricted `sudo` or systemd control. Service restart must use only the existing narrowly scoped service helper/sudoers command after explicit user confirmation. Interactive re-exec must reject unverified or incomplete launch metadata and must first follow the accepted clean shutdown ownership rules.
+2. **Privileges and restart.** Run the Web child unprivileged and grant no unrestricted `sudo` or systemd control. Service restart is a confirmed clean runtime exit handled by the existing systemd restart policy. Local headless mode reports its recorded relaunch command rather than executing an unsafe re-exec.
 3. **Concurrent writers.** Serialize updates, include a configuration revision/hash, and reject stale submissions. Web apply, runtime reload, and manual edits must not silently overwrite each other.
 4. **Separation.** Configuration mutation belongs in a focused configuration service, telemetry in the runtime/control layer, and HTTP handlers only validate, invoke, and format bounded results.
 5. **Dependencies.** Prefer Python's standard-library HTTP server and static vanilla HTML/CSS/JavaScript unless testing proves its isolation or shutdown unsuitable. Avoid a large framework/frontend toolchain for this bounded embedded UI.
@@ -1154,9 +1154,9 @@ Validation gate: apply and rollback against foreground headless and systemd runt
 
 ### Milestone 11.2 — embedded isolated Web application
 
-- [x] add the Oculizer-owned HTTP child process, bounded supervision/backoff, responsive UI, Service/Interactive target selector, explanations/tooltips, hard/recommended limits, field errors, and hot/restart-required badges;
+- [x] add the Oculizer-owned HTTP child process, bounded supervision/backoff, responsive UI, Service/Local-headless target selector, explanations/tooltips, hard/recommended limits, field errors, and hot/restart-required badges;
 - [x] implement unauthenticated apply, pause/auto/manual-scene controls, runtime/prediction view, and bounded log view through the shared services only;
-- [x] add launch-mode/capability reporting and a confirmed restart workflow: controlled systemd exit/restart or an exact manual interactive relaunch command when automatic restart is unavailable;
+- [x] add launch-mode/capability reporting and a restart workflow: controlled confirmed systemd exit/restart or the exact local-headless manual relaunch command;
 - [x] add the optional Canvas RMS/scene timeline with bounded low-rate sampling and persistent enable/disable setting;
 - [x] test Host/origin checks, malformed requests, disconnected targets, timeouts, target/config identity, Web-child crash/restart without disturbing Oculizer, and Web disablement with `--no-web`;
 - [ ] measure Web-disabled and Web-enabled CPU, RSS, thread count, inference time, and queue depth on Raspberry Pi 5.
@@ -1171,9 +1171,9 @@ Validation gate: validate from a second LAN device, including help, bounds, reje
 - [x] document LAN/local use, target semantics, hot versus restart-required fields, confirmed restart/reconnect behavior, recovery, and graph resource controls in `README.md`;
 - [ ] record architecture, tests, and Raspberry Pi measurements here in English with the implementation.
 
-Final acceptance requires a sustained LAN run with bounded queues/log/history, no inference or QLC+ regression, isolated/recovered Web-child failure, correct service and interactive restart proposals, working `--no-web`, and accepted Raspberry Pi resource use.
+Final acceptance requires a sustained LAN run with bounded queues/log/history, no inference or QLC+ regression, isolated/recovered Web-child failure, correct service and local-headless restart proposals, working `--no-web`, and accepted Raspberry Pi resource use.
 
-Operator decisions recorded on 2026-08-14: the selector targets the service or local interactive runtime even when they share one JSON file; field limits are reviewed individually and `0.75 s` is a Raspberry Pi cadence recommendation/example; LAN control deliberately has neither password nor prominent warning; hot-safe fields apply immediately while audio-device and other startup-owned changes are saved with a launch-mode-aware restart proposal; the Web server is an isolated child embedded in the headless Oculizer lifecycle, never an independent service, and is omitted completely with `--no-web`. Phase 11 implementation may begin from Milestone 11.1.
+Operator decisions recorded on 2026-08-14: the selector targets the installed service or a local foreground headless runtime even when they share one JSON file; field limits are reviewed individually and `0.75 s` is a Raspberry Pi cadence recommendation/example; LAN control deliberately has neither password nor prominent warning; hot-safe fields apply immediately while audio-device and other startup-owned changes are saved with a launch-mode-aware restart proposal; the Web server is an isolated child embedded in the headless Oculizer lifecycle, never an independent service, and is omitted completely with `--no-web`. Phase 11 implementation may begin from Milestone 11.1.
 
 ## Implementation log
 
@@ -1190,18 +1190,26 @@ Delivered behavior:
 - added compatible telemetry, bounded/redacted log-tail, configuration, apply, and restart commands to the existing owner-only Unix control socket, including bounded response enforcement;
 - factored terminal-independent runtime status for scene, raw/stable prediction, route reason, RMS, queue depth, dynamic controls, audio health, QLC+ state, configuration identity, and launch mode;
 - added the headless-owned lightweight Web child with no independent systemd unit, bounded one-second supervision checks, delayed restart backoff, clean ownership shutdown, and complete `--no-web` omission;
-- added the responsive vanilla HTML/CSS/Canvas interface with Service/Interactive target selection, pause/auto/manual scene and dynamic-profile controls, configuration form/tooltips, field errors, restart reporting, recent logs, and a browser-only bounded 60-second RMS/scene graph;
-- added a confirmed service restart path that lets the existing systemd `Restart=always` policy relaunch cleanly after the HTTP acknowledgement; interactive targets display their exact verified executable/argument command instead of unsafe automatic re-exec;
+- added the responsive vanilla HTML/CSS/Canvas interface with Service/Local-headless target selection, pause/auto/manual scene and dynamic-profile controls, grouped collapsible configuration sections/tooltips, field errors, restart reporting, current input-device inventory, recent logs, and a browser-only bounded 60-second RMS/scene graph;
+- added a confirmed service restart path that lets the existing systemd `Restart=always` policy relaunch cleanly after the HTTP acknowledgement; local headless targets display their exact executable/argument command instead of unsafe automatic re-exec;
 - extended the single Raspberry Pi service deployment with Web enabled/bind/port settings plus persistent installer and one-off `oculizer-service start|restart|run-auto --no-web` controls; no second service/status surface was introduced;
 - made package exports lazy so the lightweight Web child does not import Torch, librosa, predictors, or the audio engine merely to use the control-socket client.
 
 Validation performed:
 
-- the complete retained suite passes: 193 tests;
+- the complete retained suite passes: 194 tests;
 - focused coverage includes atomic persistence and backup, cross-field validation, stale revision conflict, unknown/secret rejection, runtime/file rollback, hot policy replacement, response and request limits, concurrent control clients, Host/origin checks, static/API behavior, Web-child crash/restart isolation, `--no-web`, service launcher generation, shell syntax, and existing interactive/service CLI behavior;
 - the public schema is about 19.5 KiB, safely below the 64 KiB control-response limit;
 - `git diff --check`, Python compilation, installer/helper shell syntax, and both CLI help surfaces pass;
 - no audio input, resampler, FFT, prediction worker, model, routing algorithm, QLC+ controller, or inference timing setting was added or changed by the Web child.
+
+Post-validation UI adjustments:
+
+- grouped all 64 editable fields into 12 logical native `<details>` sections, opening only Audio input and Silence detection initially to keep the page compact;
+- changed the second runtime label and contract from Interactive/local to Local headless, and reload schema, values, presets, audio devices, status, graph history, and logs when the target changes;
+- added an on-demand PortAudio input inventory to the selected runtime and render `audio.input_device` as a dropdown containing only input-capable devices plus the OS default selector; device enumeration runs only during explicit configuration loading and adds no continuous work;
+- record graph scene labels only on actual transitions, so a surviving current scene is not relabeled at the moving left edge after its original transition leaves the 60-second window;
+- added focused section classification, input-device inventory, target-label, collapsible-rendering, and transition-label regression coverage before rerunning all 194 tests.
 
 Remaining acceptance:
 

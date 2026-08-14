@@ -64,9 +64,9 @@ class OculizerWebHandler(BaseHTTPRequestHandler):
         target = query.get("target", ["service"])[0]
         if target == "service":
             return self.server.control_socket
-        if target == "interactive":
+        if target == "local":
             return default_control_socket_path()
-        raise ValueError("target must be service or interactive")
+        raise ValueError("target must be service or local")
 
     def _request_control(self, request):
         return send_control_request(self._socket_for_request(), request, timeout=2.0)
@@ -99,6 +99,7 @@ class OculizerWebHandler(BaseHTTPRequestHandler):
             "/api/config/schema": {"command": "config-schema"},
             "/api/config": {"command": "config-get"},
             "/api/dynamic-controls": {"command": "dynamic-controls"},
+            "/api/audio-devices": {"command": "audio-devices"},
         }
         request = commands.get(route)
         if request is None:

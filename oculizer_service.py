@@ -3,6 +3,7 @@
 import argparse
 import logging
 import signal
+import shlex
 import sys
 import os
 from pathlib import Path
@@ -145,6 +146,8 @@ def build_service(args) -> HeadlessOculizerService:
             "mode": "service" if os.environ.get("INVOCATION_ID") else "headless",
             "restart_capability": "service" if os.environ.get("INVOCATION_ID") else "manual",
             "config_path": args.config,
+            "restart_command": shlex.join([str(Path(sys.executable).resolve()), *sys.argv]),
+            "working_directory": str(Path.cwd()),
         },
         web_supervisor=web_supervisor,
     )

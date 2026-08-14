@@ -32,11 +32,40 @@ class ConfigField:
     def public(self) -> dict[str, Any]:
         result = asdict(self)
         result["choices"] = list(self.choices)
+        result["section"] = _section_for_path(self.path)
         return result
 
 
 def _field(path, label, kind, help_text, **kwargs):
     return ConfigField(path, label, kind, help_text, **kwargs)
+
+
+def _section_for_path(path: str) -> str:
+    if path.startswith("web."):
+        return "Web interface"
+    if path == "audio.input_device":
+        return "Audio input"
+    if path.startswith("audio.prediction."):
+        return "Scene prediction"
+    if path.startswith("audio.fast_detection."):
+        return "Fast speech detection"
+    if path.startswith("audio.silence."):
+        return "Silence detection"
+    if path.startswith("audio.speech."):
+        return "Speech and announcement"
+    if path.startswith("audio.master_modulation."):
+        return "Master control"
+    if ".bands.bass." in path:
+        return "Bass control"
+    if ".bands.mid." in path:
+        return "Mid control"
+    if ".bands.high." in path:
+        return "High control"
+    if path.startswith("audio.frequency_modulation."):
+        return "Frequency controls"
+    if path.startswith("control."):
+        return "Scene transitions"
+    return "Other"
 
 
 CONFIG_FIELDS = (

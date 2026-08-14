@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 
-from oculizer.audio.sources import SoundDeviceAudioSource, WavFileAudioSource
+from oculizer.audio.sources import SoundDeviceAudioSource, WavFileAudioSource, list_audio_input_devices
 from oculizer.light.control import Oculizer
 from oculizer.scenes import LogicalSceneRegistry
 
@@ -111,6 +111,24 @@ class WavFileAudioSourceTests(unittest.TestCase):
 
 
 class SoundDeviceAudioSourceTests(unittest.TestCase):
+    def test_lists_only_current_input_devices_and_marks_default(self):
+        module = Mock()
+        module.PortAudioError = RuntimeError
+        module.query_devices.side_effect = [
+            [
+                {"name": "Output", "max_input_channels": 0},
+                {"name": "USB input", "max_input_channels": 2},
+                {"name": "Microphone", "max_input_channels": 1},
+            ],
+            {"index": 2},
+        ]
+        with patch.dict(sys.modules, {"sounddevice": module}):
+            result = list_audio_input_devices()
+
+        self.assertEqual([item["index"] for item in result], [1, 2])
+        self.assertFalse(result[0]["default"])
+        self.assertTrue(result[1]["default"])
+
     def test_adapts_live_stream_to_shared_lifecycle(self):
         stream = Mock()
         stream.active = True

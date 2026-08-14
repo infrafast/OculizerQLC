@@ -43,6 +43,11 @@ class ConfigurationStoreTests(unittest.TestCase):
         self.assertEqual(interval.recommended_minimum, 0.75)
         self.assertEqual(interval.apply_mode, "restart")
         self.assertIn("Raspberry Pi", interval.help)
+        self.assertEqual(interval.public()["section"], "Scene prediction")
+        self.assertEqual(
+            CONFIG_FIELD_BY_PATH["audio.frequency_modulation.bands.bass.low_hz"].public()["section"],
+            "Bass control",
+        )
 
     def test_atomic_apply_creates_backup_and_reports_hot_and_restart_fields(self):
         before = self.store.read()

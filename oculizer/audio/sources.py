@@ -14,6 +14,32 @@ import numpy as np
 AudioCallback = Callable[[np.ndarray, int, object, object], None]
 
 
+def list_audio_input_devices():
+    """Return a compact current PortAudio input inventory on explicit request."""
+    import sounddevice as sd
+
+    devices = sd.query_devices()
+    try:
+        default_index = int(sd.query_devices(kind="input")["index"])
+    except (KeyError, TypeError, ValueError, sd.PortAudioError):
+        try:
+            default_index = int(sd.default.device[0])
+        except (AttributeError, IndexError, TypeError, ValueError):
+            default_index = None
+    result = []
+    for index, device in enumerate(devices):
+        channels = int(device.get("max_input_channels", 0))
+        if channels <= 0:
+            continue
+        result.append({
+            "index": index,
+            "name": str(device.get("name", f"Input {index}")),
+            "channels": channels,
+            "default": index == default_index,
+        })
+    return result
+
+
 class AudioSource(Protocol):
     sample_rate: int
     channels: int
