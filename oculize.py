@@ -45,6 +45,12 @@ COLOR_PAIRS = {
     'toggle_override': (curses.COLOR_BLACK, curses.COLOR_MAGENTA),  # Manually overridden scene (active)
 }
 
+# Keep enough history for remote telemetry without letting it consume the
+# interactive graph. The terminal intentionally preserves the original fixed
+# nine-row log allocation.
+INTERACTIVE_LOG_ROWS = 9
+MIN_GRAPH_TERMINAL_HEIGHT = 12
+
 def setup_logging():
     """Set up logging configuration for all modules"""
     log_format = '%(asctime)s - %(levelname)s - %(message)s'
@@ -721,8 +727,10 @@ class AudioOculizerController:
             self.stdscr.erase()
             height, width = self.stdscr.getmaxyx()
 
-            if height < 8 or width < 20:
-                self._safe_addstr(0, 0, "Terminal too small; resize to at least 20x8",
+            if height < MIN_GRAPH_TERMINAL_HEIGHT or width < 20:
+                self._safe_addstr(
+                    0, 0,
+                    f"Terminal too small; resize to at least 20x{MIN_GRAPH_TERMINAL_HEIGHT}",
                                   curses.color_pair(COLOR_PAIRS['warning']) | curses.A_BOLD)
                 self.stdscr.noutrefresh()
                 curses.doupdate()
@@ -794,7 +802,9 @@ class AudioOculizerController:
             # Display log messages (bottom)
             visible_logs = list(self.log_messages)
             graph_top = 4
-            log_capacity = min(self.log_messages.maxlen, max(0, height - 8))
+            # The 50-entry deque also backs Web telemetry. Display at most the
+            # original nine terminal rows and always reserve a graph body.
+            log_capacity = min(INTERACTIVE_LOG_ROWS, max(0, height - MIN_GRAPH_TERMINAL_HEIGHT))
             visible_logs = visible_logs[-log_capacity:] if log_capacity else []
             log_start = height - log_capacity - 4
             self._render_graph_area(graph_top, log_start - 2, width, current_scene_name)

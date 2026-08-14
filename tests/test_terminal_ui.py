@@ -6,6 +6,10 @@ import oculize
 
 
 class TerminalInitializationTests(unittest.TestCase):
+    def test_interactive_log_rows_are_decoupled_from_web_log_retention(self):
+        self.assertEqual(oculize.INTERACTIVE_LOG_ROWS, 9)
+        self.assertLess(oculize.INTERACTIVE_LOG_ROWS, 50)
+
     def test_safe_terminal_write_clips_text_and_rejects_invalid_coordinates(self):
         screen = Mock()
         screen.getmaxyx.return_value = (8, 20)
