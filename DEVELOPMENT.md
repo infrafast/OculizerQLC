@@ -909,7 +909,7 @@ Control state is initially process-local and is not restored after a crash or re
 
 ## Forward roadmap — Phase 9: native-only specialization
 
-Status: **approved on 2026-08-14 — implementation not started**
+Status: **Milestone 9.1 in progress since 2026-08-14 — awaiting first live native gate**
 
 This is the only forward implementation path. It absorbs the useful remaining Phase 8a.3 gates and supersedes all plans to maintain multiple lighting transports. The implementation may remove legacy code aggressively after each migration gate is proven, but must not alter artistic inference behavior or the accepted native QLC+ runtime contract.
 
@@ -1001,10 +1001,10 @@ The final schema may improve these names during implementation, but it must foll
 
 ### Milestone 9.1 — configuration and runtime cutover
 
-- [ ] add the validated `lighting` section to `oculizer.json` and an exact migration test for native settings, captions, fallback, pulse timing, controls, all 127 descriptions, all 127 reviewed `design_behavior` values, and all 23 duration overrides;
-- [ ] make native QLC+ the unconditional lighting path in interactive and headless runtimes;
+- [x] add the validated `lighting` section to `oculizer.json` and an exact migration test for native settings, captions, fallback, pulse timing, controls, all 127 descriptions, all 127 reviewed `design_behavior` values, and all 23 duration overrides;
+- [ ] make native QLC+ the unconditional lighting path in interactive and headless runtimes (native is now the default and legacy selectors are hidden; physical removal follows the live gate);
 - [ ] replace the DMX-oriented `SceneManager` dependency with a lightweight logical scene registry derived from predictor mappings, special scenes, duration overrides, explicit additions, and native inventory;
-- [ ] make `--config` and `--dry-run` the single configuration/dry-run contract while preserving every non-backend runtime option;
+- [ ] make `--config` and `--dry-run` the single configuration/dry-run contract while preserving every non-backend runtime option (`--config` now supplies native lighting and `--dry-run` is public; legacy aliases remain temporarily for rollback testing);
 - [ ] compare v4/v6 raw predictions and the accepted fast-event/dynamic-control WAV references against commit `ca9b38e`.
 
 Validation gate: macOS dry-run and live Native operation must pass for automatic scenes, `silent`, `announcement`, fallback, manual override, master/bass/mid/high, pause/auto, reload, WAV input, and clean shutdown before deletion begins.
@@ -1032,6 +1032,25 @@ Final acceptance gate: the operator validates macOS interactive use and Raspberr
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
+
+### 2026-08-14 — Milestone 9.1 native configuration cutover
+
+Delivered behavior:
+
+- created and pushed the annotated rollback tag `pre-native-only-unplug` at accepted commit `ca9b38e` before changing runtime behavior;
+- generated `lighting.native`, native widget captions, fallback/pulse routing, and compact metadata for all 127 logical scenes directly in `config/oculizer.json`;
+- preserved all 127 legacy descriptions and all 23 explicit duration overrides exactly, and assigned reviewed advisory behaviors: seven `static`, 25 `normal`, and 95 `responsive`;
+- added strict parsing for the native-only application schema, including captions, fallback integrity, behavior vocabulary, pulse limits, and duration limits;
+- made both interactive and headless launchers default to QLC+ Native, made a custom `--config` file authoritative for lighting too, and exposed `--dry-run` while retaining hidden legacy selection flags until the live validation gate;
+- moved automatic duration lookup to compact native metadata with the legacy scene payload retained as a temporary compatibility fallback.
+
+Validation performed:
+
+- exact migration tests cover native settings, captions, controls, descriptions, durations, absence of transport fields, and deterministic behavior classification;
+- native construction from `config/oculizer.json` reached dry-run ready state with 127 routes and no network connection;
+- the complete transitional suite passes: 230 tests.
+
+Remaining work: perform the first macOS live Native gate, replace the DMX-oriented scene registry, run fixed inference comparisons, then begin the approved legacy deletion only after operator confirmation.
 
 ### 2026-08-14 — Native-only specialization approved and planned
 

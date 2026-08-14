@@ -139,7 +139,7 @@ class Oculizer(threading.Thread):
         elif output == OUTPUT_QLC_NATIVE:
             if qlc_config_path is None:
                 current_dir = Path(__file__).resolve().parent
-                qlc_config_path = current_dir.parent.parent / 'config' / 'qlc_config.json'
+                qlc_config_path = current_dir.parent.parent / 'config' / 'oculizer.json'
             self.backend = create_qlc_native_backend(
                 qlc_config_path,
                 host=osc_host,
@@ -1475,6 +1475,9 @@ class Oculizer(threading.Thread):
 
     def get_scene_max_duration(self, scene_name):
         """Return a scene-specific automatic duration override, if declared."""
+        metadata = getattr(self.backend, "scene_metadata", {}).get(scene_name)
+        if isinstance(metadata, dict):
+            return metadata.get("max_duration_seconds")
         scene = self.scene_manager.scenes.get(scene_name)
         if not isinstance(scene, dict):
             return None

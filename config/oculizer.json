@@ -1,9 +1,39 @@
 {
   "control": {
     "dynamic_controls": {
-      "responsive": {"cache": 3, "rate": [10, 10], "throttle": [4, 1]},
-      "normal": {"cache": 15, "rate": [3, 15], "throttle": [2, 4]},
-      "calm": {"cache": 5, "rate": [2, 20], "throttle": [1, 6]}
+      "responsive": {
+        "cache": 3,
+        "rate": [
+          10,
+          10
+        ],
+        "throttle": [
+          4,
+          1
+        ]
+      },
+      "normal": {
+        "cache": 15,
+        "rate": [
+          3,
+          15
+        ],
+        "throttle": [
+          2,
+          4
+        ]
+      },
+      "calm": {
+        "cache": 5,
+        "rate": [
+          2,
+          20
+        ],
+        "throttle": [
+          1,
+          6
+        ]
+      }
     }
   },
   "audio": {
@@ -87,6 +117,560 @@
       "minimum_duration_seconds": 1.0,
       "release_duration_seconds": 0.75,
       "scene": "announcement"
+    }
+  },
+  "lighting": {
+    "native": {
+      "host": "127.0.0.1",
+      "port": 9998,
+      "encryption_key": "",
+      "reconnect_seconds": 2.0,
+      "maximum_project_size": 16777216,
+      "dry_run": false
+    },
+    "controls": {
+      "master": "master",
+      "bass": "bass",
+      "mid": "mid",
+      "high": "high"
+    },
+    "routing": {
+      "pulse_seconds": 0.1,
+      "fallback_scene": "ambient1",
+      "caption_overrides": {}
+    },
+    "scene_metadata": {
+      "RGB": {
+        "description": "RGB VHS effect",
+        "design_behavior": "responsive"
+      },
+      "ambient1": {
+        "description": "Subtle, flowing colors for calmer moments",
+        "design_behavior": "normal"
+      },
+      "ambient2": {
+        "description": "Subtle, flowing colors for calmer moments",
+        "design_behavior": "normal"
+      },
+      "ambient3": {
+        "description": "Subtle, flowing colors for calmer moments",
+        "design_behavior": "normal"
+      },
+      "announcement": {
+        "description": "Logical QLC+ scene used while dominant spoken speech is detected.",
+        "design_behavior": "static"
+      },
+      "bass_hopper": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect",
+        "design_behavior": "responsive"
+      },
+      "bass_hopper_blue": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect in blue tones",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "bass_hopper_green": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect in green tones",
+        "design_behavior": "responsive"
+      },
+      "bass_hopper_orange": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect in orange tones",
+        "design_behavior": "responsive"
+      },
+      "bass_hopper_pink": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect in pink tones",
+        "design_behavior": "responsive"
+      },
+      "bass_hopper_rainbow": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect with rainbow colors",
+        "design_behavior": "responsive"
+      },
+      "bass_hopper_red": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect in red tones",
+        "design_behavior": "responsive"
+      },
+      "bass_hopper_white": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect with white strobe",
+        "design_behavior": "responsive"
+      },
+      "bass_racer": {
+        "description": "All RGBs pulsing blue with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "bloop": {
+        "description": "Stochastic blue strobe on rgbs. All else off.",
+        "design_behavior": "responsive"
+      },
+      "blue": {
+        "description": "blue",
+        "design_behavior": "static"
+      },
+      "blue_bass_pulse": {
+        "description": "All RGBs pulsing blue with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "blue_bass_racer": {
+        "description": "All RGBs pulsing blue with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "blue_flicker": {
+        "description": "Blue lights with random flickering brightness",
+        "design_behavior": "normal"
+      },
+      "blue_pulse": {
+        "description": "All RGBs pulsing blue, reactive to low frequencies",
+        "design_behavior": "responsive"
+      },
+      "blue_riser": {
+        "description": "blue riser strobe",
+        "design_behavior": "normal"
+      },
+      "blue_speedracer": {
+        "description": "Racing blue",
+        "design_behavior": "responsive"
+      },
+      "brainblaster": {
+        "description": "Bass-reactive rainbow strobes. All else off.",
+        "design_behavior": "responsive"
+      },
+      "build1": {
+        "description": "Gradually intensifying scene for track buildups",
+        "design_behavior": "responsive"
+      },
+      "bulb_flicker": {
+        "description": "Just the bulb flickering randomly",
+        "design_behavior": "normal"
+      },
+      "cherries": {
+        "description": "Cycles through multiple lights based on bass frequencies, creating a hopping effect with pink, purple, and red colors",
+        "design_behavior": "responsive"
+      },
+      "chill_blue": {
+        "description": "All RGB lights set to blue, subtly reactive to music",
+        "design_behavior": "responsive"
+      },
+      "chill_green": {
+        "description": "All RGB lights set to green, subtly reactive to music",
+        "design_behavior": "responsive"
+      },
+      "chill_halogen": {
+        "description": "Warm halogen-inspired ambiance, subtly reactive to music - cozy orange glow",
+        "design_behavior": "responsive"
+      },
+      "chill_pink": {
+        "description": "All RGB lights set to pink, subtly reactive to music",
+        "design_behavior": "responsive"
+      },
+      "chill_purple": {
+        "description": "All RGB lights set to purple, subtly reactive to music",
+        "design_behavior": "responsive"
+      },
+      "chill_red": {
+        "description": "All RGB lights set to red, subtly reactive to music",
+        "design_behavior": "responsive"
+      },
+      "chill_white": {
+        "description": "All RGB lights set to white, subtly reactive to music",
+        "design_behavior": "responsive"
+      },
+      "disco": {
+        "description": "Disco ball on bright white with all RGBs and Rockvilles in purple with mild reactivity",
+        "design_behavior": "responsive"
+      },
+      "discobrain": {
+        "description": "Disco ball with rainbow colors and sine wave strobe",
+        "design_behavior": "normal",
+        "max_duration_seconds": 8
+      },
+      "discodance": {
+        "description": "White disco ball, purple low-frequency RGBs/Rockvilles, high-frequency strobing bars and strobe light",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "discodream": {
+        "description": "Blue reactive RGBs and Rockvilles with red disco ball at full brightness",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 15
+      },
+      "discolaser": {
+        "description": "Disco ball with sine wave and dimmer lasers",
+        "design_behavior": "normal",
+        "max_duration_seconds": 15
+      },
+      "electric": {
+        "description": "Stochastic white strobe on rgbs. All else off.",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "fade": {
+        "description": "Panel sections fade out after being triggered by bass frequencies, with bar strobe on high frequencies",
+        "design_behavior": "responsive"
+      },
+      "fairies": {
+        "description": "Stochastic purple strobe on all RGBs. All else off.",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "flicker": {
+        "description": "All lights flickering randomly",
+        "design_behavior": "normal"
+      },
+      "fullstrobe": {
+        "description": "Full white strobe all (RGB+Strobe)",
+        "design_behavior": "responsive"
+      },
+      "gloss": {
+        "description": "All RGBs pulsing purple, reactive to bass frequencies",
+        "design_behavior": "responsive"
+      },
+      "goosebumps": {
+        "description": "Eerie lighting inspired by a creepy TV show intro",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "green": {
+        "description": "green",
+        "design_behavior": "static"
+      },
+      "green_bass_pulse": {
+        "description": "All RGBs pulsing green with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "green_bass_racer": {
+        "description": "All RGBs pulsing green with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "green_pulse": {
+        "description": "All RGBs pulsing green, reactive to low frequencies",
+        "design_behavior": "responsive"
+      },
+      "green_speedracer": {
+        "description": "Racing green",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 15
+      },
+      "halogen_flicker": {
+        "description": "Warm halogen lights with random flickering brightness",
+        "design_behavior": "normal"
+      },
+      "hell": {
+        "description": "Stochastic red strobe on rgbs. All else off.",
+        "design_behavior": "responsive"
+      },
+      "hot": {
+        "description": "Four Rockville fixtures in red at 50% min brightness, reactive to full audio spectrum",
+        "design_behavior": "responsive"
+      },
+      "hypno": {
+        "description": "All RGBs pulsing blue, reactive to low frequencies, strobe",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "kisskiss": {
+        "description": "Romantic lighting with pink and purple tones",
+        "design_behavior": "responsive"
+      },
+      "lamp": {
+        "description": "Just the lamp at 100 brightness",
+        "design_behavior": "static"
+      },
+      "laser_strobe": {
+        "description": "Laser show with strobe effects on high frequencies",
+        "design_behavior": "responsive"
+      },
+      "lasers": {
+        "description": "Laser show with both dimmer and 10-channel laser effects",
+        "design_behavior": "responsive"
+      },
+      "loveblaster": {
+        "description": "Bass-reactive strobes in pink, purple, red, and blue. All else off.",
+        "design_behavior": "responsive"
+      },
+      "orb_cycle": {
+        "description": "Orbs and bulb hopping based on bass frequencies with random flickering",
+        "design_behavior": "responsive"
+      },
+      "orb_racer": {
+        "description": "Racing orbs and bulb",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 15
+      },
+      "orb_sine": {
+        "description": "Orbs and bulb with 0.5Hz sine wave",
+        "design_behavior": "normal"
+      },
+      "party": {
+        "description": "Default basic party scene :).",
+        "design_behavior": "responsive"
+      },
+      "pink_bass_pulse": {
+        "description": "All RGBs pulsing pink with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "pink_bass_racer": {
+        "description": "All RGBs pulsing pink with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "pink_echo": {
+        "description": "pink echo strobe.",
+        "design_behavior": "normal"
+      },
+      "pink_pulse": {
+        "description": "All RGBs pulsing pink, reactive to low frequencies",
+        "design_behavior": "responsive"
+      },
+      "pink_speedracer": {
+        "description": "Racing pink",
+        "design_behavior": "responsive"
+      },
+      "pink_strobe_pulse": {
+        "description": "All RGBs pulsing pink, reactive to low frequencies, strobe",
+        "design_behavior": "responsive"
+      },
+      "pink_wave": {
+        "description": "All pink RGBs with a slow sine wave pattern",
+        "design_behavior": "normal"
+      },
+      "prance": {
+        "description": "All RGBs pulsing blue with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "ps": {
+        "description": "Red sine wave on pinspot",
+        "design_behavior": "normal"
+      },
+      "purple_flicker": {
+        "description": "purple lights with random flickering brightness",
+        "design_behavior": "normal"
+      },
+      "purple_pulse": {
+        "description": "All RGBs pulsing purple, reactive to bass frequencies",
+        "design_behavior": "responsive"
+      },
+      "purple_riser": {
+        "description": "purple riser strobe",
+        "design_behavior": "normal"
+      },
+      "purple_speedracer": {
+        "description": "Racing purple",
+        "design_behavior": "responsive"
+      },
+      "quasar": {
+        "description": "A cosmic explosion of light - hopping RGBs, fading panels, sequential bars, and pulsing core. Maximum system complexity with blue/pink/purple spectrum.",
+        "design_behavior": "responsive"
+      },
+      "rainbow_pulse": {
+        "description": "All RGBs pulsing with random colors, reactive to low frequencies",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "red": {
+        "description": "red",
+        "design_behavior": "static"
+      },
+      "red_bass_pulse": {
+        "description": "All RGBs pulsing red with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "red_bass_racer": {
+        "description": "All RGBs pulsing red with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "red_black_fade": {
+        "description": "All four Rockvilles pulsing with random red and black patterns, with fade effect triggered by bass frequencies",
+        "design_behavior": "responsive"
+      },
+      "red_delay": {
+        "description": "Red echo without strobe.",
+        "design_behavior": "normal"
+      },
+      "red_echo": {
+        "description": "Red echo strobe.",
+        "design_behavior": "normal"
+      },
+      "red_flicker": {
+        "description": "Red lights with random flickering brightness",
+        "design_behavior": "normal"
+      },
+      "red_pulse": {
+        "description": "All RGBs pulsing red, reactive to low frequencies",
+        "design_behavior": "responsive"
+      },
+      "red_speedracer": {
+        "description": "Racing red",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 15
+      },
+      "red_strobe_pulse": {
+        "description": "All RGBs pulsing red, reactive to low frequencies, strobe",
+        "design_behavior": "responsive"
+      },
+      "red_wave": {
+        "description": "All red RGBs with a slow sine wave pattern",
+        "design_behavior": "normal"
+      },
+      "rightround": {
+        "description": "You spin me round! Now with lasers and disco ball.",
+        "design_behavior": "responsive"
+      },
+      "rockville_example": {
+        "description": "Rockville panel pulses with bass frequencies in blue, strobe bar activates chase mode on high frequencies",
+        "design_behavior": "responsive"
+      },
+      "sequence_blue": {
+        "description": "Sequential activation with blue tones, panels only without strobe bar",
+        "design_behavior": "responsive"
+      },
+      "sequence_cosmic": {
+        "description": "Sequential activation with cosmic colors",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "sequence_fire": {
+        "description": "Sequential activation with warm fire colors",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "sequence_forest": {
+        "description": "Sequential activation with forest colors",
+        "design_behavior": "responsive"
+      },
+      "sequence_green": {
+        "description": "Sequential activation with green tones, panels only without strobe bar",
+        "design_behavior": "responsive"
+      },
+      "sequence_ice": {
+        "description": "Sequential activation of panel pairs with configurable direction and colors",
+        "design_behavior": "responsive"
+      },
+      "sequence_pink": {
+        "description": "Sequential activation with cute pink, red, and white colors",
+        "design_behavior": "responsive"
+      },
+      "sequence_rainbow": {
+        "description": "Sequential activation with rainbow colors",
+        "design_behavior": "responsive"
+      },
+      "sequence_red": {
+        "description": "Sequential activation with red tones, panels only without strobe bar",
+        "design_behavior": "responsive"
+      },
+      "sexy": {
+        "description": "A sultry red ambiance with a reactive orb",
+        "design_behavior": "responsive"
+      },
+      "silent": {
+        "description": "Lighting state used while sustained silence is detected",
+        "design_behavior": "static"
+      },
+      "slime": {
+        "description": "Stochastic green strobe on all RGBs. All else off.",
+        "design_behavior": "responsive"
+      },
+      "smut": {
+        "description": "All RGBs pulsing purple, reactive to low frequencies, strobe",
+        "design_behavior": "responsive"
+      },
+      "snap": {
+        "description": "Laser show with disco ball and strobe effects",
+        "design_behavior": "responsive"
+      },
+      "splatter": {
+        "description": "Random choice color patterns triggered by bass frequencies, with bar sections randomly activating on high frequencies",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "supernova": {
+        "description": "A cosmic explosion of light - hopping RGBs, fading panels, sequential bars, and pulsing core. Maximum system complexity.",
+        "design_behavior": "responsive"
+      },
+      "sustain": {
+        "description": "Panel sections sustain full brightness after being triggered by bass frequencies, with bar strobe on high frequencies",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "swamp": {
+        "description": "Eerie swamp scene with flickering blue and green lights",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "temple": {
+        "description": "All RGBs pulsing red, reactive to low frequencies, strobe",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 8
+      },
+      "time_pulse": {
+        "description": "Smooth time-based pulsing effect for both panel and bar sections",
+        "design_behavior": "normal"
+      },
+      "trance": {
+        "description": "All RGBs pulsing purple with a sine wave and maximum strobe",
+        "design_behavior": "responsive"
+      },
+      "vintage": {
+        "description": "Warm and cozy for acoustic songs.",
+        "design_behavior": "responsive"
+      },
+      "vortex": {
+        "description": "Swirling rainbow vortex with sequential panels and spinning RGBs - a trippy color journey",
+        "design_behavior": "responsive"
+      },
+      "wave": {
+        "description": "All blue RGB lights with a slow sine wave pattern",
+        "design_behavior": "normal"
+      },
+      "weeble": {
+        "description": "All RGBs pulsing green, reactive to low frequencies, strobe",
+        "design_behavior": "responsive"
+      },
+      "whispers": {
+        "description": "A very dim, spooky scene with subtle, unsettling movements",
+        "design_behavior": "responsive"
+      },
+      "white": {
+        "description": "white",
+        "design_behavior": "static"
+      },
+      "white_bass_pulse": {
+        "description": "All RGBs pulsing white with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "white_bass_racer": {
+        "description": "All RGBs pulsing white with bass, high-frequency reactive strobe",
+        "design_behavior": "responsive"
+      },
+      "white_echo": {
+        "description": "White echo strobe.",
+        "design_behavior": "normal"
+      },
+      "white_fairies": {
+        "description": "Stochastic white strobe on all RGBs. All else off.",
+        "design_behavior": "responsive"
+      },
+      "white_flicker": {
+        "description": "White lights with random flickering brightness",
+        "design_behavior": "normal"
+      },
+      "white_pulse": {
+        "description": "All RGBs pulsing white, reactive to low frequencies",
+        "design_behavior": "responsive"
+      },
+      "white_riser": {
+        "description": "white riser strobe",
+        "design_behavior": "normal",
+        "max_duration_seconds": 8
+      },
+      "white_speedracer": {
+        "description": "Racing white",
+        "design_behavior": "responsive",
+        "max_duration_seconds": 15
+      },
+      "wobble": {
+        "description": "All RGBs pulsing green, reactive to low frequencies",
+        "design_behavior": "responsive"
+      }
     }
   }
 }

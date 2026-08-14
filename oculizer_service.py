@@ -24,7 +24,8 @@ def configure_service_streams() -> None:
 def parse_args():
     parser = argparse.ArgumentParser(description="Run Oculizer without a terminal interface")
     parser.add_argument("--config", default=None, help="General configuration (default: config/oculizer.json)")
-    parser.add_argument("--output", choices=OUTPUT_CHOICES, default="qlc-osc")
+    parser.add_argument("--output", choices=OUTPUT_CHOICES, default="qlc-native",
+                        help=argparse.SUPPRESS)
     parser.add_argument("--profile", default=None, help="Fixture profile required only for Enttec")
     parser.add_argument("--input-device", default=None, help="Prediction audio input selector")
     parser.add_argument("--audio-file", default=None, help="Loop a local PCM WAV file instead of opening an audio device")
@@ -45,12 +46,14 @@ def parse_args():
                         help="Base automatic music-scene duration before ±30%% variation (default: 40 seconds)")
     parser.add_argument("--control-socket", default=default_control_socket_path(), help="Unix runtime control socket path")
     parser.add_argument("--no-control-socket", action="store_true", help="Disable the local runtime control socket")
-    parser.add_argument("--qlc-config", default=None, help="Unified QLC+ configuration (default: config/qlc_config.json)")
+    parser.add_argument("--qlc-config", default=None, help=argparse.SUPPRESS)
     parser.add_argument("--qlc-host", "--osc-host", dest="osc_host", default=None)
     parser.add_argument("--qlc-port", "--osc-port", dest="osc_port", type=int, default=None)
     parser.add_argument("--qlc-encryptionkey", default=None,
-                        help="QLC+ native encryption key (default: value from qlc_config.json)")
-    parser.add_argument("--qlc-dry-run", "--osc-dry-run", dest="osc_dry_run", action="store_true", default=None)
+                        help="QLC+ native encryption key (default: lighting.native in --config)")
+    parser.add_argument("--dry-run", "--qlc-dry-run", "--osc-dry-run", dest="osc_dry_run",
+                        action="store_true", default=None,
+                        help="Validate native QLC+ intentions without opening a network connection")
     parser.add_argument(
         "--dmx-dry-run",
         action="store_true",
@@ -122,7 +125,7 @@ def build_service(args) -> HeadlessOculizerService:
         scene_cache_size=args.scene_cache_size,
         prediction_channels=args.prediction_channels,
         output=args.output,
-        qlc_config_path=args.qlc_config,
+        qlc_config_path=args.qlc_config or args.config,
         osc_host=args.osc_host,
         osc_port=args.osc_port,
         osc_dry_run=args.osc_dry_run,

@@ -101,6 +101,53 @@ class SceneMap:
             fallback_scene=fallback_scene,
         )
 
+    @classmethod
+    def from_native_mapping(
+        cls,
+        routing: Mapping[str, Any],
+        scene_metadata: Mapping[str, Any],
+    ) -> "SceneMap":
+        """Build caption routing from the native-only application config."""
+        if not isinstance(routing, Mapping):
+            raise SceneMapError("lighting.routing must be an object")
+        if not isinstance(scene_metadata, Mapping) or not scene_metadata:
+            raise SceneMapError("lighting.scene_metadata must be a non-empty object")
+
+        pulse_seconds = routing.get("pulse_seconds", 0.1)
+        if isinstance(pulse_seconds, bool) or not isinstance(pulse_seconds, (int, float)):
+            raise SceneMapError("lighting.routing.pulse_seconds must be numeric")
+        if not 0.0 <= float(pulse_seconds) <= 2.0:
+            raise SceneMapError("lighting.routing.pulse_seconds must be between 0 and 2 seconds")
+
+        overrides = routing.get("caption_overrides", {})
+        if not isinstance(overrides, Mapping):
+            raise SceneMapError("lighting.routing.caption_overrides must be an object")
+        unknown_overrides = set(overrides).difference(scene_metadata)
+        if unknown_overrides:
+            raise SceneMapError(
+                "lighting.routing.caption_overrides contains unknown scenes: "
+                + ", ".join(sorted(unknown_overrides))
+            )
+
+        scenes = {}
+        for name in scene_metadata:
+            if not isinstance(name, str) or not name.strip():
+                raise SceneMapError("scene names must be non-empty strings")
+            caption = overrides.get(name, name)
+            if not isinstance(caption, str) or not caption.strip():
+                raise SceneMapError(f"scene '{name}' caption must be a non-empty string")
+            scenes[name] = SceneControl(caption=caption)
+
+        fallback = routing.get("fallback_scene")
+        if fallback is not None and fallback not in scenes:
+            raise SceneMapError("lighting.routing.fallback_scene must name a known scene")
+        return cls(
+            scenes=scenes,
+            pulse_seconds=float(pulse_seconds),
+            unmapped="fallback" if fallback is not None else "ignore",
+            fallback_scene=fallback,
+        )
+
     def get(self, scene_name: str) -> SceneControl | None:
         return self.scenes.get(scene_name)
 

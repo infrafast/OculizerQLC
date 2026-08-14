@@ -6,7 +6,7 @@ The accepted product direction is now QLC+ 5 Native only: Oculizer owns audio an
 
 ![OculizerQLC simplified native-only workflow](docs/native_only_workflow.svg)
 
-> **Migration checkpoint:** commands below still describe the recoverable pre-unplug build where output selection exists. The approved [Phase 9 plan](DEVELOPMENT.md#phase-9-native-only) removes those choices, merges the surviving native configuration into `config/oculizer.json`, and replaces `--qlc-dry-run` with `--dry-run`. User commands will be rewritten as each cutover milestone lands; do not assume the planned CLI is already available.
+> **Migration checkpoint:** Milestone 9.1 now defaults interactive and headless operation to QLC+ Native, reads native lighting from `config/oculizer.json`, and exposes `--dry-run`. Hidden legacy flags remain temporarily for regression testing; the Raspberry Pi service pack still uses its pre-unplug deployment schema until Milestone 9.3, so reinstall it only when that migration is announced.
 
 The migration will preserve a compact user-facing entry for every logical scene: its artistic `description`, a reviewed `design_behavior` (`static`, `normal`, or `responsive`), and its optional maximum duration. These metadata guide QLC+ workspace design and do not change inference or routing behavior.
 
@@ -21,8 +21,7 @@ Development architecture, implementation details, decisions, validation history,
 - Git and internet access during installation;
 - PortAudio and an audio input for live capture;
 - optionally, a virtual audio cable such as BlackHole on macOS;
-- an Enttec-compatible interface only for direct-DMX operation;
-- QLC+ 5 for the OSC output mode.
+- QLC+ 5 with its Native Server enabled.
 
 A CUDA-capable GPU can accelerate prediction but is not required. Initial model loading can take several seconds on a CPU.
 
@@ -43,24 +42,22 @@ cd OculizerQLC
 ./.venv/bin/python oculize.py
 ```
 
-The default lighting output is an Enttec-compatible DMX interface. Select a
-different output backend explicitly when required; for example, to control
-QLC+ through its WebSocket server:
+QLC+ Native is now the default lighting path. With QLC+ running and the native
+client authorized, start the interactive application with:
 
 ```bash
-./.venv/bin/python oculize.py --output qlc-websocket
+./.venv/bin/python oculize.py
 ```
 
-To validate QLC+ mappings and view the intended commands without connecting to
-QLC+ or sending network traffic, add `--qlc-dry-run`:
+To validate configuration and intended commands without connecting to QLC+ or
+sending network traffic, add `--dry-run`:
 
 ```bash
-./.venv/bin/python oculize.py --output qlc-websocket --qlc-dry-run
+./.venv/bin/python oculize.py --dry-run
 ```
 
-Without connected DMX hardware, the default Enttec backend can also be tested
-with `--output enttec --dmx-dry-run`. Add the required options for your audio
-input and lighting output using the examples below.
+Dry-run validates logical captions but cannot verify that widgets exist in the
+currently loaded QLC+ project. Add the required audio options using the examples below.
 
 Run `./.venv/bin/python oculize.py --help` to display every available option.
 
@@ -153,15 +150,11 @@ With `qlc-native`, service startup is asynchronous: systemd considers Oculizer r
 
 ## Configuration
 
-The main user configuration files are:
+The current application configuration is:
 
-- `config/oculizer.json`: audio input, analysis behavior, dynamic-control profiles, silence, and speech settings;
-- `config/qlc_config.json`: QLC+ OSC destination, global controls, and logical-scene mappings;
-- `profiles/`: direct-DMX fixture profiles;
-- `scenes/`: lighting scenes;
-- `profiles/profile_fallbacks.json`: profile-specific scene substitutions.
+- `config/oculizer.json`: audio input and analysis, dynamic-control profiles, silence/speech settings, QLC+ Native connection and widget captions, and the compact logical-scene design metadata.
 
-Use another general configuration with `--config PATH`, or another QLC+ configuration with `--qlc-config PATH`.
+Use another complete configuration with `--config PATH`. Legacy scene/profile files remain in the repository only until the Milestone 9.1 live and inference gates are accepted.
 
 ### Audio input
 

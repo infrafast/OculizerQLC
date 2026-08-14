@@ -999,18 +999,17 @@ Scene Cache Size:
                       help=f'Channels to use from prediction device (e.g., "1" for channel 1, "1,2" for channels 1-2 averaged, "1-16" for all 16 channels averaged). Default: {default_prediction_channels if default_prediction_channels else "auto-detect"}')
     parser.add_argument('--test', action='store_true',
                       help='Test mode: Enable scene predictions only, disable FFT reactivity and DMX output. Uses virtual cable (BlackHole on macOS, Cable Output on Windows) for predictions.')
-    parser.add_argument('--output', choices=OUTPUT_CHOICES, default='enttec',
-                      help='Lighting output backend (default: enttec)')
-    parser.add_argument('--qlc-config', default=None,
-                      help='Unified QLC+ configuration (default: config/qlc_config.json)')
+    parser.add_argument('--output', choices=OUTPUT_CHOICES, default='qlc-native',
+                      help=argparse.SUPPRESS)
+    parser.add_argument('--qlc-config', default=None, help=argparse.SUPPRESS)
     parser.add_argument('--qlc-host', '--osc-host', dest='osc_host', default=None,
                       help='Override the selected QLC+ transport host')
     parser.add_argument('--qlc-port', '--osc-port', dest='osc_port', type=int, default=None,
                       help='Override the selected QLC+ transport port')
     parser.add_argument('--qlc-encryptionkey', default=None, metavar='KEY',
-                      help='Override the QLC+ native encryption key (default: qlc_config.json or built-in QLC+ key)')
-    parser.add_argument('--qlc-dry-run', '--osc-dry-run', dest='osc_dry_run', action='store_true', default=None,
-                      help='Validate and log QLC+ intentions without network output')
+                      help='Override the QLC+ native encryption key (default: lighting.native in --config)')
+    parser.add_argument('--dry-run', '--qlc-dry-run', '--osc-dry-run', dest='osc_dry_run', action='store_true', default=None,
+                      help='Validate native QLC+ intentions without opening a network connection')
     parser.add_argument('--dmx-dry-run', action='store_true',
                       help='Render Enttec DMX frames through a rate-limited virtual controller')
     parser.add_argument('--filter-dmx', '--filter-DMX', action='store_true',
@@ -1230,7 +1229,7 @@ if __name__ == "__main__":
                 args.prediction_channels,
                 args.test,
                 args.output,
-                args.qlc_config,
+                args.qlc_config or args.config,
                 args.osc_host,
                 args.osc_port,
                 args.osc_dry_run,

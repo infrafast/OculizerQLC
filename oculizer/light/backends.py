@@ -202,11 +202,12 @@ class QLCWebSocketBackend(LightingBackend):
     name = OUTPUT_QLC_WEBSOCKET
 
     def __init__(self, client: QLCWebSocketClient, scene_map: SceneMap, controls=None,
-                 config_path: str | Path | None = None):
+                 config_path: str | Path | None = None, scene_metadata=None):
         self.client = client
         self.scene_map = scene_map
         self.controls = dict(controls or {})
         self.config_path = Path(config_path) if config_path is not None else None
+        self.scene_metadata = dict(scene_metadata or {})
         self.active_scene = None
         self._closed = False
         self._last_activation_error = None
@@ -281,6 +282,7 @@ class QLCWebSocketBackend(LightingBackend):
         self.client.rediscover()
         self.scene_map = config.routing
         self.controls = dict(config.controls)
+        self.scene_metadata = dict(config.scene_metadata)
         self.active_scene = None
         self._last_activation_error = None
         self._last_parameter_errors.clear()
@@ -307,6 +309,7 @@ class QLCNativeBackend(QLCWebSocketBackend):
         config = QLCConfig.from_file(self.config_path)
         self.scene_map = config.routing
         self.controls = dict(config.controls)
+        self.scene_metadata = dict(config.scene_metadata)
         self.active_scene = None
 
 
@@ -399,6 +402,7 @@ def create_qlc_native_backend(
         qlc_config.routing,
         controls=qlc_config.controls,
         config_path=config_path,
+        scene_metadata=qlc_config.scene_metadata,
     )
     backend.initialize()
     return backend
