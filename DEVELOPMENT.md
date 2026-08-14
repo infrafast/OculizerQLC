@@ -748,6 +748,8 @@ The service-pack user documentation was also expanded on 2026-08-14 with the com
 
 WAV startup validation was hardened on 2026-08-14 after a duplicated relative path produced a full headless traceback after the native transport had already begun connecting. Both interactive and headless argument parsers now expand and resolve `--audio-file`, reject a missing file before initializing QLC+, audio, or inference, and report the exact absolute path through the normal concise CLI error. The headless entry point also converts expected `ValueError`/`OSError` construction failures into one startup error and exit status `2`, while unexpected programming errors still retain their traceback. Regression coverage verifies both entry points and the headless fallback.
 
+Control-client connection diagnostics were clarified on 2026-08-14. `oculizerctl` now reports the exact socket path it attempted and distinguishes a missing socket, a path with no listening Oculizer process, and a response timeout. The message identifies `/etc/oculizer/deployment.json` as the systemd socket authority, shows the current user's normal manual socket, and points to `--socket PATH`; application-level command failures remain separate. The wire protocol, wrapper-selected production path, and exit status remain unchanged.
+
 ### Phase 8b — Raspberry Pi 5 production target
 
 Status: **complete — functional, service, audio, resource, and operator validation accepted on Raspberry Pi 5**

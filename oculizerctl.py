@@ -30,13 +30,35 @@ def build_request(args):
     return request
 
 
+def control_connection_error(socket_path, exc):
+    manual_socket = default_control_socket_path()
+    if isinstance(exc, FileNotFoundError):
+        reason = "the socket does not exist"
+    elif isinstance(exc, ConnectionRefusedError):
+        reason = "the socket exists but no Oculizer process is accepting connections"
+    elif isinstance(exc, TimeoutError):
+        reason = "the Oculizer process did not answer before the timeout"
+    else:
+        reason = str(exc)
+    return (
+        f"cannot connect to Oculizer control socket '{socket_path}': {reason}. "
+        "Check that the intended runtime is running. The systemd service normally "
+        "uses the socket configured in /etc/oculizer/deployment.json; a manual "
+        f"run normally uses '{manual_socket}'. Select it explicitly with "
+        "--socket PATH."
+    )
+
+
 def main(argv=None):
     args = parse_args(argv)
     request = build_request(args)
     try:
         result = send_control_request(args.socket, request)
-    except (OSError, RuntimeError, ValueError) as exc:
-        print(f"oculizerctl: {exc}", file=sys.stderr)
+    except OSError as exc:
+        print(f"oculizerctl: {control_connection_error(args.socket, exc)}", file=sys.stderr)
+        return 1
+    except (RuntimeError, ValueError) as exc:
+        print(f"oculizerctl: control command failed via '{args.socket}': {exc}", file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0

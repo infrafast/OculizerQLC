@@ -139,6 +139,12 @@ The installer grants the configured service account passwordless permission only
 
 `oculizer-service auto` controls systemd boot behavior. It is distinct from `oculizerctl auto`, which tells an already running Oculizer process to leave pause/manual-scene mode and resume automatic prediction.
 
+The installed `oculizerctl` wrapper uses the production socket recorded in
+`/etc/oculizer/deployment.json`. A manually launched runtime normally uses
+`/tmp/oculizer-<uid>.sock`; control it with `oculizerctl.py --socket PATH` from
+the repository. Connection errors print the exact attempted path and explain
+this distinction.
+
 Oculizer passively waits for the separately managed local QLC+ WebSocket endpoint when that transport is selected; it does not own the QLC+ lifecycle. Do not reboot for the first validation: ensure the external QLC+ service is operational, then inspect the Oculizer log first.
 
 With `qlc-native`, service startup is asynchronous: systemd considers Oculizer running while the native client is disconnected, waiting for QLC+ authorization, downloading the project, or ready. This is intentional and keeps the lifecycle states compatible with raspiLightGUI, where `UP`, `AUTO`, and `MANUAL` describe the Oculizer process and boot policy. Use `oculizerctl status` to inspect the separate native `lighting_state`.
