@@ -6,6 +6,32 @@ import oculize
 
 
 class TerminalInitializationTests(unittest.TestCase):
+    def test_safe_terminal_write_clips_text_and_rejects_invalid_coordinates(self):
+        screen = Mock()
+        screen.getmaxyx.return_value = (8, 20)
+        controller = Mock(stdscr=screen)
+
+        written = oculize.AudioOculizerController._safe_addstr(
+            controller, 2, 17, "abcdef", 42
+        )
+        rejected = oculize.AudioOculizerController._safe_addstr(
+            controller, -1, 0, "outside", 42
+        )
+
+        self.assertTrue(written)
+        self.assertFalse(rejected)
+        screen.addstr.assert_called_once_with(2, 17, "ab", 42)
+
+    def test_safe_terminal_write_tolerates_concurrent_resize_error(self):
+        screen = Mock()
+        screen.getmaxyx.return_value = (8, 20)
+        screen.addstr.side_effect = oculize.curses.error("resized")
+        controller = Mock(stdscr=screen)
+
+        self.assertFalse(oculize.AudioOculizerController._safe_addstr(
+            controller, 1, 0, "status", 42
+        ))
+
     def test_keyboard_interrupt_cleanup_temporarily_ignores_sigint(self):
         controller = Mock()
         with (

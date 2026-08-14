@@ -1200,6 +1200,7 @@ Validation performed:
 
 Post-validation UI adjustments:
 
+- bounded interactive curses rendering against narrow, short, and concurrently resized terminals, preventing `addwstr() returned ERR` from escaping into and corrupting the macOS terminal display;
 - made Auto, Select scene, and Pause a mutually exclusive persisted mode indicator driven by authoritative runtime status, with pressed styling and `aria-pressed` accessibility state;
 - grouped all 64 editable fields into 12 logical native `<details>` sections, opening only Audio input and Silence detection initially to keep the page compact;
 - removed the runtime selector after live validation confirmed that service and local headless modes intentionally share `config/oculizer.json`; each Web child now presents only its owning runtime, with service-only values isolated in the deployment section;

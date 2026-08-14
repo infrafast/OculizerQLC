@@ -671,6 +671,22 @@ class AudioOculizerController:
     def _scene_symbol(self, scene_name):
         return scene_visual(scene_name).symbol
 
+    def _safe_addstr(self, row, column, text, attribute=0):
+        """Write inside the current terminal bounds without reaching its last cell."""
+        height, width = self.stdscr.getmaxyx()
+        if row < 0 or row >= height or column < 0 or column >= width - 1:
+            return False
+        available = width - column - 1
+        if available <= 0:
+            return False
+        try:
+            self.stdscr.addstr(row, column, str(text)[:available], attribute)
+            return True
+        except curses.error:
+            # A resize can happen between getmaxyx() and addstr(). The next
+            # display cycle will redraw using the new dimensions.
+            return False
+
     def _render_graph_area(self, top, bottom, width, scene_name):
         """Render only inside the unused area between status and logs."""
         area_height = bottom - top + 1
@@ -680,20 +696,20 @@ class AudioOculizerController:
             message = "No graph, activate it by removing  --no-graph option at startup "
             row = top + area_height // 2
             col = max(0, (width - len(message)) // 2)
-            self.stdscr.addstr(row, col, message[:width - col - 1], curses.color_pair(COLOR_PAIRS['info']))
+            self._safe_addstr(row, col, message, curses.color_pair(COLOR_PAIRS['info']))
             return
 
         header = "RMS history (30s)"
-        self.stdscr.addstr(top, 0, header[:width - 1], curses.color_pair(COLOR_PAIRS['info']) | curses.A_BOLD)
+        self._safe_addstr(top, 0, header, curses.color_pair(COLOR_PAIRS['info']) | curses.A_BOLD)
 
         lines, points = self.rms_graph.render_frame(width - 1, area_height - 1)
         for offset, line in enumerate(lines, start=1):
             if offset >= area_height:
                 break
-            self.stdscr.addstr(top + offset, 0, line[:width - 1], curses.color_pair(COLOR_PAIRS['info']))
+            self._safe_addstr(top + offset, 0, line, curses.color_pair(COLOR_PAIRS['info']))
         for row, column, character, point_scene in points:
             if row + 1 < area_height and column < width - 1:
-                self.stdscr.addstr(
+                self._safe_addstr(
                     top + row + 1,
                     column,
                     character,
@@ -704,10 +720,19 @@ class AudioOculizerController:
         try:
             self.stdscr.erase()
             height, width = self.stdscr.getmaxyx()
+
+            if height < 8 or width < 20:
+                self._safe_addstr(0, 0, "Terminal too small; resize to at least 20x8",
+                                  curses.color_pair(COLOR_PAIRS['warning']) | curses.A_BOLD)
+                self.stdscr.noutrefresh()
+                curses.doupdate()
+                return
             
             # Display title
             title = "https://github.com/infrafast/OculizerQLC"
-            self.stdscr.addstr(0, (width - len(title)) // 2, title, curses.color_pair(COLOR_PAIRS['title']) | curses.A_BOLD)
+            rendered_title = title[:width - 1]
+            self._safe_addstr(0, max(0, (width - len(rendered_title)) // 2), rendered_title,
+                              curses.color_pair(COLOR_PAIRS['title']) | curses.A_BOLD)
 
             # Display audio device info with channel details (top left)
             if self.oculizer.audio_file is not None:
@@ -730,7 +755,7 @@ class AudioOculizerController:
             if self.average_dual_channels:
                 primary_parts.append("FFT: ch1-2 averaged")
             primary_info = " | ".join(primary_parts)
-            self.stdscr.addstr(1, 0, primary_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
+            self._safe_addstr(1, 0, primary_info, curses.color_pair(COLOR_PAIRS['info']))
 
             # Compact scene and prediction status into a second line.
             current_scene_name = self.scene_manager.current_scene['name']
@@ -753,7 +778,7 @@ class AudioOculizerController:
             else:
                 scene_parts.append("Latest prediction: -")
             scene_info = " | ".join(scene_parts)
-            self.stdscr.addstr(2, 0, scene_info[:width-1], curses.color_pair(scene_status_color))
+            self._safe_addstr(2, 0, scene_info, curses.color_pair(scene_status_color))
 
             # Keep secondary diagnostics on one optional line.
             detail_parts = []
@@ -764,36 +789,40 @@ class AudioOculizerController:
                 f"Dynamic: {self.runtime_control.active_dynamic_control} (cache {policy['scene_cache_size']})"
             )
             detail_info = " | ".join(detail_parts)
-            self.stdscr.addstr(3, 0, detail_info[:width-1], curses.color_pair(COLOR_PAIRS['info']))
+            self._safe_addstr(3, 0, detail_info, curses.color_pair(COLOR_PAIRS['info']))
 
             # Display log messages (bottom)
             visible_logs = list(self.log_messages)
             graph_top = 4
-            log_capacity = self.log_messages.maxlen
+            log_capacity = min(self.log_messages.maxlen, max(0, height - 8))
+            visible_logs = visible_logs[-log_capacity:] if log_capacity else []
             log_start = height - log_capacity - 4
             self._render_graph_area(graph_top, log_start - 2, width, current_scene_name)
-            self.stdscr.addstr(log_start, 0, "Log Messages:", curses.color_pair(COLOR_PAIRS['log']) | curses.A_BOLD)
+            self._safe_addstr(log_start, 0, "Log Messages:", curses.color_pair(COLOR_PAIRS['log']) | curses.A_BOLD)
             for i, message in enumerate(visible_logs):
-                self.stdscr.addstr(log_start + i + 1, 0, message[:width-1], curses.color_pair(COLOR_PAIRS['log']))
+                self._safe_addstr(log_start + i + 1, 0, message, curses.color_pair(COLOR_PAIRS['log']))
 
             # Display info message (bottom - with blank line above)
             if self.info_message:
-                self.stdscr.addstr(height-3, 0, self.info_message[:width-1], curses.color_pair(COLOR_PAIRS['info']) | curses.A_BOLD)
+                self._safe_addstr(height-3, 0, self.info_message, curses.color_pair(COLOR_PAIRS['info']) | curses.A_BOLD)
 
             # Display error message (bottom)
             if self.error_message:
-                self.stdscr.addstr(height-2, 0, self.error_message[:width-1], curses.color_pair(COLOR_PAIRS['error']))
+                self._safe_addstr(height-2, 0, self.error_message, curses.color_pair(COLOR_PAIRS['error']))
 
             # Display controls (bottom)
             controls = "Press 'q' to quit, Ctrl+T for toggle mode, 'r' to reload scenes, 'l' for dynamic control"
-            self.stdscr.addstr(height-1, 0, controls[:width-1], curses.color_pair(COLOR_PAIRS['controls']))
+            self._safe_addstr(height-1, 0, controls, curses.color_pair(COLOR_PAIRS['controls']))
 
             self.stdscr.noutrefresh()
             curses.doupdate()
+        except curses.error:
+            # Terminal resizes are asynchronous on several curses builds.
+            # Avoid writing to stderr while curses owns the screen; the next
+            # scheduled refresh will repaint it.
+            return
         except Exception as e:
-            import sys
-            print(f"Error updating display: {str(e)}", file=sys.stderr)
-            logging.error(f"Error updating display: {str(e)}")
+            logging.error("Error updating display: %s", e)
 
     def stop(self):
         try:
