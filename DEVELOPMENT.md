@@ -909,7 +909,7 @@ Control state is initially process-local and is not restored after a crash or re
 
 ## Forward roadmap — Phase 9: native-only specialization
 
-Status: **Milestone 9.1 in progress since 2026-08-14 — awaiting first live native gate**
+Status: **Milestones 9.1 and 9.2 complete; Milestone 9.3 awaits Raspberry Pi production acceptance**
 
 This is the only forward implementation path. It absorbs the useful remaining Phase 8a.3 gates and supersedes all plans to maintain multiple lighting transports. The implementation may remove legacy code aggressively after each migration gate is proven, but must not alter artistic inference behavior or the accepted native QLC+ runtime contract.
 
@@ -1002,29 +1002,29 @@ The final schema may improve these names during implementation, but it must foll
 ### Milestone 9.1 — configuration and runtime cutover
 
 - [x] add the validated `lighting` section to `oculizer.json` and an exact migration test for native settings, captions, fallback, pulse timing, controls, all 127 descriptions, all 127 reviewed `design_behavior` values, and all 23 duration overrides;
-- [ ] make native QLC+ the unconditional lighting path in interactive and headless runtimes (native is now the default and legacy selectors are hidden; physical removal follows the live gate);
-- [ ] replace the DMX-oriented `SceneManager` dependency with a lightweight logical scene registry derived from predictor mappings, special scenes, duration overrides, explicit additions, and native inventory;
-- [ ] make `--config` and `--dry-run` the single configuration/dry-run contract while preserving every non-backend runtime option (`--config` now supplies native lighting and `--dry-run` is public; legacy aliases remain temporarily for rollback testing);
-- [ ] compare v4/v6 raw predictions and the accepted fast-event/dynamic-control WAV references against commit `ca9b38e`.
+- [x] make native QLC+ the unconditional lighting path in interactive and headless runtimes;
+- [x] replace the DMX-oriented `SceneManager` dependency with a lightweight logical scene registry derived from compact metadata and native routing;
+- [x] make `--config` and `--dry-run` the single configuration/dry-run contract while preserving every non-backend runtime option;
+- [x] compare v4/v6 raw predictions and the accepted fast-event/dynamic-control WAV references against commit `ca9b38e`.
 
 Validation gate: macOS dry-run and live Native operation must pass for automatic scenes, `silent`, `announcement`, fallback, manual override, master/bass/mid/high, pause/auto, reload, WAV input, and clean shutdown before deletion begins.
 
 ### Milestone 9.2 — legacy unplug and code reduction
 
-- [ ] delete Enttec/DMX, OSC, and WebSocket implementations, assets, profiles, legacy scene payloads, dependencies, scripts, CLI branches, factories, and backend-only tests listed in scope;
-- [ ] collapse `LightingBackend`/factory indirection into a focused native lighting controller while retaining clean separation between routing intent and network I/O;
-- [ ] move caption normalization out of the deleted WebSocket module and retain native protocol isolation;
-- [ ] remove dead fixture/effect/orchestrator imports and prove that no retained module imports deleted packages or reads deleted folders;
-- [ ] decide `toggle.py` by demonstrated user value: native-only simplification or removal, with integrated/manual control retained either way.
+- [x] delete Enttec/DMX, OSC, and WebSocket implementations, assets, profiles, legacy scene payloads, dependencies, scripts, CLI branches, factories, and backend-only tests listed in scope;
+- [x] collapse `LightingBackend`/factory indirection into a focused native lighting controller while retaining clean separation between routing intent and network I/O;
+- [x] move caption normalization out of the deleted WebSocket module and retain native protocol isolation;
+- [x] remove dead fixture/effect/orchestrator imports and prove that no retained module imports deleted packages or reads deleted folders;
+- [x] remove `toggle.py`; integrated selector and `oculizerctl` retain manual control without a second competing runtime.
 
 Validation gate: the retained automated suite passes; a repository search finds no runtime Enttec, OSC, WebSocket, fixture-profile, `OSCPath`, `OSCaction`, or output-selection dependency outside historical documentation; raw inference comparison remains identical.
 
 ### Milestone 9.3 — deployment, documentation, and production acceptance
 
-- [ ] make the Raspberry Pi installer native-only, remove `--output`, generate the new deployment schema, preserve backup/permissions/systemd/raspiLightGUI lifecycle compatibility, and update every wrapper and readiness helper;
+- [x] make the Raspberry Pi installer native-only, remove `--output`, generate the new deployment schema, preserve backup/permissions/systemd/raspiLightGUI lifecycle compatibility, and update every wrapper and readiness helper;
 - [ ] reinstall over the accepted Raspberry Pi deployment and validate manual/automatic service operation, `oculizerctl`, QLC+ late start/restart/authorization, inventory refresh, logs, and foreground diagnostics;
-- [ ] replace all current README commands and troubleshooting guidance with the native-only CLI and configuration; keep historical details only in this implementation log;
-- [ ] publish the simplified local workflow diagram showing Audio → Oculizer inference/router → QLC+ Native → Virtual Console/Functions/DMX;
+- [x] replace all current README commands and troubleshooting guidance with the native-only CLI and configuration; keep historical details only in this implementation log;
+- [x] publish the simplified local workflow diagram showing Audio → Oculizer inference/router → QLC+ Native → Virtual Console/Functions/DMX;
 - [ ] measure CPU, RSS, queue depth, startup time, reconnect log volume, and a sustained live/WAV session against the rollback checkpoint.
 
 Final acceptance gate: the operator validates macOS interactive use and Raspberry Pi service use, including representative concert audio, silence/speech transitions, manual/runtime control, continuous sliders, QLC+ restart, and raspiLightGUI status. If accepted, native-only becomes the supported product and the rollback tag is retained as historical recovery. If rejected for a fundamental reason, return to `pre-native-only-unplug`/`ca9b38e` as a whole.
@@ -1052,6 +1052,49 @@ Validation performed:
 - corrected interactive SIGINT cleanup after Raspberry Pi/Python 3.13 showed that a repeated Ctrl+C could interrupt the native client's bounded thread join and print a traceback; interactive cleanup now temporarily ignores further SIGINT, the native client independently tolerates an interrupted join, and normal shutdown semantics remain unchanged on macOS and Linux.
 
 Remaining work: perform the first macOS live Native gate, replace the DMX-oriented scene registry, run fixed inference comparisons, then begin the approved legacy deletion only after operator confirmation.
+
+### 2026-08-14 — Milestone 9.1 logical registry and inference gate
+
+Delivered behavior:
+
+- replaced `SceneManager` with `LogicalSceneRegistry` in both native interactive and headless construction; the native runtime now loads 127 compact metadata entries and no fixture, orchestrator, effect, profile fallback, or DMX scene payload;
+- preserved the existing scene-dictionary interface needed by the selector, status, automatic router, and runtime control, including current selection across an atomic configuration reload;
+- changed interactive `r` to reload both compact scene metadata and native QLC+ routing/inventory instead of rereading only legacy DMX files;
+- changed the dynamic-control comparison tool to obtain its scene catalog and 23 duration overrides from `config/oculizer.json`.
+
+Validation performed:
+
+- operator accepted the first live native gate for automatic scenes, priority silence/speech, manual control, continuous sliders, pause, and interactive operation;
+- added registry tests for compact loading, duration preservation, selection, unknown scenes, successful reload, and rollback on invalid configuration;
+- confirmed the complete v4/v6 predictor directories, audio pipeline, automatic router, fast detection, modulation code, and audio parameters are byte-identical to rollback commit `ca9b38e`;
+- reproduced all 42 v6 raw predictions and all 44 fast semantic predictions from the accepted `mixvoicemusic.wav` reference exactly; historical profile-policy differences predate Phase 9 and reflect the later accepted preset calibration;
+- completed real v4 and v6 inference runs over the 42-window reference without error; a current `fascination.wav` run also completed, but was not claimed as parity because the local untracked WAV differs in duration from the retained report source;
+- the complete transitional suite passes: 234 tests before the additional metadata-source regression.
+
+Remaining work: complete the CLI cutover and begin Milestone 9.2 deletion. The next operator gate occurs after the native-only code reduction, before service-pack migration.
+
+### 2026-08-14 — Native-only unplug and deployment cutover
+
+Delivered behavior:
+
+- removed 168 approved legacy files in the first deletion pass, including all 127 DMX scene payloads, 13 fixture profiles, custom fixture assets, Enttec/virtual DMX, OSC, WebSocket, fallback generation, backend factories, standalone `toggle.py`, and backend-only tests;
+- removed the separate `config/qlc_config.json`; `config/oculizer.json` is now the sole application configuration and the retained 127-scene metadata catalog is covered independently;
+- replaced interchangeable backend inheritance with a focused `NativeLightingController` over the isolated `QLCNativeClient`, and moved caption normalization into a transport-neutral utility;
+- removed output/profile/config transport selection from both public CLIs. Only `--config`, `--dry-run`, and explicit `--qlc-host`/`--qlc-port`/`--qlc-encryptionkey` native overrides remain;
+- removed `pyserial`, `PyDMXControl`, and `websocket-client` from runtime dependencies;
+- removed unused adaptive DMX normalization/MFFT queue work while preserving the mel spectrum consumed by master/frequency modulation, reducing bounded CPU and memory work rather than adding any embedded overhead;
+- migrated the service installer, launcher, readiness helper, deployment JSON schema, tests, and service-pack documentation atomically to native-only operation; systemd and raspiLightGUI lifecycle commands are unchanged;
+- replaced the user README with a native-only guide covering macOS, dry-run/WAV, QLC+ authorization and widgets, unified configuration, runtime control, Raspberry Pi installation, and troubleshooting.
+
+Validation performed:
+
+- retained native/controller/config/catalog/automatic/audio/fast-event/modulation/control-socket/deployment/inference tests pass: 176 tests;
+- shell syntax and installer help validate with no output/backend option;
+- both application help surfaces contain no output/profile/OSC/WebSocket/DMX choices;
+- a complete v6 headless dry-run over `mixvoicemusic.wav` emitted master/bass values, routed music and `announcement`, and stopped cleanly on SIGINT;
+- repository runtime/config/install search finds no retained legacy transport or fixture dependency; references remaining in this file are historical implementation records.
+
+Remaining work: reinstall and run the native-only service pack on Raspberry Pi, repeat the live QLC+ scene/slider/reconnect/control/clean-shutdown gate, and collect production CPU/RSS/queue observations before final acceptance.
 
 ### 2026-08-14 — Native-only specialization approved and planned
 

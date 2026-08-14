@@ -8,9 +8,9 @@ from pathlib import Path
 
 from oculizer.headless import HeadlessOculizerService
 from oculizer.control_socket import default_control_socket_path
-from oculizer.light import Oculizer, OUTPUT_CHOICES
+from oculizer.light import Oculizer
 from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
-from oculizer.scenes import SceneManager
+from oculizer.scenes import LogicalSceneRegistry
 
 
 def configure_service_streams() -> None:
@@ -24,9 +24,6 @@ def configure_service_streams() -> None:
 def parse_args():
     parser = argparse.ArgumentParser(description="Run Oculizer without a terminal interface")
     parser.add_argument("--config", default=None, help="General configuration (default: config/oculizer.json)")
-    parser.add_argument("--output", choices=OUTPUT_CHOICES, default="qlc-native",
-                        help=argparse.SUPPRESS)
-    parser.add_argument("--profile", default=None, help="Fixture profile required only for Enttec")
     parser.add_argument("--input-device", default=None, help="Prediction audio input selector")
     parser.add_argument("--audio-file", default=None, help="Loop a local PCM WAV file instead of opening an audio device")
     parser.add_argument("--prediction-device", default=None, help="Optional separate prediction input")
@@ -46,31 +43,13 @@ def parse_args():
                         help="Base automatic music-scene duration before ±30%% variation (default: 40 seconds)")
     parser.add_argument("--control-socket", default=default_control_socket_path(), help="Unix runtime control socket path")
     parser.add_argument("--no-control-socket", action="store_true", help="Disable the local runtime control socket")
-    parser.add_argument("--qlc-config", default=None, help=argparse.SUPPRESS)
-    parser.add_argument("--qlc-host", "--osc-host", dest="osc_host", default=None)
-    parser.add_argument("--qlc-port", "--osc-port", dest="osc_port", type=int, default=None)
+    parser.add_argument("--qlc-host", default=None)
+    parser.add_argument("--qlc-port", type=int, default=None)
     parser.add_argument("--qlc-encryptionkey", default=None,
                         help="QLC+ native encryption key (default: lighting.native in --config)")
-    parser.add_argument("--dry-run", "--qlc-dry-run", "--osc-dry-run", dest="osc_dry_run",
+    parser.add_argument("--dry-run",
                         action="store_true", default=None,
                         help="Validate native QLC+ intentions without opening a network connection")
-    parser.add_argument(
-        "--dmx-dry-run",
-        action="store_true",
-        help="Render Enttec DMX frames through a rate-limited virtual controller",
-    )
-    parser.add_argument(
-        "--filter-dmx", "--filter-DMX",
-        action="store_true",
-        help="Hide all virtual DMX frame summaries from logs",
-    )
-    parser.add_argument(
-        "--filter-osc",
-        action="append",
-        default=[],
-        metavar="PATH",
-        help="Hide one exact OSC path from dry-run logs; repeat for multiple paths",
-    )
     args = parser.parse_args()
 
     try:
@@ -88,12 +67,6 @@ def parse_args():
     args.dynamic_controls = configured_dynamic_controls(config)
     if args.dynamic_control != "off" and args.dynamic_control not in args.dynamic_controls:
         parser.error("--dynamic-control must be 'off' or a profile from control.dynamic_controls")
-    if args.output == "enttec" and not args.profile:
-        parser.error("--profile is required with --output enttec")
-    if args.dmx_dry_run and args.output != "enttec":
-        parser.error("--dmx-dry-run requires --output enttec")
-    if args.filter_dmx and not args.dmx_dry_run:
-        parser.error("--filter-dmx requires --dmx-dry-run")
     if args.audio_file and args.prediction_device:
         parser.error("--audio-file cannot be combined with --prediction-device")
     if args.audio_file:
@@ -111,12 +84,8 @@ def parse_args():
 
 
 def build_service(args) -> HeadlessOculizerService:
-    scene_manager = SceneManager(
-        "scenes",
-        profile_name=args.profile if args.output == "enttec" else None,
-    )
+    scene_manager = LogicalSceneRegistry(args.config)
     oculizer = Oculizer(
-        args.profile,
         scene_manager,
         input_device=args.input_device,
         scene_prediction_enabled=True,
@@ -124,14 +93,10 @@ def build_service(args) -> HeadlessOculizerService:
         predictor_version=args.predictor_version,
         scene_cache_size=args.scene_cache_size,
         prediction_channels=args.prediction_channels,
-        output=args.output,
-        qlc_config_path=args.qlc_config or args.config,
-        osc_host=args.osc_host,
-        osc_port=args.osc_port,
-        osc_dry_run=args.osc_dry_run,
-        osc_log_filters=args.filter_osc,
-        dmx_dry_run=args.dmx_dry_run,
-        filter_dmx=args.filter_dmx,
+        config_path=args.config,
+        qlc_host=args.qlc_host,
+        qlc_port=args.qlc_port,
+        dry_run=args.dry_run,
         prediction_window_seconds=args.prediction_config.window_seconds,
         prediction_interval_seconds=args.prediction_config.interval_seconds,
         audio_file=args.audio_file,

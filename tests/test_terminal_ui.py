@@ -28,7 +28,7 @@ class TerminalInitializationTests(unittest.TestCase):
 
         with (
             patch("oculize.curses.curs_set"),
-            patch("oculize.SceneManager", return_value=scene_manager),
+            patch("oculize.LogicalSceneRegistry", return_value=scene_manager),
             patch("oculize.Oculizer", return_value=oculizer) as constructor,
             patch("oculize.AutomaticSceneRouter"),
             patch("oculize.MasterModulator"),
@@ -37,10 +37,8 @@ class TerminalInitializationTests(unittest.TestCase):
         ):
             controller = oculize.AudioOculizerController(
                 screen,
-                profile=None,
                 input_device="default",
                 dual_stream=False,
-                output="qlc-native",
                 qlc_encryption_key="secret-key",
             )
 
@@ -58,12 +56,12 @@ class TerminalInitializationTests(unittest.TestCase):
         ):
             oculize.show_loading_screen(
                 screen,
-                ["Lighting: QLC+ OSC", "Audio: WAV file test.wav", "Predictor: v4"],
+                ["Lighting: QLC+ Native", "Audio: WAV file test.wav", "Predictor: v4"],
             )
 
         rendered = [call.args[2] for call in screen.addstr.call_args_list]
         self.assertIn("Loading Oculizer...", rendered)
-        self.assertIn("Lighting: QLC+ OSC", rendered)
+        self.assertIn("Lighting: QLC+ Native", rendered)
         self.assertIn("Audio: WAV file test.wav", rendered)
         self.assertIn("This can take several seconds.", rendered)
         screen.refresh.assert_called_once_with()

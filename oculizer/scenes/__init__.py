@@ -1,1 +1,1 @@
-from .scene_manager import SceneManager
+from .logical_registry import LogicalSceneRegistry

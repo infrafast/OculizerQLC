@@ -19,7 +19,6 @@ when reconfiguring an existing service:
 
 | Option | Accepted value | Default |
 |---|---|---|
-| `--output MODE` | `qlc-websocket`, `qlc-native`, or `qlc-osc` | `qlc-websocket` |
 | `--audio-input SELECTOR` | An Oculizer device selector such as `default` | `default` |
 | `--dynamic-control NAME` | `off` or a profile declared in `config/oculizer.json` | `normal` |
 | `--service-user USER` | Existing Linux account used to run Oculizer | invoking sudo user, or `pi` |
@@ -32,17 +31,10 @@ Display the authoritative option list at any time:
 ./raspi_service_pack/install.sh --help
 ```
 
-For example, install or reconfigure the service for QLC+ native output:
+For example, install or reconfigure the native-only service:
 
 ```bash
-sudo ./raspi_service_pack/install.sh --output qlc-native --audio-input default --dynamic-control normal --service-user pi
-```
-
-Equivalent WebSocket and OSC examples are:
-
-```bash
-sudo ./raspi_service_pack/install.sh --output qlc-websocket --audio-input default --dynamic-control normal --service-user pi
-sudo ./raspi_service_pack/install.sh --output qlc-osc --audio-input default --dynamic-control normal --service-user pi
+sudo ./raspi_service_pack/install.sh --audio-input default --dynamic-control normal --service-user pi
 ```
 
 Every successful installation regenerates `/etc/oculizer/deployment.json`
@@ -63,6 +55,12 @@ explicitly when the new configuration should take effect:
 ```bash
 oculizer-service restart
 ```
+
+Lighting connection, widget captions, routing, and scene metadata all come
+from the repository's single `config/oculizer.json`. The deployment file holds
+only machine-specific service values such as repository, account, audio input,
+dynamic-control profile, and control socket. QLC+ Native startup remains
+asynchronous, so the service can start before QLC+ and reconnect later.
 
 The installer preserves the current running and boot-enabled states. Choose one operating mode afterward:
 

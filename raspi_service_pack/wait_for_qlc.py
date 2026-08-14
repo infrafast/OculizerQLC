@@ -3,8 +3,6 @@
 
 import json
 from pathlib import Path
-import socket
-import time
 
 
 CONFIG = Path("/etc/oculizer/deployment.json")
@@ -12,46 +10,13 @@ DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
 def wait_for_qlc(config, *, timeout_seconds=DEFAULT_TIMEOUT_SECONDS, connector=None):
-    """Wait for the configured QLC+ endpoint and report progress visibly."""
-    if config["output"] == "qlc-osc":
-        print("QLC+ readiness: OSC output selected; waiting 3 seconds for startup...", flush=True)
-        time.sleep(3.0)
-        print("QLC+ readiness: OSC startup delay complete.", flush=True)
-        return True
-
-    if config["output"] == "qlc-native":
-        print(
-            "QLC+ readiness: native output selected; startup is asynchronous. "
-            "Oculizer will connect when QLC+ becomes available.",
-            flush=True,
-        )
-        return True
-
-    connector = connector or socket.create_connection
-    host = str(config.get("qlc_host", "127.0.0.1"))
-    port = int(config.get("qlc_port", 9999))
-    server_name = "WebSocket server"
-    deadline = time.monotonic() + timeout_seconds
+    """Confirm the non-blocking native startup policy."""
     print(
-        f"QLC+ readiness: waiting up to {timeout_seconds:g} seconds for "
-        f"{server_name} at {host}:{port}...",
+        "QLC+ readiness: native startup is asynchronous. "
+        "Oculizer will connect when QLC+ becomes available.",
         flush=True,
     )
-    while time.monotonic() < deadline:
-        try:
-            with connector((host, port), timeout=0.5):
-                print(f"QLC+ readiness: server available at {host}:{port}.", flush=True)
-                return True
-        except OSError:
-            time.sleep(0.5)
-    print(
-        f"ERROR: QLC+ {server_name} did not become available at "
-        f"{host}:{port} within {timeout_seconds:g} seconds.\n"
-        "Check that QLC+ is running with the required server enabled and that "
-        "the configured host and port are correct.",
-        flush=True,
-    )
-    return False
+    return True
 
 
 def main():

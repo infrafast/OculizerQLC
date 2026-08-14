@@ -117,23 +117,16 @@ def scene_style(scene: str) -> tuple[str, str]:
     return visual.symbol, xterm_rgb(palette_index)
 
 
-def load_scene_durations() -> tuple[set[str], dict[str, float]]:
-    import json
-
-    names = {"silent", "announcement"}
-    durations = {}
-    for path in sorted((ROOT / "scenes").glob("*.json")):
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        name = data.get("name")
-        if not isinstance(name, str):
-            continue
-        names.add(name)
-        duration = data.get("max_duration_seconds")
-        if isinstance(duration, (int, float)) and not isinstance(duration, bool):
-            durations[name] = float(duration)
+def load_scene_durations(config) -> tuple[set[str], dict[str, float]]:
+    """Read the compact logical catalog used by the runtime."""
+    metadata = config.get("lighting", {}).get("scene_metadata", {})
+    names = set(metadata)
+    durations = {
+        name: float(data["max_duration_seconds"])
+        for name, data in metadata.items()
+        if isinstance(data.get("max_duration_seconds"), (int, float))
+        and not isinstance(data.get("max_duration_seconds"), bool)
+    }
     return names, durations
 
 
@@ -481,7 +474,7 @@ def main(argv=None):
     fast_detection_config = configured_fast_detection(config)
     silence_config = configured_silence(config)
     speech_config = configured_speech(config)
-    scene_names, scene_durations = load_scene_durations()
+    scene_names, scene_durations = load_scene_durations(config)
     rms, duration, predictions, semantic_predictions = analyse_wav(
         args.wav, args.predictor_version, prediction_config.window_seconds,
         args.prediction_hop_seconds,

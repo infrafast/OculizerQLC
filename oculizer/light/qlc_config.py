@@ -1,4 +1,4 @@
-"""Unified QLC+ transport, global controls, and scene-routing configuration."""
+"""Validated QLC+ Native section of the application configuration."""
 
 from __future__ import annotations
 
@@ -7,26 +7,21 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
-from oculizer.light.osc_client import OscConfig, OscConfigError, build_float_message
 from oculizer.light.scene_map import SceneMap, SceneMapError
-from oculizer.light.qlc_websocket import QLCWebSocketConfig
 from oculizer.light.qlc_native import QLCNativeConfig
 
 
 class QLCConfigError(ValueError):
-    """Raised when the unified QLC+ configuration is invalid."""
+    """Raised when native lighting configuration is invalid."""
 
 
 @dataclass(frozen=True)
 class QLCControl:
-    osc_path: str | None
     caption: str
 
 
 @dataclass(frozen=True)
 class QLCConfig:
-    transport: OscConfig
-    websocket: QLCWebSocketConfig
     native: QLCNativeConfig
     controls: Mapping[str, QLCControl]
     routing: SceneMap
@@ -49,54 +44,9 @@ class QLCConfig:
         if not isinstance(data, Mapping):
             raise QLCConfigError("QLC+ configuration must be a JSON object")
 
-        if "lighting" in data:
-            return cls._from_application_mapping(data)
-
-        transport = data.get("transport", {})
-        controls = data.get("controls", {})
-        websocket = data.get("websocket", {})
-        native = data.get("native", {})
-        routing = data.get("routing", {})
-        if not isinstance(transport, Mapping):
-            raise QLCConfigError("QLC+ configuration 'transport' must be an object")
-        if not isinstance(controls, Mapping):
-            raise QLCConfigError("QLC+ configuration 'controls' must be an object")
-        if not isinstance(routing, Mapping):
-            raise QLCConfigError("QLC+ configuration 'routing' must be an object")
-        if not isinstance(websocket, Mapping):
-            raise QLCConfigError("QLC+ configuration 'websocket' must be an object")
-        if not isinstance(native, Mapping):
-            raise QLCConfigError("QLC+ configuration 'native' must be an object")
-
-        validated_controls = {}
-        for name, raw_control in controls.items():
-            if not isinstance(name, str) or not name.strip():
-                raise QLCConfigError("QLC+ control names must be non-empty strings")
-            if not isinstance(raw_control, Mapping):
-                raise QLCConfigError(
-                    f"QLC+ control '{name}' must contain OSCPath and caption"
-                )
-            osc_path = raw_control.get("OSCPath")
-            caption = raw_control.get("caption", name)
-            try:
-                build_float_message(osc_path, 0.0)
-            except (TypeError, ValueError) as exc:
-                raise QLCConfigError(f"Invalid QLC+ control '{name}': {exc}") from exc
-            if not isinstance(caption, str) or not caption.strip():
-                raise QLCConfigError(f"QLC+ control '{name}' caption must be non-empty")
-            validated_controls[name] = QLCControl(osc_path=osc_path, caption=caption)
-
-        try:
-            return cls(
-                transport=OscConfig.from_mapping(transport),
-                websocket=QLCWebSocketConfig.from_mapping(websocket),
-                native=QLCNativeConfig.from_mapping(native),
-                controls=validated_controls,
-                routing=SceneMap.from_mapping(routing),
-                scene_metadata={},
-            )
-        except (OscConfigError, SceneMapError, ValueError) as exc:
-            raise QLCConfigError(str(exc)) from exc
+        if "lighting" not in data:
+            raise QLCConfigError("Application configuration requires a 'lighting' object")
+        return cls._from_application_mapping(data)
 
     @classmethod
     def _from_application_mapping(cls, data: Mapping[str, Any]) -> "QLCConfig":
@@ -120,7 +70,7 @@ class QLCConfig:
                 raise QLCConfigError("lighting control names must be non-empty strings")
             if not isinstance(caption, str) or not caption.strip():
                 raise QLCConfigError(f"lighting control '{name}' caption must be non-empty")
-            validated_controls[name] = QLCControl(osc_path=None, caption=caption)
+            validated_controls[name] = QLCControl(caption=caption)
 
         validated_metadata = {}
         for name, raw_metadata in metadata.items():
@@ -147,12 +97,10 @@ class QLCConfig:
 
         try:
             return cls(
-                transport=OscConfig.from_mapping({}),
-                websocket=QLCWebSocketConfig.from_mapping({}),
                 native=QLCNativeConfig.from_mapping(native),
                 controls=validated_controls,
                 routing=SceneMap.from_native_mapping(routing, validated_metadata),
                 scene_metadata=validated_metadata,
             )
-        except (OscConfigError, SceneMapError, ValueError) as exc:
+        except (SceneMapError, ValueError) as exc:
             raise QLCConfigError(str(exc)) from exc

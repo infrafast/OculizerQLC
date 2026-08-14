@@ -41,22 +41,22 @@ class DeploymentTests(unittest.TestCase):
         self.assertIn('oculizerctl.py" "$@"', script)
         self.assertNotIn('--socket "$socket_path"', script)
 
-    def test_oculizer_command_uses_shared_transport_configuration(self):
+    def test_oculizer_command_uses_single_application_configuration(self):
         command = build_oculizer_command({
             "repository": "/opt/Oculizer QLC",
-            "output": "qlc-websocket",
             "audio_input": "default",
             "dynamic_control": "normal",
             "control_socket": "/run/oculizer/control.sock",
         })
         self.assertEqual(command[0], "/opt/Oculizer QLC/.venv/bin/python")
-        self.assertIn("qlc-websocket", command)
+        self.assertNotIn("--output", command)
+        self.assertNotIn("--qlc-config", command)
+        self.assertIn("/opt/Oculizer QLC/config/oculizer.json", command)
         self.assertIn("/run/oculizer/control.sock", command)
 
     def test_foreground_run_can_override_system_control_socket(self):
         config = {
             "repository": "/opt/OculizerQLC",
-            "output": "qlc-websocket",
             "audio_input": "default",
             "dynamic_control": "normal",
             "control_socket": "/run/oculizer/control.sock",
@@ -66,38 +66,13 @@ class DeploymentTests(unittest.TestCase):
         self.assertIn("/tmp/oculizer-1000.sock", command)
         self.assertNotIn("/run/oculizer/control.sock", command)
 
-    def test_qlc_readiness_reports_configured_websocket_endpoint(self):
-        class Connection:
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args):
-                return False
-
-        calls = []
-
-        def connect(endpoint, timeout):
-            calls.append((endpoint, timeout))
-            return Connection()
-
-        with patch("builtins.print") as output:
-            ready = wait_for_qlc(
-                {"output": "qlc-websocket", "qlc_host": "192.0.2.10", "qlc_port": 1234},
-                timeout_seconds=1,
-                connector=connect,
-            )
-        self.assertTrue(ready)
-        self.assertEqual(calls, [(('192.0.2.10', 1234), 0.5)])
-        messages = " ".join(str(call.args[0]) for call in output.call_args_list)
-        self.assertIn("192.0.2.10:1234", messages)
-
     def test_qlc_native_readiness_never_blocks_service_startup(self):
         def connector(*_args, **_kwargs):
             self.fail("native readiness must not open a connection")
 
         with patch("builtins.print") as output:
             self.assertTrue(wait_for_qlc(
-                {"output": "qlc-native"}, timeout_seconds=1,
+                {}, timeout_seconds=1,
                 connector=connector,
             ))
         messages = " ".join(str(call.args[0]) for call in output.call_args_list)

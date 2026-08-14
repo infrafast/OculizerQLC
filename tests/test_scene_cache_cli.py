@@ -62,7 +62,7 @@ class SceneCacheCliTests(unittest.TestCase):
 
     def test_linux_uses_one_default_os_audio_stream(self):
         with patch("oculize.platform.system", return_value="Linux"), \
-                patch("sys.argv", ["oculize.py", "--output", "qlc-osc", "--input-device", "default"]):
+                patch("sys.argv", ["oculize.py", "--input-device", "default"]):
             args = oculize.parse_args()
         self.assertTrue(args.single_stream)
         self.assertIsNone(args.default_prediction_device)

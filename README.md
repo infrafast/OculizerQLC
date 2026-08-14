@@ -1,29 +1,28 @@
 # OculizerQLC
 
-OculizerQLC is a music-reactive lighting controller based on the original Oculizer project available here: https://github.com/LandryBulls/Oculizer. It analyzes audio in real time, automatically selects lighting scenes, and lets an operator take manual control when needed.
-
-The accepted product direction is now QLC+ 5 Native only: Oculizer owns audio analysis, inference, routing, and normalized modulations, while QLC+ owns its Virtual Console, Functions, fixture patching, and final DMX output. The current rollback checkpoint still contains legacy Enttec, OSC, and WebSocket code; Phase 9 removes it before native-only is declared production-complete.
+OculizerQLC analyzes live or recorded audio, predicts an artistic lighting
+scene, and controls a local or remote QLC+ 5 project through the QLC+ Native
+Server. QLC+ owns the Virtual Console, Functions, fixtures, universes, and DMX
+output. Oculizer owns audio analysis, inference, transition policy, priority
+silence/speech detection, and normalized `master`, `bass`, `mid`, and `high`
+modulations.
 
 ![OculizerQLC simplified native-only workflow](docs/native_only_workflow.svg)
 
-> **Migration checkpoint:** Milestone 9.1 now defaults interactive and headless operation to QLC+ Native, reads native lighting from `config/oculizer.json`, and exposes `--dry-run`. Hidden legacy flags remain temporarily for regression testing; the Raspberry Pi service pack still uses its pre-unplug deployment schema until Milestone 9.3, so reinstall it only when that migration is announced.
-
-The migration will preserve a compact user-facing entry for every logical scene: its artistic `description`, a reviewed `design_behavior` (`static`, `normal`, or `responsive`), and its optional maximum duration. These metadata guide QLC+ workspace design and do not change inference or routing behavior.
-
-
-It can use a live audio device or continuously loop an uncompressed PCM WAV file for simulation and testing before live show. Interactive and headless operation share the same live control commands.
-
-Development architecture, implementation details, decisions, validation history, and the roadmap are maintained in [DEVELOPMENT.md](DEVELOPMENT.md).
+Development decisions, implementation history, rollback information, and the
+active roadmap are maintained in [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Requirements
 
-- Python 3.11 for the macOS development environment or Python 3.13 for the Debian 13 Raspberry Pi target;
-- Git and internet access during installation;
-- PortAudio and an audio input for live capture;
-- optionally, a virtual audio cable such as BlackHole on macOS;
-- QLC+ 5 with its Native Server enabled.
+- Python 3.11 on the macOS development system or Python 3.13 on the Debian 13
+  Raspberry Pi 5 production target;
+- QLC+ 5 with its Native Server enabled (TCP port `9998` by default);
+- PortAudio and an audio input for live operation;
+- optionally, a virtual audio device such as BlackHole on macOS;
+- Git and internet access during installation.
 
-A CUDA-capable GPU can accelerate prediction but is not required. Initial model loading can take several seconds on a CPU.
+No Enttec interface, Oculizer fixture profile, OSC input, or QLC+ WebSocket
+connection is used.
 
 ## Installation
 
@@ -33,699 +32,223 @@ cd OculizerQLC
 ./install.sh
 ```
 
-The installer creates or updates the local `.venv` environment and installs all Python dependencies. Run it again after updating the repository. Use `./install.sh --python COMMAND` only when a specific Python interpreter is required.
-
-## Start the application after installation
+The installer creates or updates `.venv` and installs the Python dependencies.
+Run it again after updating the repository. To select a particular interpreter:
 
 ```bash
-cd OculizerQLC
+./install.sh --python python3
+```
+
+## Interactive operation
+
+Start with the OS-default input:
+
+```bash
 ./.venv/bin/python oculize.py
 ```
 
-QLC+ Native is now the default lighting path. With QLC+ running and the native
-client authorized, start the interactive application with:
+Select BlackHole on macOS:
 
 ```bash
-./.venv/bin/python oculize.py
+./.venv/bin/python oculize.py --input-device blackhole
 ```
 
-To validate configuration and intended commands without connecting to QLC+ or
-sending network traffic, add `--dry-run`:
+List available audio devices:
 
 ```bash
-./.venv/bin/python oculize.py --dry-run
+./.venv/bin/python oculize.py --list-devices
 ```
 
-Dry-run validates logical captions but cannot verify that widgets exist in the
-currently loaded QLC+ project. Add the required audio options using the examples below.
+Use an uncompressed PCM WAV file instead of a live input:
 
-Run `./.venv/bin/python oculize.py --help` to display every available option.
+```bash
+./.venv/bin/python oculize.py --audio-file tests/fascination.wav
+```
 
-### Raspberry Pi 5 service installation
+Validate configuration and logical intentions without opening a QLC+ network
+connection:
 
-The Phase 8b installer targets 64-bit Debian 13/Raspberry Pi OS on Raspberry Pi 5. It installs only Oculizer's Python environment, audio system packages, production `oculizerctl` command, and headless systemd service. QLC+, its workspace, and its own service are managed by the separate QLC+ deployment repository and are never installed, configured, started, stopped, or enabled by this repository.
+```bash
+./.venv/bin/python oculize.py --dry-run --audio-file tests/mixvoicemusic.wav
+```
 
-Run the read-only preflight first:
+Dry-run verifies logical captions but cannot prove that corresponding widgets
+exist in the QLC+ project currently loaded.
+
+Interactive controls:
+
+- `Ctrl+T`: open the integrated scene selector;
+- `Enter`: activate the selected manual scene;
+- `Esc`: leave manual override and resume automatic routing;
+- `l`: select a configured dynamic-control policy;
+- `r`: reload the application scene metadata and QLC+ routing/inventory;
+- `q` or `Ctrl+C`: stop cleanly.
+
+A direct click in the QLC+ GUI does not put Oculizer into manual override.
+Use the integrated selector or `oculizerctl scene NAME`; alternatively pause
+Oculizer before manipulating QLC+ directly.
+
+## Headless operation
+
+Run the non-interactive process directly:
+
+```bash
+./.venv/bin/python oculizer_service.py --input-device default --dynamic-control normal
+```
+
+The headless and interactive applications use the same inference, routing,
+native connection, configuration, and runtime-control implementation.
+
+## QLC+ Native setup
+
+1. Enable the QLC+ Native Server, normally on TCP port `9998`.
+2. Start Oculizer.
+3. Authorize the `OculizerQLC` client in the QLC+ GUI when requested.
+4. Create one Virtual Console button for each logical scene you want to use.
+5. Give each button the logical scene caption, matching without case or common
+   separators. Use `lighting.routing.caption_overrides` only for exceptions.
+6. Create sliders captioned `master`, `bass`, `mid`, and `high` for every
+   modulation enabled in the configuration.
+
+Button type, action, function association, Frame/Solo Frame ownership, slider
+range, and widget IDs are discovered from the active QLC+ project. Widget IDs
+are never stored by Oculizer. Toggle, Blackout, Stop All, Flash, and future
+button actions therefore retain their QLC+ semantics.
+
+The native client connects asynchronously. Audio and inference do not block if
+QLC+ starts late, is restarted, or is awaiting authorization. After reconnect,
+Oculizer downloads a fresh project inventory before resuming output.
+
+Connection overrides are available when needed:
+
+```bash
+./.venv/bin/python oculize.py --qlc-host 127.0.0.1 --qlc-port 9998
+```
+
+An empty `lighting.native.encryption_key` uses QLC+'s built-in key. A custom key
+can be stored in the configuration or supplied with `--qlc-encryptionkey KEY`.
+
+## Configuration
+
+`config/oculizer.json` is the only application configuration. Select another
+complete configuration with:
+
+```bash
+./.venv/bin/python oculize.py --config /absolute/path/oculizer.json
+```
+
+Its main sections are:
+
+- `control.dynamic_controls`: named transition-policy presets;
+- `audio.input_device`: default live input selector;
+- `audio.prediction`: artistic prediction window and interval;
+- `audio.fast_detection`: low-cost priority speech evaluation;
+- `audio.silence` and `audio.speech`: priority routing thresholds and scenes;
+- `audio.master_modulation` and `audio.frequency_modulation`: normalized QLC+
+  slider signals;
+- `lighting.native`: native host, port, authorization, reconnect, and dry-run;
+- `lighting.controls`: logical modulation name to QLC+ slider caption;
+- `lighting.routing`: button pulse, fallback scene, and caption exceptions;
+- `lighting.scene_metadata`: logical scene descriptions, design guidance, and
+  optional maximum durations.
+
+Every logical scene carries one advisory `design_behavior`:
+
+- `static`: deliberately fixed look;
+- `normal`: autonomous or time-driven animation/movement;
+- `responsive`: intended to react materially to audio modulation.
+
+This metadata helps design the corresponding QLC+ Function. It never changes
+inference, routing, transition policy, or slider processing. If a scene omits
+`max_duration_seconds`, automatic routing uses `--scene-max-duration`, whose
+default is 40 seconds, with the existing bounded random variation and
+anti-ping-pong policy.
+
+The prediction window should match model training. The supplied v6 model uses
+four seconds and is the runtime default:
+
+```bash
+./.venv/bin/python oculize.py --predictor-version v6
+```
+
+## Runtime control
+
+While either runtime is active:
+
+```bash
+./oculizerctl.py status
+./oculizerctl.py scene ambient1
+./oculizerctl.py pause
+./oculizerctl.py auto
+./oculizerctl.py preset calm
+./oculizerctl.py master 0.5
+./oculizerctl.py bass 0.8
+```
+
+The installed `oculizerctl` wrapper automatically discovers one active Unix
+socket. If several runtimes are active, select one explicitly with
+`--socket PATH`. Pause only suspends inference; it does not alter QLC+ buttons
+or sliders.
+
+## Raspberry Pi 5 service
+
+QLC+, its workspace, and its service are maintained independently. This
+repository installs only Oculizer and never starts, stops, configures, or
+installs QLC+.
+
+After every native-only deployment-schema update, reinstall the service pack:
 
 ```bash
 cd ~/OculizerQLC
 chmod +x raspi_service_pack/install.sh
 ./raspi_service_pack/install.sh --check
+sudo ./raspi_service_pack/install.sh --audio-input default --dynamic-control normal --service-user pi
 ```
 
-Install the service pack. Installation neither starts the service nor changes its boot auto-start state:
+Installation preserves whether the service is running and whether boot
+auto-start is enabled. Restart explicitly to adopt new code/configuration:
 
 ```bash
-sudo ./raspi_service_pack/install.sh
+oculizer-service restart
 ```
 
-The installer accepts `--output` (`qlc-websocket`, `qlc-native`, or `qlc-osc`),
-`--audio-input`, `--dynamic-control`, and `--service-user`. For example, install
-or reconfigure the service for native output:
+Lifecycle commands remain compatible with raspiLightGUI:
 
-```bash
-sudo ./raspi_service_pack/install.sh --output qlc-native --audio-input default --dynamic-control normal --service-user pi
-```
-
-Run `./raspi_service_pack/install.sh --help` for the authoritative option list.
-Each successful invocation regenerates `/etc/oculizer/deployment.json`; omitted
-options use their documented defaults rather than inheriting previous values.
-The previous file is saved as `/etc/oculizer/deployment.json.previous`. Inspect
-the active settings with `cat /etc/oculizer/deployment.json`, and run
-`oculizer-service restart` if a running process must adopt the new settings.
-The detailed option table and transport examples are in
-[`raspi_service_pack/README.md`](raspi_service_pack/README.md).
-
-Choose automatic boot operation:
-
-```bash
-oculizer-service auto
-```
-
-Or leave boot auto-start disabled and operate it manually, including from a QLC+ System Command script:
-
-```bash
+```text
 oculizer-service start
 oculizer-service stop
 oculizer-service restart
 oculizer-service status
 oculizer-service logs
-oculizer-service health
-oculizer-service last-state
-```
-
-Run the same installed configuration in the foreground for diagnostics:
-
-```bash
 oculizer-service run-auto
-```
-
-With WebSocket output, `run-auto` reports the QLC+ host and port it is waiting
-for. If that server cannot be reached within 30 seconds, it exits with a clear
-connection error and troubleshooting hint instead of starting Oculizer. Native
-output starts immediately and lets the asynchronous native client connect and
-request authorization when QLC+ becomes available. OSC output retains its
-fixed three-second startup delay.
-
-Disable future boot auto-start without stopping the currently running process:
-
-```bash
+oculizer-service auto
 oculizer-service noauto
+oculizer-service last-state
+oculizer-service health
 ```
 
-The installer grants the configured service account passwordless permission only for starting, stopping, restarting, enabling, or disabling `oculizer.service`. This allows QLC+ to invoke the absolute commands `/usr/local/bin/oculizer-service start` and `/usr/local/bin/oculizer-service stop` without a terminal or password prompt. It grants no control over QLC+ or any other service.
-
-`oculizer-service auto` controls systemd boot behavior. It is distinct from `oculizerctl auto`, which tells an already running Oculizer process to leave pause/manual-scene mode and resume automatic prediction.
-
-The installed and repository-local `oculizerctl` commands automatically find
-one active runtime. Discovery checks `OCULIZER_CONTROL_SOCKET`, the production
-socket recorded in `/etc/oculizer/deployment.json`, the user's runtime
-directory, and `/tmp/oculizer-<uid>.sock`. If none is active, the command lists
-every path it tried. If several runtimes are active, it refuses to guess; place
-`--socket PATH` before the subcommand to select one explicitly.
-
-Oculizer passively waits for the separately managed local QLC+ WebSocket endpoint when that transport is selected; it does not own the QLC+ lifecycle. Do not reboot for the first validation: ensure the external QLC+ service is operational, then inspect the Oculizer log first.
-
-With `qlc-native`, service startup is asynchronous: systemd considers Oculizer running while the native client is disconnected, waiting for QLC+ authorization, downloading the project, or ready. This is intentional and keeps the lifecycle states compatible with raspiLightGUI, where `UP`, `AUTO`, and `MANUAL` describe the Oculizer process and boot policy. Use `oculizerctl status` to inspect the separate native `lighting_state`.
-
-## Configuration
-
-The current application configuration is:
-
-- `config/oculizer.json`: audio input and analysis, dynamic-control profiles, silence/speech settings, QLC+ Native connection and widget captions, and the compact logical-scene design metadata.
-
-Use another complete configuration with `--config PATH`. Legacy scene/profile files remain in the repository only until the Milestone 9.1 live and inference gates are accepted.
-
-### Audio input
-
-List the inputs visible to Oculizer:
-
-```bash
-python oculize.py --list-devices
-```
-
-Select the default device, a recognized alias such as `blackhole` or `scarlett`, a full or partial device name, or a numeric index:
-
-```bash
-python oculize.py --input-device blackhole
-python oculize.py --input-device "Microphone iMac"
-python oculize.py --input-device 0
-```
-
-Device names are preferable to indexes because indexes can change after a restart.
-
-### WAV input
-
-On a host without an audio capture device, use an uncompressed PCM WAV file. It is played at real-time speed and loops continuously:
-
-```bash
-python oculize.py \
-  --audio-file tests/fascination.wav \
-  --output qlc-osc \
-  --osc-dry-run
-```
-
-`--audio-file` cannot be combined with `--prediction-device`. MP3 and online streams are not currently supported.
-
-Relative WAV paths are resolved from the current working directory. A missing
-file is rejected before QLC+, audio capture, or prediction starts, and the error
-prints the resolved absolute path without a Python traceback. Use an absolute
-path for service diagnostics when the working directory may be ambiguous.
-
-### Silence and speech scenes
-
-Oculizer can recognize sustained silence and dominant spoken voice independently of the normal music-scene prediction. Each event activates a dedicated logical scene: silence selects `silent`, while speech selects `announcement` so that lighting remains suitable when someone speaks between songs.
-
-Configure the two routes under `audio` in `config/oculizer.json`:
-
-```json
-{
-  "audio": {
-    "silence": {
-      "enabled": true,
-      "threshold": 0.001,
-      "resume_threshold": 0.002,
-      "duration_seconds": 2.0,
-      "scene": "silent"
-    },
-    "speech": {
-      "enabled": true,
-      "threshold": 0.55,
-      "music_margin": 0.15,
-      "minimum_duration_seconds": 1.0,
-      "release_duration_seconds": 0.75,
-      "scene": "announcement"
-    },
-    "fast_detection": {
-      "enabled": true,
-      "speech": {
-        "enabled": true,
-        "window_seconds": 2.0,
-        "interval_seconds": 1.0
-      }
-    }
-  }
-}
-```
-
-Change each `scene` value to any logical scene available to the selected output backend. Silence uses the inexpensive RMS thresholds and duration configured under `audio.silence`. Speech routing performs one serialized semantic check per second over the latest two seconds of audio, uses the existing confidence and timing margins, then discards stale scene evidence before returning to music prediction. It shares the existing EfficientAT model and prediction thread: no second model, worker, or event-triggered inference is created. Set the corresponding `enabled` value to `false` to disable a detector.
-
-The following example processes `mixvoicemusic.wav`, which contains silence, spoken voice, and music. The scene markers include `silent` during detected silence and `announcement` when speech becomes dominant, alongside the scenes selected for musical passages. It uses the neutral raw view because silence and speech are priority events rather than ordinary music transitions and do not require a dynamic-control comparison.
-
-![Silence, speech, and music scene detection on mixvoicemusic.wav](docs/mixvoicemusic.svg)
-
-This panel example was generated using following command:
-
-```bash
-python3 scripts/render_dynamic_control_comparison.py \
-  tests/mixvoicemusic.wav \
-  --output docs/mixvoicemusic.svg \
-  --prediction-hop-seconds 2 \
-  --raw-only
-```
-
-Please note that since it is a single panel, profiles where first removed from oculizer.json config file (see
-
-## Interactive automatic operation
-
-Example with one live audio stream:
-
-```bash
-python oculize.py \
-  --profile garage2025 \
-  --input-device blackhole \
-  --single-stream
-```
-
-Example with separate FFT and prediction devices:
-
-```bash
-python oculize.py \
-  --profile garage2025 \
-  --input-device scarlett \
-  --prediction-device blackhole
-```
-
-Useful options:
-
-| Option | Purpose |
-| --- | --- |
-| `-p`, `--profile` | Direct-DMX fixture profile |
-| `-i`, `--input-device` | Main audio input |
-| `--prediction-device` | Separate prediction input |
-| `--single-stream` | Use one input for FFT and prediction |
-| `--audio-file PATH` | Loop a PCM WAV file instead of capturing audio |
-| `--predictor-version VERSION` | Select the prediction model |
-| `--scene-cache-size N` | Set prediction smoothing (default: `10`) |
-| `--dynamic-control PROFILE` | Apply a configured dynamics profile; see [Dynamic control](#dynamic-control) (default: `off`) |
-| `--scene-max-duration SECONDS` | Set the automatic scene-duration base before ±30% per-activation variation (default: `40`) |
-| `--output enttec|qlc-osc` | Select the lighting output |
-| `--no-graph` | Hide the interactive RMS graph |
-| `--list-devices` | List available audio inputs |
-
-The artistic predictor analyses the latest `audio.prediction.window_seconds`
-seconds of audio at the cadence configured by
-`audio.prediction.interval_seconds` in `config/oculizer.json`. The shipped
-and recommended production values use a four-second window and one prediction
-per second:
-
-```json
-"prediction": {
-  "window_seconds": 4.0,
-  "interval_seconds": 1.0
-}
-```
-
-Increasing the interval reduces CPU use but also reduces how often a new
-artistic candidate can be produced; it does not change the separate priority
-silence, audio-resume, or announcement routes, nor the master and frequency
-modulation updates. If one artistic prediction per second feels too restrained,
-`0.75` is the recommended first responsiveness compromise. Avoid `0.5` on a
-Raspberry Pi when inference already takes about 500ms: it leaves no scheduling
-margin and can return the service to continuous high CPU usage.
-
-System can be used different trained predictors. `v6` is the default predictor and is selected when `--predictor-version` is omitted. Use `--predictor-version v4` or `--predictor-version v5` only for explicit comparison or compatibility tests. `v5` uses the v4 scene mapping as an experimental starting point; because its clusters were trained separately, its scene assignments still require artistic validation. Earlier incomplete predictors have been removed from runtime selection, while their distinct scene mappings remain archived under `oculizer/scene_predictors/legacy_mappings/`.
-
-### Train a concert-specific predictor
-
-You can regenerate `v6` from your own concert recordings. The process first groups acoustically similar four-second excerpts into clusters; it cannot decide what those clusters should look like on stage. You complete that artistic step by listening to representative excerpts and assigning an existing Oculizer scene to every cluster.
-
-Cluster numbers have no permanent meaning: cluster `7` is not intrinsically a calm or energetic cluster, and its meaning can change when the corpus, cluster count, or training options change.
-
-#### 1. Prepare the recording corpus
-
-Place representative MP3, WAV, FLAC, M4A, AAC, or OGG recordings in one directory. Include the different songs, intensities, transitions, and atmospheres expected during a show. Avoid unnecessary duplicates; use `--max-windows-per-track` if a long recording would otherwise dominate the corpus.
-
-The command below intentionally replaces the current v6 model, so back it up first if it must be retained.
-
-#### 2. Extract features and create the clusters
-
-```bash
-python3 scripts/train_predictor_v6.py \
-  --input /path/to/concert-recordings \
-  --clusters 30 \
-  --window-seconds 4 \
-  --hop-seconds 2 \
-  --representatives 8 \
-  --force
-```
-
-This produces the model files and a review workspace under `oculizer/scene_predictors/v6/review/`. The model deliberately remains unavailable at runtime at this point because its provisional mapping assigns every cluster to `party`.
-
-#### 3. Perform the artistic interpretation
-
-Open `oculizer/scene_predictors/v6/review/cluster_report.md`. For each cluster:
-
-1. Listen to all its files in `review/excerpts/`, not only the first one. The source names and the RMS, speech, singing, and music measurements in the report are useful clues, but they are not artistic decisions.
-2. Identify what the excerpts have in common: for example energy, density, rhythm, mood, colour, or the suitability of a strobe effect.
-3. Choose the existing scene that should represent that musical character. Use its exact logical name from the scene definitions under `scenes/`.
-4. Edit the corresponding value in `oculizer/scene_predictors/v6/scene_mapping.json`.
-
-For example:
-
-```json
-{
-  "0": "chill_blue",
-  "1": "electric",
-  "2": "pink_strobe_pulse"
-}
-```
-
-Every cluster from `0` to `29` must occur exactly once. Several clusters may deliberately use the same scene, but no value may be empty and no cluster may be omitted or added. Speech and silence are detected separately at runtime and use the dedicated `announcement` and `silent` routes; do not try to encode those two events solely through the musical cluster mapping.
-
-This review is normally iterative: when a cluster is ambiguous, replay all its excerpts and choose the scene whose behaviour is safest and most coherent across the whole group, rather than the scene that best matches one isolated excerpt.
-
-#### 4. Approve and finalize the mapping
-
-Rerun the statistical stage from the cached features. Keep the same cluster and window settings used above:
-
-```bash
-python3 scripts/train_predictor_v6.py \
-  --input /path/to/concert-recordings \
-  --clusters 30 \
-  --window-seconds 4 \
-  --hop-seconds 2 \
-  --representatives 8 \
-  --reuse-features \
-  --mapping oculizer/scene_predictors/v6/scene_mapping.json \
-  --force
-```
-
-This validates that the mapping is complete, marks the model as reviewed, and enables `--predictor-version v6`. Reusing the feature cache avoids decoding every recording and running feature extraction again.
-
-#### 5. Test the completed predictor
-
-Test it without lighting hardware before using it in a show:
-
-```bash
-python3 oculize.py \
-  --audio-file tests/fascination.wav \
-  --output qlc-osc \
-  --osc-dry-run \
-  --predictor-version v6 \
-  --scene-cache-size 10
-```
-
-Check that the selected scenes remain artistically appropriate across several representative tracks. If an assignment is unsatisfactory, edit `scene_mapping.json` and repeat step 4; feature extraction is not required again.
-
-Keep `audio.prediction.window_seconds` equal to the window used for training (`4` in this example). Also ensure every mapped scene exists in the selected output configuration, especially the QLC+ mapping. The feature cache and review excerpts are generated locally and ignored by Git, so retain a backup until the model and artistic mapping are final. Run `python3 scripts/train_predictor_v6.py --help` for less common controls.
-
-Interactive controls:
-
-- `q`: quit;
-- `r`: reload scenes;
-- `l`: select a dynamic-control profile live;
-- `Ctrl+T`: open the scene selector;
-- `Ctrl+O`: switch between manual override and automatic prediction from the integrated selector.
-
-The main screen displays a scrolling RMS graph and scene-transition markers. Disable it when a simpler display is preferred:
-
-```bash
-python oculize.py --no-graph [other options]
-```
-
-Otherwise the main screen looks like:
-<img width="2481" height="1428" alt="image" src="https://github.com/user-attachments/assets/f26856ab-65e4-43f4-94d6-788b151dddf4" />
-
-The milestones correspondent to scenes changes and colors and icons resemble those of the scenes available in the scene control screen (CTRL+T).
-
-Automatic music scene duration uses 40 seconds as its default base. Override the global base at startup with, for example, `--scene-max-duration 20`. On every automatic activation, Oculizer draws one effective duration uniformly within ±30% of the scene-specific or global base and keeps that value stable for the complete activation. A base of 8 seconds therefore produces 5.6–10.4 seconds, while the default base produces 28–52 seconds. When that duration expires, Oculizer prefers a different mapped scene found in recent predictions and otherwise selects `ambient1`. This safety replacement bypasses the active profile's transition admission but is recorded in its internal budgets; the expired prediction holds that one replacement until a genuinely different prediction arrives, and the expired target cannot immediately re-enter. Silence, announcement, and manual overrides are exempt.
-
-A scene can override the global duration by declaring a positive duration in its artistic definition under `scenes/`:
-
-```json
-{
-  "name": "white_flicker",
-  "max_duration_seconds": 8,
-  "lights": []
-}
-```
-
-When `max_duration_seconds` is absent, the global value is used. The example only illustrates the field; retain the scene's real `lights` definition.
-
-The supplied v6 scene set applies an eight-second duration base to every scene with an active strobe declaration. Non-strobing racer/alternating effects and selected high-energy scenes use a 15-second base. Calmer v6 scenes inherit the global 40-second base. The ±30% variation makes these safety-oriented rotations less mechanical; tune the bases in the corresponding `scenes/<name>.json` file.
-
-## QLC+ OSC operation
-
-Start automatic operation with QLC+:
-
-```bash
-python oculize.py \
-  --output qlc-osc \
-  --qlc-config config/qlc_config.json \
-  --input-device blackhole
-```
-
-Override the OSC destination with `--osc-host HOST` and `--osc-port PORT`.
-
-`config/qlc_config.json` contains every logical scene emitted by predictors v4 and v6 and derives each OSC address as `/oculizer/scenes/<scene-name>`. Transport-specific fields are explicit: `OSCPath` is the OSC address, `OSCaction` defines the OSC gesture, and the optional `caption` overrides the logical name used for WebSocket lookup. WebSocket never interprets `OSCPath` or `OSCaction`. All 30 v6 scenes carry a temporary `"implemented": false` marker so the operator can track QLC+ widget creation. Oculizer deliberately ignores this marker; change it manually as the QLC+ project progresses. Predictor mappings and artistic scene filenames use the same canonical identifiers; historical aliases and misspellings have been normalized.
-
-```json
-"silent": {
-  "OSCaction": "pushButton",
-  "OSCPath": "/oculizer/scenes/silent",
-  "caption": "Silent"
-}
-```
-
-`caption` can be omitted when it is identical to the logical scene name, including differences in case and separators.
-
-### QLC+ 5 WebSocket Virtual Console backend
-
-The optional WebSocket backend targets the verified QLC+ `5.2.2` Web API. It supports scene buttons plus normalized `master`, `bass`, `mid`, and `high` sliders. Start QLC+ with web access enabled; its default endpoint is port `9999`:
-
-```bash
-qlcplus -w -wp 9999 /path/to/workspace.qxw
-```
-
-Then start Oculizer with:
-
-```bash
-python oculize.py --output qlc-websocket --qlc-config config/qlc_config.json --input-device blackhole
-```
-
-The backend retrieves `/vc.json` after connecting to `/qlcplusWS`, recursively discovers Virtual Console buttons and sliders, and resolves each requested logical control by a normalized caption. Matching ignores letter case and the common separators space, `_`, and `-`, so `white_fairies`, `WHITE FAIRIES`, and `White-Fairies` are equivalent. No partial or fuzzy match is used. Captions present in QLC+ must remain unique after normalization; ambiguous pairs fail explicitly. Every route uses its logical name as the default caption, or can declare `"caption": "Exact QLC+ label"`. For every requested button—including `silent`—the backend reads the actual QLC+ `actionType` and sends the matching gesture: state-aware activation for Toggle and Blackout, press/release for Flash, and one momentary press for Stop All. The type or function assigned in QLC+ is therefore not duplicated in Oculizer configuration. Missing controls, unsupported widget/action types, and malformed states fail explicitly. Put mutually exclusive scene buttons in a QLC+ Solo Frame; Oculizer activates the requested button and does not toggle the previous one off.
-
-The `silent` entry is an ordinary scene route. Its explicit `OSCaction: "pushButton"` sends a press (`1.0`) followed by a release (`0.0`) to `/oculizer/scenes/silent`. WebSocket ignores the OSC fields, resolves the `silent` caption, and adapts to the discovered QLC+ button type. Silence does not imply blackout: the QLC+ function assigned to the `Silent` widget owns the desired lighting state. `announcement`, fallback resolution, and ordinary scenes follow the same transport separation.
-
-Dry-run validates configuration and logs intended captions without opening a network connection:
-
-```bash
-python oculize.py --output qlc-websocket --qlc-config config/qlc_config.json --qlc-dry-run --input-device blackhole
-```
-
-Continuous values are mapped from Oculizer's normalized `0..1` range to each discovered slider's QLC+ range. Connection or protocol failure is reported explicitly, and automatic reconnect plus authenticated (`-wa`) web access are not yet implemented. QLC+ web access is disabled by default, uses `ws://` rather than encrypted `wss://`, and should remain bound to the local host or a trusted network. See the official [QLC+ Web Interface](https://docs.qlcplus.org/v5/advanced/web-interface) and [Web API](https://docs.qlcplus.org/v5/advanced/web-interface/web-api) documentation.
-
-### QLC+ native backend (Phase 8a.3 preview)
-
-This backend requires a QLC+ build containing commit `984f0e7`. Start both QLC+ servers so its Web interface remains available to other applications:
-
-```bash
-qlcplus --web --remote /path/to/workspace.qxw
-```
-
-Then start Oculizer with:
-
-```bash
-python oculize.py --output qlc-native --qlc-config config/qlc_config.json --input-device blackhole
-```
-
-QLC+ asks the operator to authorize the native client named `OculizerQLC`. Oculizer continues audio analysis while waiting and exposes `lighting_state: waiting-for-qlc-authorization` through `oculizerctl status`. Waiting uses a blocked network thread rather than active polling. Scene and slider intentions are bounded: only the newest scene and newest value for each continuous control are retained, then applied after authorization and project discovery.
-
-Native packets and transferred workspace XML are decoded with fixed memory limits. The normal QLC+ `<!DOCTYPE Workspace>` marker is supported, while entity and external DTD declarations are rejected. A malformed, truncated, oversized, or unsafe project/session is reconnected without stopping audio analysis or accumulating an unbounded network buffer.
-
-The native client is forward-compatible within those safety boundaries: unknown opcodes and additional fields are ignored, while the required fields of commands used by Oculizer remain validated.
-
-Button type, function association, Frame/SoloFrame hierarchy, and slider metadata are discovered from the active QLC+ project; they are not duplicated in `qlc_config.json`. Native scene activation follows the discovered action: Toggle, Blackout, and StopAll receive one press, while Flash receives a timed press and release using the routing `pulse_seconds` value.
-
-An empty `native.encryption_key` in `config/qlc_config.json` uses QLC+'s built-in key. If QLC+ has a custom key, configure the same value there or override it at startup with `--qlc-encryptionkey KEY`. The native server uses port `9998` by default. Use `--qlc-host` and `--qlc-port` to override it. Native dry-run opens no connection:
-
-```bash
-python oculize.py --output qlc-native --qlc-dry-run --audio-file tests/fascination.wav
-```
-
-This backend is undergoing Raspberry Pi parity validation. Keep `qlc-websocket` available until the native validation checklist is accepted.
-
-### Real-time audio controls
-
-In addition to selecting scenes, Oculizer can continuously send four normalized values from `0` to `1` for use inside QLC+:
-
-| Default OSC path / WebSocket/native caption | Signal | Typical QLC+ use |
-| --- | --- | --- |
-| `/oculizer/master` | Overall audio RMS/level | Grand master, scene brightness, or a dimmer group |
-| `/oculizer/bass` | Low-frequency energy | Bass pulses, fixture intensity, or effect speed |
-| `/oculizer/mid` | Mid-frequency energy | Color, movement, or secondary intensity |
-| `/oculizer/high` | High-frequency energy | Sparkle, strobe depth, or fast effects |
-
-Enable or disable the overall level under `audio.master_modulation`, and the frequency controls under `audio.frequency_modulation` in `config/oculizer.json`:
-
-```json
-"master_modulation": {
-  "enabled": true
-},
-"frequency_modulation": {
-  "enabled": true,
-  "bands": {
-    "bass": { "enabled": true },
-    "mid":  { "enabled": false },
-    "high": { "enabled": false }
-  }
-}
-```
-
-Set `frequency_modulation.enabled` to `false` to disable all three bands, or change one band's `enabled` value independently. The supplied configuration enables `master` and `bass` but leaves `mid` and `high` disabled. Keep the other tuning fields already present in the configuration when editing these abbreviated examples.
-
-For OSC, enable a QLC+ OSC input listening on the configured port (`7700` by default), create a Virtual Console slider for each signal, and assign its external input with QLC+'s input auto-detection. For WebSocket or native output, create sliders captioned `master`, `bass`, `mid`, and `high`; captions can be overridden under `controls` in `config/qlc_config.json`. Each control object contains its transport-specific `OSCPath` and shared caption. The current reference workspace contains `master` and `bass`; add `mid` and `high` before enabling those bands. Direct Enttec output does not consume these controls.
-
-Test without sending UDP packets:
-
-```bash
-python oculize.py \
-  --audio-file tests/fascination.wav \
-  --output qlc-osc \
-  --osc-dry-run
-```
-
-Hide selected paths from dry-run logs by repeating `--filter-osc`:
-
-```bash
-python oculize.py \
-  --audio-file tests/fascination.wav \
-  --output qlc-osc \
-  --osc-dry-run \
-  --filter-osc /oculizer/bass \
-  --filter-osc /oculizer/mid \
-  --filter-osc /oculizer/high
-```
-
-## Direct-DMX dry run
-
-Exercise the Enttec rendering path without a connected DMX interface:
-
-```bash
-python oculize.py \
-  --profile garage2025 \
-  --audio-file tests/fascination.wav \
-  --output enttec \
-  --dmx-dry-run
-```
-
-The dry run prints a maximum of three changed-channel summaries per second. Hide all DMX frame summaries with `--filter-dmx`:
-
-```bash
-python oculize.py \
-  --profile garage2025 \
-  --audio-file tests/fascination.wav \
-  --output enttec \
-  --dmx-dry-run \
-  --filter-dmx
-```
-
-## Manual scene selection
-
-Run the standalone direct-DMX selector:
-
-```bash
-python toggle.py --profile garage2025 --input blackhole
-```
-
-Run the standalone QLC+ selector:
-
-```bash
-python toggle.py --output qlc-osc --qlc-config config/qlc_config.json
-```
-
-Selector controls:
-
-- arrow keys: move through the scene grid;
-- Enter: activate a scene;
-- type letters: search by prefix;
-- Escape: clear the search;
-- `Ctrl+R`: reload scenes and QLC+ mappings;
-- `Ctrl+T`: return to the automatic screen when using the integrated selector;
-- `Ctrl+Q`: quit.
-
-<img width="2409" height="480" alt="image" src="https://github.com/user-attachments/assets/9d2d9bd2-8fa4-41ba-85d0-bef644d62b63" />
-
-
-## Headless operation
-
-Run automatic prediction and QLC+ routing without curses:
-
-```bash
-python oculizer_service.py \
-  --output qlc-osc \
-  --input-device blackhole \
-  --qlc-config config/qlc_config.json
-```
-
-The process handles `SIGINT` and `SIGTERM` cleanly. Raspberry Pi and systemd installation are covered by the next development phase and are not yet documented as production-ready.
-
-## Live runtime control
-
-Interactive and headless operation expose the same local control socket. From another terminal:
-
-```bash
-python3 oculizerctl.py status
-python3 oculizerctl.py auto
-python3 oculizerctl.py pause
-python3 oculizerctl.py scene wave
-python3 oculizerctl.py dynamic-controls
-python3 oculizerctl.py dynamic-control responsive
-python3 oculizerctl.py dynamic-control normal
-python3 oculizerctl.py dynamic-control calm
-python3 oculizerctl.py dynamic-control off
-```
-
-`oculizerctl.py` automatically probes the environment override
-`OCULIZER_CONTROL_SOCKET`, the service deployment configuration, the user's
-runtime directory, and the normal `/tmp/oculizer-<uid>.sock` path. Exactly one
-active socket is selected. No match produces a list of attempted paths, while
-multiple matches require an explicit selection such as
-`python3 oculizerctl.py --socket /run/oculizer/control.sock status`. Start the
-application with `--control-socket PATH` to choose its socket, or use
-`--no-control-socket` to disable external control.
-
-`pause` only suspends prediction and automatic routing/modulation updates; it deliberately leaves the current QLC+ scene, blackout state, master, and frequency controls untouched. `auto` clears pause or manual override and resumes automatic operation from fresh prediction input. `scene NAME` forces a configured logical scene. Live changes last until the application restarts and do not rewrite configuration files.
-
-## Dynamic control
-The engine responsivity can be controlled using a dynamic parameter. This is used when you want to calm down the scene or unleash a very color full show. 
-Use `--dynamic-control PROFILE` at startup, press `l` in the interactive interface, or run `oculizerctl dynamic-control PROFILE` from another terminal. The active profile is shown in the status area and changes received through the control socket appear there automatically.
-
-Named profiles can be added, adjusted, or removed under `control.dynamic_controls` in `config/oculizer.json`. An empty object is valid and leaves `off` as the only available profile. Selecting a named profile applies its complete tuple, including its cache value, so it takes precedence over `--scene-cache-size` while active. Starting without `--dynamic-control` selects the reserved `off` state: it restores the startup cache value and disables transition filtering.
-
-Fast silence, resume, energy-edge, and speech detection is configured independently under `audio.fast_detection`. Dynamic-control profiles only govern ordinary music-scene admission: they do not alter fast detector windows, thresholds, or polling intervals. The v6 artistic classifier continues to use its four-second training-compatible window, while one shared EfficientAT instance performs serialized two-second semantic checks for priority speech routing.
-
-The following values are recommended starting points when those named profiles are configured:
-
-| Profile | Cache | Throttle | Rate limit | Behavior |
-| --- | ---: | ---: | ---: | --- |
-| `responsive` | `3` | `4/1` | `10/10` | Fast response, close to unrestricted behavior |
-| `normal` | `15` | `2/4` | `3/15` | Stable general-purpose behavior with clearly restrained transitions |
-| `calm` | `5` | `1/6` | `2/20` | Immediate candidate detection with deliberately infrequent activation |
-| `off` | startup value | `Off` | `Off` | Restore startup smoothing and leave predictions unrestricted |
-
-`off` is the least restricted profile, but it is not always the fastest. It keeps the normal startup cache (`10` by default), whereas `responsive` uses a shorter cache (`3`) and can therefore react sooner. In exchange, `responsive` retains generous safeguards against unusually rapid or sustained changes. If the predictions are already stable enough to remain below those safeguards, `off` and `responsive` can select the same scenes and produce the same number of changes.
-
-The comparison below demonstrates the intended progression on the current reference WAV: `off` and `responsive` each produce 80 changes, `normal` produces 55, and `calm` produces 34. Raw predictions are sampled every two seconds. Responsive therefore remains close to unrestricted behavior, while normal and calm provide increasingly deliberate scene retention.
-
-The reference file begins with silence and spoken voice before the music. Every profile follows the same priority timeline: `silent` from `2.0s` to `18.0s`, `announcement` from `18.0s` to `19.3s`, then `silent` until `24.0s`. A second silence routes to `silent` from `47.0s` to `56.0s`. These identical intervals demonstrate that silence and speech routing are independent from ordinary dynamic-control limits; only subsequent artistic scene changes differ between profiles.
-
-### Visual comparison
-
-The following image replays the same RMS curve and raw v6 predictions through the neutral `off` state and every dynamic-control profile currently declared in `config/oculizer.json`. A colored dot or gray symbol marks the active scene at startup and each subsequent transition. The comparison is illustrative rather than a live-performance benchmark: model inference is sampled every two seconds for practical documentation generation, while routing, cache smoothing, silence, speech, scene-duration, rate, and throttle behavior are simulated every 0.1 seconds.
-
-![Dynamic-control profiles compared on fascination.wav](docs/dynamic_control_comparison.svg)
-
-Regenerate the image after changing a predictor, scene rules, or dynamic-control profiles:
-
-```bash
-python3 scripts/render_dynamic_control_comparison.py \
-  tests/fascination.wav \
-  --output docs/dynamic_control_comparison.svg \
-  --prediction-hop-seconds 2
-```
-
-The script accepts any PCM WAV and automatically creates one panel for `off` plus one panel for every configured profile. Use `--config`, `--predictor-version`, `--prediction-hop-seconds`, `--simulation-step-seconds`, `--off-cache-size`, `--seed`, or `--width` when a different comparison is required. Smaller prediction hops are closer to the intended live inference cadence but take proportionally longer to compute.
-
-### QLC+ buttons
-
-QLC+ 5 Virtual Console buttons can call the installed client through script functions such as:
-
-```javascript
-Engine.systemCommand("/usr/local/bin/oculizerctl dynamic-control responsive");
-Engine.systemCommand("/usr/local/bin/oculizerctl dynamic-control normal");
-Engine.systemCommand("/usr/local/bin/oculizerctl dynamic-control calm");
-Engine.systemCommand("/usr/local/bin/oculizerctl dynamic-control off");
-```
-
-The `/usr/local/bin/oculizerctl` installation path will be provided by the Raspberry Pi deployment phase. During development, use the absolute paths to Python and `oculizerctl.py`.
-
-## Test mode
-
-Run prediction without FFT or DMX output:
-
-```bash
-python oculize.py --test --profile mobile
-```
+`oculizer-service auto` controls systemd boot startup. `oculizerctl auto`
+changes an already-running process back to automatic prediction.
+
+The installer regenerates `/etc/oculizer/deployment.json` and retains the
+previous file as `deployment.json.previous`. The deployment file contains only
+machine-specific service values; application and lighting configuration remain
+in the repository's `config/oculizer.json`. See
+[raspi_service_pack/README.md](raspi_service_pack/README.md) for details.
 
 ## Troubleshooting
 
-- No audio input: run `python oculize.py --list-devices`, or use `--audio-file` on an audio-less host.
-- `PortAudio library not found`: install the system PortAudio library before using live capture; WAV mode does not require a capture device.
-- No DMX interface: use `--output enttec --dmx-dry-run` for a hardware-free test.
-- Slow or apparently blank startup: model loading can take several seconds on a CPU.
-- Excessive OSC or DMX dry-run logs: use repeatable `--filter-osc PATH` or `--filter-dmx`.
-- Dark or substituted scene: check the active profile, `profiles/profile_fallbacks.json`, and QLC+ mappings.
-- Runtime details and errors: inspect `oculizer.log`.
-- Installation cannot find EfficientAT on PyPI: run the separate EfficientAT installation command shown above.
+- `waiting-for-qlc-authorization`: authorize `OculizerQLC` in the QLC+ GUI.
+- Missing scene button: verify its caption or add a `caption_overrides` entry.
+- Slider does not move: verify the slider exists and its band is enabled under
+  `audio.frequency_modulation.bands`.
+- No live audio: run `--list-devices`, then select `default`, an alias, a
+  partial device name, or an index.
+- Slow or queued predictions: keep the four-second v6 window and one-second
+  interval; inspect queue depth and CPU before tightening them on Raspberry Pi.
+- Control client cannot connect: run `oculizerctl status`; its error lists all
+  socket paths tested and explains how to select one explicitly.
 
-Display all supported command-line options with:
-
-```bash
-python oculize.py --help
-```
-
-## License and credits
-
-The project is distributed under the MIT License. Audio prediction relies on EfficientAT, librosa, PyTorch, and scikit-learn.
+Oculizer reuses the existing audio and EfficientAT inference pipeline for fast
+speech decisions. It does not create another model, FFT pass, unbounded queue,
+or polling worker, keeping Raspberry Pi CPU and memory use bounded.

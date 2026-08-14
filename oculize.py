@@ -8,9 +8,8 @@ import platform
 import signal
 from contextlib import redirect_stderr, redirect_stdout
 from curses import wrapper
-from oculizer import Oculizer, SceneManager
-from oculizer.light import OUTPUT_CHOICES
-from oculizer.light.qlc_websocket import QLCWebSocketError
+from oculizer import Oculizer
+from oculizer.scenes import LogicalSceneRegistry
 from oculizer.runtime_config import configured_audio_input, configured_dynamic_controls, configured_fast_detection, configured_frequency_modulation, configured_master_modulation, configured_prediction, configured_silence, configured_speech, load_runtime_config
 from oculizer.automatic import AutomaticSceneRouter, PolicyConflictError
 from oculizer.control_socket import ControlSocketServer, default_control_socket_path
@@ -193,15 +192,14 @@ def get_index_from_position(row, col, num_columns, total_scenes):
     return min(index, total_scenes - 1)
 
 class AudioOculizerController:
-    def __init__(self, stdscr, profile='garage', input_device='scarlett', 
+    def __init__(self, stdscr, input_device='default',
                  dual_stream=True, prediction_device=None, predictor_version='v6',
                  average_dual_channels=False, scene_cache_size=10, prediction_channels=None,
-                 test_mode=False, output='enttec', qlc_config=None, osc_host=None,
-                 osc_port=None, osc_dry_run=None, silence_config=None,
+                 test_mode=False, config_path=None, qlc_host=None,
+                 qlc_port=None, dry_run=None, silence_config=None,
                  speech_config=None, master_config=None, frequency_config=None,
                  prediction_window_seconds=4.0, prediction_interval_seconds=1.0,
-                 audio_file=None, osc_log_filters=(),
-                 dmx_dry_run=False, filter_dmx=False, graph_enabled=True,
+                 audio_file=None, graph_enabled=True,
                  dynamic_control="off", dynamic_controls=None, scene_max_duration=40.0,
                  control_socket_path=None, fast_detection_config=None,
                  qlc_encryption_key=None):
@@ -218,20 +216,13 @@ class AudioOculizerController:
         self.graph_enabled = bool(graph_enabled)
         self.rms_graph = RmsGraph()
         
-        # Load profile first to get available fixtures for SceneManager
-        profile_fixtures = self._load_profile_fixtures(profile) if output == 'enttec' else set()
-        
-        # Initialize SceneManager with profile awareness for scene fallbacks
-        self.scene_manager = SceneManager('scenes', 
-                                         profile_name=profile if output == 'enttec' else None,
-                                         available_fixtures=profile_fixtures)
+        self.scene_manager = LogicalSceneRegistry(config_path)
         
         # Initialize Oculizer with scene prediction support
         # dual_stream=True: Use separate device for scene prediction (default)
         # dual_stream=False: Use same audio stream for both FFT and prediction
         # average_dual_channels=True: Average first two input channels for FFT
         self.oculizer = Oculizer(
-            profile_name=profile,
             scene_manager=self.scene_manager,
             input_device=input_device,
             scene_prediction_enabled=True,
@@ -241,22 +232,17 @@ class AudioOculizerController:
             scene_cache_size=scene_cache_size,
             prediction_channels=prediction_channels,
             test_mode=test_mode,
-            output=output,
-            qlc_config_path=qlc_config,
-            osc_host=osc_host,
-            osc_port=osc_port,
-            osc_dry_run=osc_dry_run,
+            config_path=config_path,
+            qlc_host=qlc_host,
+            qlc_port=qlc_port,
+            dry_run=dry_run,
             prediction_window_seconds=prediction_window_seconds,
             prediction_interval_seconds=prediction_interval_seconds,
             audio_file=audio_file,
-            osc_log_filters=osc_log_filters,
-            dmx_dry_run=dmx_dry_run,
-            filter_dmx=filter_dmx,
             fast_detection_config=fast_detection_config,
             qlc_encryption_key=qlc_encryption_key,
         )
-        if output in ('qlc-osc', 'qlc-websocket', 'qlc-native'):
-            self.oculizer.restrict_scenes_to_backend()
+        self.oculizer.restrict_scenes_to_backend()
         self.scene_router = AutomaticSceneRouter(
             self.oculizer,
             silence_config=silence_config,
@@ -278,7 +264,6 @@ class AudioOculizerController:
         self.dual_stream = dual_stream
         self.predictor_version = predictor_version
         self.average_dual_channels = average_dual_channels
-        self.profile_name = profile
         self.error_message = ""
         self.info_message = ""
         
@@ -291,37 +276,6 @@ class AudioOculizerController:
         self.log_handler = self.LogHandler(self.log_messages)
         logging.getLogger().addHandler(self.log_handler)
     
-    def _load_profile_fixtures(self, profile_name):
-        """Load profile and extract available fixture names."""
-        try:
-            import json
-            from pathlib import Path
-            
-            # Construct path to profile
-            current_dir = Path(__file__).resolve().parent
-            profile_path = current_dir / 'profiles' / f'{profile_name}.json'
-            
-            if not profile_path.exists():
-                logging.warning(f"Profile '{profile_name}' not found at {profile_path}")
-                return set()
-            
-            with open(profile_path, 'r') as f:
-                profile = json.load(f)
-            
-            # Extract fixture names
-            fixtures = set()
-            if 'lights' in profile:
-                for light in profile['lights']:
-                    if 'name' in light:
-                        fixtures.add(light['name'])
-            
-            logging.info(f"Loaded profile '{profile_name}' with {len(fixtures)} fixtures: {', '.join(sorted(fixtures))}")
-            return fixtures
-            
-        except Exception as e:
-            logging.error(f"Error loading profile fixtures: {e}")
-            return set()
-
     class LogHandler(logging.Handler):
         def __init__(self, log_messages):
             super().__init__()
@@ -387,30 +341,6 @@ class AudioOculizerController:
                 logging.error(f"Error in update loop: {str(e)}")
             
             time.sleep(0.02)
-
-    def turn_off_all_lights(self):
-        # Skip in test mode
-        if self.test_mode:
-            return
-            
-        try:
-            for light_name, light_fixture in self.oculizer.controller_dict.items():
-                # Get the light type from the profile
-                light_type = next((light['type'] for light in self.oculizer.profile['lights'] 
-                                if light['name'] == light_name), None)
-                
-                if light_type == 'laser':
-                    # Special handling for laser - set all channels to 0
-                    light_fixture.set_channels([0] * 10)
-                elif hasattr(light_fixture, 'dim'):
-                    light_fixture.dim(0)
-                elif hasattr(light_fixture, 'set_channels'):
-                    light_fixture.set_channels([0] * light_fixture.channels)
-            
-            self.oculizer.dmx_controller.update()  # this is a magic piece of code that is broken, but it saves the day somehow
-            logging.info("All lights turned off")
-        except Exception as e:
-            logging.error(f"Error turning off lights: {str(e)}")
 
     def run_toggle_mode(self):
         """
@@ -659,9 +589,9 @@ class AudioOculizerController:
                 logging.info("Returned to oculizer mode")
                 self.info_message = "Returned to oculizer mode"
             elif key == ord('r'):
-                self.scene_manager.reload_scenes()
-                self.info_message = "Scenes reloaded"
-                logging.info("Scenes reloaded")
+                self.oculizer.reload_scene_configuration()
+                self.info_message = "Configuration reloaded"
+                logging.info("Logical scene and QLC+ configuration reloaded")
             elif key == ord('l'):
                 self.run_dynamic_control_mode()
             return True
@@ -827,7 +757,7 @@ class AudioOculizerController:
                 stream_mode = "SINGLE"
             primary_parts = [
                 audio_info,
-                f"Profile: {self.oculizer.profile_name}",
+                "Lighting: QLC+ Native",
                 f"Stream mode: {stream_mode}",
                 f"Predictor: {self.predictor_version}",
             ]
@@ -957,7 +887,7 @@ Single-stream mode (default on macOS):
   - Predictor: v6 (default)
   
 Dual-stream mode (--prediction-device):
-  - FFT stream: Scarlett interface for DMX modulation
+  - FFT stream: selected interface for QLC+ slider modulation
   - Prediction stream: Separate device (e.g., BlackHole, VB Cable) for scene prediction
 
 Dual-channel averaging (--average-dual-channels):
@@ -979,8 +909,6 @@ Scene Cache Size:
     )
     parser.add_argument('--config', default=None,
                       help='General Oculizer JSON configuration (default: config/oculizer.json)')
-    parser.add_argument('-p', '--profile', type=str, default=None,
-                      help=f'Enttec fixture profile (default for Enttec: {default_profile}; unused for QLC+)')
     parser.add_argument('-i', '--input-device', type=str, default=None,
                       help='Override the configured FFT audio input with default, an alias, a name, or an index')
     parser.add_argument('--audio-file', type=str, default=None,
@@ -1009,24 +937,15 @@ Scene Cache Size:
     parser.add_argument('--prediction-channels', type=str, default=default_prediction_channels,
                       help=f'Channels to use from prediction device (e.g., "1" for channel 1, "1,2" for channels 1-2 averaged, "1-16" for all 16 channels averaged). Default: {default_prediction_channels if default_prediction_channels else "auto-detect"}')
     parser.add_argument('--test', action='store_true',
-                      help='Test mode: Enable scene predictions only, disable FFT reactivity and DMX output. Uses virtual cable (BlackHole on macOS, Cable Output on Windows) for predictions.')
-    parser.add_argument('--output', choices=OUTPUT_CHOICES, default='qlc-native',
-                      help=argparse.SUPPRESS)
-    parser.add_argument('--qlc-config', default=None, help=argparse.SUPPRESS)
-    parser.add_argument('--qlc-host', '--osc-host', dest='osc_host', default=None,
-                      help='Override the selected QLC+ transport host')
-    parser.add_argument('--qlc-port', '--osc-port', dest='osc_port', type=int, default=None,
-                      help='Override the selected QLC+ transport port')
+                      help='Test mode: enable scene predictions without lighting output; use a virtual cable for live audio if needed')
+    parser.add_argument('--qlc-host', default=None,
+                      help='Override the QLC+ Native host')
+    parser.add_argument('--qlc-port', type=int, default=None,
+                      help='Override the QLC+ Native port')
     parser.add_argument('--qlc-encryptionkey', default=None, metavar='KEY',
                       help='Override the QLC+ native encryption key (default: lighting.native in --config)')
-    parser.add_argument('--dry-run', '--qlc-dry-run', '--osc-dry-run', dest='osc_dry_run', action='store_true', default=None,
+    parser.add_argument('--dry-run', action='store_true', default=None,
                       help='Validate native QLC+ intentions without opening a network connection')
-    parser.add_argument('--dmx-dry-run', action='store_true',
-                      help='Render Enttec DMX frames through a rate-limited virtual controller')
-    parser.add_argument('--filter-dmx', '--filter-DMX', action='store_true',
-                      help='Hide all virtual DMX frame summaries from logs')
-    parser.add_argument('--filter-osc', action='append', default=[], metavar='PATH',
-                      help='Hide one exact OSC path from dry-run logs; repeat for multiple paths')
     parser.add_argument('--no-graph', action='store_true',
                       help='Disable the interactive RMS history graph')
     parser.add_argument('--list-devices', action='store_true',
@@ -1053,8 +972,6 @@ Scene Cache Size:
     args.dynamic_controls = configured_dynamic_controls(config)
     if args.dynamic_control != 'off' and args.dynamic_control not in args.dynamic_controls:
         parser.error("--dynamic-control must be 'off' or a profile from control.dynamic_controls")
-    if args.profile is None and args.output == 'enttec':
-        args.profile = default_profile
     if args.audio_file and args.prediction_device:
         parser.error('--audio-file cannot be combined with --prediction-device')
     if args.audio_file:
@@ -1062,41 +979,31 @@ Scene Cache Size:
         if not audio_file.is_file():
             parser.error(f'--audio-file does not exist: {audio_file}')
         args.audio_file = str(audio_file)
-    if args.dmx_dry_run and args.output != 'enttec':
-        parser.error('--dmx-dry-run requires --output enttec')
-    if args.filter_dmx and not args.dmx_dry_run:
-        parser.error('--filter-dmx requires --dmx-dry-run')
     if not 1 <= args.scene_cache_size <= 100:
         parser.error('--scene-cache-size must be between 1 and 100')
     if not 0.5 <= args.scene_max_duration <= 3600:
         parser.error('--scene-max-duration must be between 0.5 and 3600 seconds')
     return args
 
-def main(stdscr, profile, input_device, dual_stream, prediction_device, predictor_version,
+def main(stdscr, input_device, dual_stream, prediction_device, predictor_version,
          average_dual_channels, scene_cache_size, prediction_channels, test_mode,
-         output, qlc_config, osc_host, osc_port, osc_dry_run,
+         config_path, qlc_host, qlc_port, dry_run,
          silence_config, speech_config, master_config, frequency_config,
          prediction_window_seconds, prediction_interval_seconds, audio_file,
-         osc_log_filters, dmx_dry_run,
-         filter_dmx, graph_enabled, dynamic_control, dynamic_controls,
+         graph_enabled, dynamic_control, dynamic_controls,
          scene_max_duration, control_socket_path, fast_detection_config,
          qlc_encryption_key):
     setup_colors()
     initialize_screen(stdscr)
-    lighting_detail = "Lighting: QLC+ OSC" if output == 'qlc-osc' else (
-        "Lighting: QLC+ WebSocket" if output == 'qlc-websocket' else
-        "Lighting: QLC+ native" if output == 'qlc-native' else
-        "Lighting: virtual Enttec DMX" if dmx_dry_run else "Lighting: Enttec DMX"
-    )
+    lighting_detail = "Lighting: QLC+ Native"
     audio_detail = (
         f"Audio: WAV file {os.path.basename(audio_file)}"
         if audio_file else f"Audio input: {input_device}"
     )
-    profile_detail = profile if profile is not None else "QLC+ logical scenes"
     loading_details = [
         lighting_detail,
         audio_detail,
-        f"Profile: {profile_detail} | Predictor: {predictor_version}",
+        f"Predictor: {predictor_version}",
         f"Dynamic control: {dynamic_control}",
     ]
     show_loading_screen(stdscr, loading_details)
@@ -1106,7 +1013,6 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
         with redirect_stdout(startup_output), redirect_stderr(startup_output):
             controller = AudioOculizerController(
                 stdscr,
-                profile=profile,
                 input_device=input_device,
                 dual_stream=dual_stream,
                 prediction_device=prediction_device,
@@ -1115,11 +1021,10 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
                 scene_cache_size=scene_cache_size,
                 prediction_channels=prediction_channels,
                 test_mode=test_mode,
-                output=output,
-                qlc_config=qlc_config,
-                osc_host=osc_host,
-                osc_port=osc_port,
-                osc_dry_run=osc_dry_run,
+                config_path=config_path,
+                qlc_host=qlc_host,
+                qlc_port=qlc_port,
+                dry_run=dry_run,
                 silence_config=silence_config,
                 speech_config=speech_config,
                 master_config=master_config,
@@ -1127,9 +1032,6 @@ def main(stdscr, profile, input_device, dual_stream, prediction_device, predicto
                 prediction_window_seconds=prediction_window_seconds,
                 prediction_interval_seconds=prediction_interval_seconds,
                 audio_file=audio_file,
-                osc_log_filters=osc_log_filters,
-                dmx_dry_run=dmx_dry_run,
-                filter_dmx=filter_dmx,
                 graph_enabled=graph_enabled,
                 dynamic_control=dynamic_control,
                 dynamic_controls=dynamic_controls,
@@ -1187,7 +1089,7 @@ if __name__ == "__main__":
             args.input_device = args.prediction_device
             dual_stream = True  # Use dual-stream setup (prediction device will be used)
             
-            logging.info("TEST MODE enabled: Scene predictions only, no FFT/DMX")
+            logging.info("TEST MODE enabled: scene predictions without lighting output")
             logging.info(f"  Using {args.prediction_device} for predictions")
         else:
             # Determine if dual-stream mode should be used
@@ -1230,7 +1132,6 @@ if __name__ == "__main__":
         try:
             wrapper(lambda stdscr: main(
                 stdscr,
-                args.profile,
                 args.input_device,
                 dual_stream,
                 prediction_device if dual_stream else None,
@@ -1239,11 +1140,10 @@ if __name__ == "__main__":
                 args.scene_cache_size,
                 args.prediction_channels,
                 args.test,
-                args.output,
-                args.qlc_config or args.config,
-                args.osc_host,
-                args.osc_port,
-                args.osc_dry_run,
+                args.config,
+                args.qlc_host,
+                args.qlc_port,
+                args.dry_run,
                 args.silence_config,
                 args.speech_config,
                 args.master_config,
@@ -1251,9 +1151,6 @@ if __name__ == "__main__":
                 args.prediction_config.window_seconds,
                 args.prediction_config.interval_seconds,
                 args.audio_file,
-                args.filter_osc,
-                args.dmx_dry_run,
-                args.filter_dmx,
                 not args.no_graph,
                 args.dynamic_control,
                 args.dynamic_controls,
@@ -1262,16 +1159,5 @@ if __name__ == "__main__":
                 args.fast_detection_config,
                 args.qlc_encryptionkey,
             ))
-        except QLCWebSocketError as exc:
-            raise SystemExit(
-                f"QLC+ WebSocket startup failed: {exc}\n"
-                "Check that the QLC+ Web Server is running, or override the "
-                "connection with --qlc-host and --qlc-port."
-            ) from None
-        except RuntimeError as exc:
-            if str(exc).startswith("No DMX interface found"):
-                raise SystemExit(
-                    "No DMX interface found. Connect the interface or run with "
-                    "--output enttec --dmx-dry-run."
-                ) from None
+        except Exception:
             raise

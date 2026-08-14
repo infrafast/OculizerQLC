@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).parents[1]
-SCENES_DIR = PROJECT_ROOT / "scenes"
+CONFIG_PATH = PROJECT_ROOT / "config" / "oculizer.json"
 V6_MAPPING = PROJECT_ROOT / "oculizer" / "scene_predictors" / "v6" / "scene_mapping.json"
 FIFTEEN_SECOND_SCENES = {
     "discodream",
@@ -14,36 +14,28 @@ FIFTEEN_SECOND_SCENES = {
     "red_speedracer",
     "white_speedracer",
 }
-
-
-def has_active_strobe(value):
-    if isinstance(value, dict):
-        return any(
-            ("strobe" in key.lower() and child not in (0, "0", None, False))
-            or has_active_strobe(child)
-            for key, child in value.items()
-        )
-    if isinstance(value, list):
-        return any(has_active_strobe(child) for child in value)
-    return False
+EIGHT_SECOND_SCENES = {
+    "bass_hopper_blue", "blue_bass_racer", "discobrain", "discodance",
+    "electric", "fairies", "goosebumps", "hypno", "rainbow_pulse",
+    "red_bass_pulse", "sequence_cosmic", "sequence_fire", "splatter",
+    "sustain", "swamp", "temple", "white_riser",
+}
 
 
 class V6SceneDurationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         mapping = json.loads(V6_MAPPING.read_text(encoding="utf-8"))
+        metadata = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))["lighting"]["scene_metadata"]
         cls.scenes = {
-            name: json.loads((SCENES_DIR / f"{name}.json").read_text(encoding="utf-8"))
+            name: metadata[name]
             for name in set(mapping.values())
         }
 
     def test_every_active_strobe_scene_is_limited_to_eight_seconds(self):
-        active_strobes = {
-            name for name, scene in self.scenes.items() if has_active_strobe(scene)
-        }
         self.assertEqual(
             {name for name, scene in self.scenes.items() if scene.get("max_duration_seconds") == 8},
-            active_strobes,
+            EIGHT_SECOND_SCENES,
         )
 
     def test_alternating_or_high_energy_non_strobe_scenes_use_fifteen_seconds(self):
@@ -51,4 +43,3 @@ class V6SceneDurationTests(unittest.TestCase):
             {name for name, scene in self.scenes.items() if scene.get("max_duration_seconds") == 15},
             FIFTEEN_SECOND_SCENES,
         )
-

@@ -1,8 +1,0 @@
-{
-    "name": "testing",
-    "description": "Testing profile. This works as the template lighting profile for running tests with two rgbs.",
-    "lights": [
-        {"name": "rgb1", "type": "rgb", "n_channels": 6},
-        {"name": "rgb2", "type": "rgb", "n_channels": 6}
-    ]
-}

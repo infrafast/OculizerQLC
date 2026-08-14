@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import tempfile
@@ -10,7 +11,7 @@ import numpy as np
 
 from oculizer.audio.sources import SoundDeviceAudioSource, WavFileAudioSource
 from oculizer.light.control import Oculizer
-from oculizer.scenes import SceneManager
+from oculizer.scenes import LogicalSceneRegistry
 
 
 def write_wav(path: Path, samples, *, sample_rate=8000, channels=1):
@@ -83,20 +84,22 @@ class WavFileAudioSourceTests(unittest.TestCase):
             path = Path(directory) / "input.wav"
             write_wav(path, [1000, 2000])
             qlc_config = Path(directory) / "qlc.json"
-            qlc_config.write_text(
-                '{"transport":{"dry_run":true},"routing":{"scenes":{"ambient1":{"OSCPath":"/ambient"}}}}',
-                encoding="utf-8",
-            )
+            qlc_config.write_text(json.dumps({"lighting": {
+                "native": {"dry_run": True},
+                "controls": {},
+                "routing": {"fallback_scene": "ambient1"},
+                "scene_metadata": {"ambient1": {
+                    "description": "Ambient", "design_behavior": "normal",
+                }},
+            }}), encoding="utf-8")
             with (
                 patch.object(Oculizer, "_get_audio_device_idx", side_effect=AssertionError("device lookup")),
                 patch.object(Oculizer, "_init_scene_prediction"),
             ):
                 engine = Oculizer(
-                    None,
-                    SceneManager("scenes"),
+                    LogicalSceneRegistry(qlc_config),
                     scene_prediction_enabled=True,
-                    output="qlc-osc",
-                    qlc_config_path=qlc_config,
+                    config_path=qlc_config,
                     audio_file=path,
                 )
 

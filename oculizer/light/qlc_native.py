@@ -15,6 +15,8 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from enum import Enum
 
+from oculizer.light.captions import normalize_caption
+
 
 PROTOCOL_ID = b"\xE6\x86"
 HEADER_LEN = 7
@@ -367,8 +369,6 @@ def _metadata_uint(raw_value: str | None, description: str) -> int | None:
 
 def parse_project_inventory(xml_data: bytes, maximum_size: int = 16 * 1024 * 1024):
     """Return normalized-caption button/slider inventories from QLC+ XML."""
-    from oculizer.light.qlc_websocket import normalize_caption
-
     if len(xml_data) > maximum_size:
         raise QLCNativeError("QLC+ project exceeds configured native inventory limit")
     lowered = xml_data.lower()
@@ -634,7 +634,6 @@ class QLCNativeClient:
                 self._stop.wait(self.reconnect_seconds)
 
     def activate_button(self, caption: str) -> bool:
-        from oculizer.light.qlc_websocket import normalize_caption
         if self.dry_run:
             logger.info("QLC+ native dry-run: activate button caption '%s'", caption)
             return True
@@ -653,7 +652,6 @@ class QLCNativeClient:
         return True
 
     def set_slider_level(self, caption: str, value: float) -> bool:
-        from oculizer.light.qlc_websocket import normalize_caption
         if self.dry_run:
             logger.info("QLC+ native dry-run: slider '%s' = %.3f", caption, value)
             return True
@@ -672,7 +670,6 @@ class QLCNativeClient:
         return True
 
     def _flush_pending(self) -> None:
-        from oculizer.light.qlc_websocket import normalize_caption
         with self._lock:
             if self.state != NativeState.READY or self.socket is None:
                 return

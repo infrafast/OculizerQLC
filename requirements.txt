@@ -23,10 +23,5 @@ torchvision==0.26.0
 # metadata pins PyTorch 1.13, which is unavailable for Python 3.11 on Apple
 # Silicon. See the installation command in README.md.
 
-# Lighting control
-pyserial>=3.5
-PyDMXControl
-websocket-client>=1.8.0,<2.0.0
-
 # Terminal UI
 windows-curses>=2.3.0; sys_platform == 'win32'

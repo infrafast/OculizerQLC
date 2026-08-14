@@ -3,7 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
-DEFAULT_OUTPUT=qlc-websocket
 DEFAULT_AUDIO_INPUT=default
 DEFAULT_DYNAMIC_CONTROL=normal
 CONFIG_DIR=/etc/oculizer
@@ -13,7 +12,6 @@ CONTROL_CLIENT=/usr/local/bin/oculizerctl
 SERVICE_CLIENT=/usr/local/bin/oculizer-service
 APP_UNIT=oculizer.service
 
-output=$DEFAULT_OUTPUT
 audio_input=$DEFAULT_AUDIO_INPUT
 dynamic_control=$DEFAULT_DYNAMIC_CONTROL
 service_user=${SUDO_USER:-pi}
@@ -26,7 +24,6 @@ Usage: sudo ./raspi_service_pack/install.sh [OPTIONS]
 Install Oculizer as a Raspberry Pi systemd service.
 
 Options:
-  --output MODE             qlc-websocket (default), qlc-native, or qlc-osc
   --audio-input SELECTOR    Oculizer input selector (default: default)
   --dynamic-control NAME    Startup dynamic-control profile (default: normal)
   --service-user USER       Runtime account (default: invoking sudo user or pi)
@@ -43,7 +40,6 @@ fail() {
 
 while (($#)); do
   case "$1" in
-    --output) (($# >= 2)) || fail "--output requires a value"; output=$2; shift 2 ;;
     --audio-input) (($# >= 2)) || fail "--audio-input requires a value"; audio_input=$2; shift 2 ;;
     --dynamic-control) (($# >= 2)) || fail "--dynamic-control requires a value"; dynamic_control=$2; shift 2 ;;
     --service-user) (($# >= 2)) || fail "--service-user requires a value"; service_user=$2; shift 2 ;;
@@ -54,7 +50,6 @@ while (($#)); do
   esac
 done
 
-[[ $output == qlc-websocket || $output == qlc-native || $output == qlc-osc ]] || fail "--output must be qlc-websocket, qlc-native, or qlc-osc"
 [[ $(uname -m) == aarch64 || $(uname -m) == arm64 ]] || fail "this installer currently requires Linux ARM64"
 [[ -r /etc/os-release ]] || fail "cannot identify the operating system"
 grep -qE '^(ID=debian|ID=raspbian)$' /etc/os-release || fail "Debian or Raspberry Pi OS is required"
@@ -65,13 +60,11 @@ service_group=$(id -gn "$service_user")
 service_uid=$(id -u "$service_user")
 
 [[ -r $REPO_ROOT/config/oculizer.json ]] || fail "missing config/oculizer.json"
-[[ -r $REPO_ROOT/config/qlc_config.json ]] || fail "missing config/qlc_config.json"
 [[ -f $REPO_ROOT/oculizer/scene_predictors/v6/.ready ]] || fail "the v6 predictor is not marked ready"
 
 echo "Oculizer Raspberry Pi installation"
 echo "  repository:      $REPO_ROOT"
 echo "  service user:    $service_user"
-echo "  output:          $output"
 echo "  audio input:     $audio_input"
 echo "  dynamic control: $dynamic_control"
 
@@ -99,20 +92,18 @@ install -d -m 0755 "$CONFIG_DIR" "$HELPER_DIR"
 if [[ -e $CONFIG_FILE ]]; then
   cp -a "$CONFIG_FILE" "$CONFIG_FILE.previous"
 fi
-python3 - "$CONFIG_FILE" "$REPO_ROOT" "$service_user" "$output" "$audio_input" "$dynamic_control" <<'PY'
+python3 - "$CONFIG_FILE" "$REPO_ROOT" "$service_user" "$audio_input" "$dynamic_control" <<'PY'
 import json
 import os
 import sys
 
-path, repository, user, output, audio_input, dynamic_control = sys.argv[1:]
+path, repository, user, audio_input, dynamic_control = sys.argv[1:]
 payload = {
     "repository": repository,
     "service_user": user,
-    "output": output,
     "audio_input": audio_input,
     "dynamic_control": dynamic_control,
     "control_socket": "/run/oculizer/control.sock",
-    "qlc_port": 9998 if output == "qlc-native" else 9999,
 }
 temporary = path + ".tmp"
 with open(temporary, "w", encoding="utf-8") as handle:

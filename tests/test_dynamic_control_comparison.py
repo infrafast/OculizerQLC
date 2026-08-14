@@ -8,6 +8,7 @@ from oculizer.runtime_config import SilenceConfig, SpeechConfig
 from scripts.render_dynamic_control_comparison import (
     comparison_dynamic_controls,
     count_transitions,
+    load_scene_durations,
     render_svg,
     scene_style,
     simulate_profile,
@@ -17,6 +18,19 @@ from scripts.render_dynamic_control_comparison import (
 
 
 class DynamicControlComparisonTests(unittest.TestCase):
+    def test_scene_durations_come_from_compact_application_metadata(self):
+        names, durations = load_scene_durations({"lighting": {"scene_metadata": {
+            "ambient1": {"description": "Ambient", "design_behavior": "normal"},
+            "strobe": {
+                "description": "Strobe",
+                "design_behavior": "responsive",
+                "max_duration_seconds": 8,
+            },
+        }}})
+
+        self.assertEqual(names, {"ambient1", "strobe"})
+        self.assertEqual(durations, {"strobe": 8.0})
+
     def test_statistics_report_scene_durations_and_transition_intervals(self):
         summary = summarize_simulation(
             [(0.0, 0.1, None), (1.0, 0.2, "one"),

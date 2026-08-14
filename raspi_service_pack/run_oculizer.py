@@ -19,8 +19,6 @@ def build_command(config):
     return [
         str(python), str(entrypoint),
         "--config", str(repository / "config/oculizer.json"),
-        "--qlc-config", str(repository / "config/qlc_config.json"),
-        "--output", config["output"],
         "--input-device", config["audio_input"],
         "--dynamic-control", config["dynamic_control"],
         "--control-socket", control_socket,

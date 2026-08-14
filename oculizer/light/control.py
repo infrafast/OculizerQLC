@@ -1,8 +1,7 @@
 """
 light_control.py
 
-Description: This script provides all the lighting control. It is responsible for controlling the DMX lights and RGB lights, loading profiles, 
-setting up the DMX controller, providing functions for sending signals to the DMX controller, and providing functions for controlling the RGB lights.
+Description: Real-time audio analysis, prediction, and QLC+ Native intentions.
 
 Author: Landry Bulls
 Date: 8/20/24
@@ -10,31 +9,17 @@ Date: 8/20/24
 
 import numpy as np
 import librosa
-from oculizer.light.enttec_controller import EnttecProController
-from oculizer.light.dmx_config import get_dmx_config
-from oculizer.scenes import SceneManager
-from oculizer.light.mapping import process_light, scale_mfft
 from oculizer.config import audio_parameters
 from oculizer.utils import load_json
-from oculizer.audio import AdaptiveNormalizer
 import threading
 import queue
 import time
 import logging
 from collections import deque
 from pathlib import Path
-from oculizer.light.effects import reset_effect_states
-from oculizer.light.orchestrators import ORCHESTRATORS
-from oculizer.light.backends import (
-    DisabledBackend,
-    EnttecBackend,
-    OUTPUT_ENTTEC,
-    OUTPUT_QLC_OSC,
-    OUTPUT_QLC_NATIVE,
-    OUTPUT_QLC_WEBSOCKET,
-    create_qlc_native_backend,
-    create_qlc_osc_backend,
-    create_qlc_websocket_backend,
+from oculizer.light.native_controller import (
+    DisabledLightingController,
+    create_native_lighting_controller,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,28 +41,15 @@ class _LazySoundDevice:
 
 sd = _LazySoundDevice()
 
-global n_channels
-n_channels = {
-    'dimmer': 1,
-    'rgb': 6,
-    'strobe': 2,
-    'laser': 10,
-    'rockville864': 39,
-    'pinspot': 6
-}
-
 class Oculizer(threading.Thread):
-    def __init__(self, profile_name, scene_manager, input_device='cable', 
+    def __init__(self, scene_manager, input_device='cable',
                  scene_prediction_enabled=False, scene_prediction_device=None, predictor_version='v6',
                  average_dual_channels=False, scene_cache_size=10, prediction_channels=None,
-                 test_mode=False, adaptive_gain=True, output=OUTPUT_ENTTEC,
-                 qlc_config_path=None, osc_host=None,
-                 osc_port=None, osc_dry_run=None, prediction_window_seconds=4.0,
+                 test_mode=False, config_path=None, qlc_host=None,
+                 qlc_port=None, dry_run=None, prediction_window_seconds=4.0,
                  prediction_interval_seconds=1.0,
-                 audio_file=None, osc_log_filters=(), dmx_dry_run=False,
-                 filter_dmx=False, fast_detection_config=None, qlc_encryption_key=None):
+                 audio_file=None, fast_detection_config=None, qlc_encryption_key=None):
         threading.Thread.__init__(self)
-        self.profile_name = profile_name
         self.input_device = str(input_device).strip()
         self.audio_file = Path(audio_file).expanduser().resolve() if audio_file else None
         self.sample_rate = audio_parameters['SAMPLERATE']
@@ -86,79 +58,29 @@ class Oculizer(threading.Thread):
         self.channels = 1
         self.average_dual_channels = average_dual_channels
         self.test_mode = test_mode
-        self.output = output
-        self.dmx_dry_run = bool(dmx_dry_run)
-        self.filter_dmx = bool(filter_dmx)
-        self.mfft_queue = queue.Queue(maxsize=1)
         self.running = threading.Event()
         self.scene_manager = scene_manager
-        # QLC+ owns fixtures and DMX patching. Only the Enttec backend loads a
-        # hardware profile from Oculizer.
-        self.profile = self._load_profile() if output == OUTPUT_ENTTEC and not test_mode else {"lights": []}
-        self.light_names = [i['name'] for i in self.profile['lights']]
-        # Test mode disables all lighting output. Otherwise select the requested backend.
+        # Test mode disables lighting output; all normal operation is native.
         if test_mode:
-            self.dmx_controller, self.controller_dict = None, {}
-            self.backend = DisabledBackend()
+            self.backend = DisabledLightingController()
             logger.info("Test mode: lighting output disabled")
-        elif output == OUTPUT_QLC_OSC:
-            if qlc_config_path is None:
+        else:
+            if config_path is None:
                 current_dir = Path(__file__).resolve().parent
-                qlc_config_path = current_dir.parent.parent / 'config' / 'qlc_config.json'
-            self.backend = create_qlc_osc_backend(
-                qlc_config_path,
-                host=osc_host,
-                port=osc_port,
-                dry_run=osc_dry_run,
-                log_filter_paths=osc_log_filters,
-            )
-            self.dmx_controller, self.controller_dict = None, {}
-            logger.info(
-                "QLC+ OSC output initialized for %s:%d%s",
-                self.backend.client.config.host,
-                self.backend.client.config.port,
-                " (dry-run)" if self.backend.client.config.dry_run else "",
-            )
-        elif output == OUTPUT_QLC_WEBSOCKET:
-            if qlc_config_path is None:
-                current_dir = Path(__file__).resolve().parent
-                qlc_config_path = current_dir.parent.parent / 'config' / 'qlc_config.json'
-            self.backend = create_qlc_websocket_backend(
-                qlc_config_path,
-                host=osc_host,
-                port=osc_port,
-                dry_run=osc_dry_run,
-            )
-            self.dmx_controller, self.controller_dict = None, {}
-            logger.info(
-                "QLC+ WebSocket output initialized for %s:%d%s",
-                self.backend.client.config.host,
-                self.backend.client.config.port,
-                " (dry-run)" if self.backend.client.config.dry_run else "",
-            )
-        elif output == OUTPUT_QLC_NATIVE:
-            if qlc_config_path is None:
-                current_dir = Path(__file__).resolve().parent
-                qlc_config_path = current_dir.parent.parent / 'config' / 'oculizer.json'
-            self.backend = create_qlc_native_backend(
-                qlc_config_path,
-                host=osc_host,
-                port=osc_port,
-                dry_run=osc_dry_run,
+                config_path = current_dir.parent.parent / 'config' / 'oculizer.json'
+            self.backend = create_native_lighting_controller(
+                config_path,
+                host=qlc_host,
+                port=qlc_port,
+                dry_run=dry_run,
                 encryption_key=qlc_encryption_key,
             )
-            self.dmx_controller, self.controller_dict = None, {}
             logger.info("QLC+ native output initialized; authorization continues asynchronously")
-        elif output == OUTPUT_ENTTEC:
-            self.dmx_controller, self.controller_dict = self._load_controller()
-            self.backend = EnttecBackend(self.dmx_controller, self.controller_dict)
-        else:
-            raise ValueError(f"Unsupported lighting output: {output}")
         # Audio is only required for direct reactive rendering or prediction.
         # A manual QLC+ selector must not open an otherwise unused native stream.
         self.audio_processing_enabled = (
             scene_prediction_enabled
-            or (not test_mode and self.backend.supports_direct_fixture_output)
+            or False
         )
         if self.audio_file is not None and scene_prediction_device is not None:
             raise ValueError("--audio-file cannot be combined with a separate prediction device")
@@ -169,8 +91,6 @@ class Oculizer(threading.Thread):
         )
         self.audio_source = None
         self.scene_changed = threading.Event()
-        self.current_orchestrator = None
-        # Set scene_changed event to trigger initial orchestrator setup
         self.scene_changed.set()
         
         # Scene prediction setup
@@ -216,11 +136,6 @@ class Oculizer(threading.Thread):
         self.queue_pressure_checks = 0
         self.queue_pressure_level = None
         self.audio_loop_generation = 0
-
-        # Adaptive gain normalizer — compensates for differing source levels
-        # (e.g. BlackHole has no hardware gain knob unlike the Scarlett 2i2).
-        self.adaptive_gain_enabled = adaptive_gain
-        self.normalizer = AdaptiveNormalizer() if adaptive_gain else None
 
         if self.audio_file is not None:
             from oculizer.audio.sources import WavFileAudioSource
@@ -552,15 +467,6 @@ class Oculizer(threading.Thread):
                 ), axis=1)
                 self.current_mel_spectrum = mfft_data
                 self.current_mel_sample_rate = 48000
-                mfft_data = scale_mfft(mfft_data)
-                
-                # Update mfft_queue for visualizer
-                if self.mfft_queue.full():
-                    try:
-                        self.mfft_queue.get_nowait()
-                    except queue.Empty:
-                        pass
-                self.mfft_queue.put(mfft_data)
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
@@ -825,248 +731,6 @@ class Oculizer(threading.Thread):
             self.prediction_thread = threading.Thread(target=self.prediction_processing_thread, daemon=True)
             self.prediction_thread.start()
 
-    def _create_dimmer_fixture(self, name, start_channel, channels, controller):
-        """Create a dimmer fixture for EnttecProController."""
-        class DimmerFixture:
-            def __init__(self, name, start_channel, channels, controller):
-                self.name = name
-                self.start_channel = start_channel
-                self.n_channels = channels
-                self.controller = controller
-            
-            def dim(self, value):
-                """Set dimmer value."""
-                self.controller.set_channel(self.start_channel, value)
-            
-            def set_channels(self, values):
-                """Set channel values (batched update to avoid multiple DMX sends)."""
-                # Update all channels in controller's buffer without sending
-                for i, value in enumerate(values):
-                    if i < self.n_channels:
-                        channel = self.start_channel + i
-                        if 1 <= channel <= 512:
-                            self.controller.dmx_data[channel] = max(0, min(255, int(value)))
-                # Send all updates at once
-                self.controller._send_dmx_packet()
-        
-        return DimmerFixture(name, start_channel, channels, controller)
-
-    def _create_rgb_fixture(self, name, start_channel, channels, controller):
-        """Create an RGB fixture for EnttecProController."""
-        class RGBFixture:
-            def __init__(self, name, start_channel, channels, controller):
-                self.name = name
-                self.start_channel = start_channel
-                self.n_channels = channels
-                self.controller = controller
-            
-            def set_channels(self, values):
-                """Set RGB channel values (batched update to avoid multiple DMX sends)."""
-                # Update all channels in controller's buffer without sending
-                for i, value in enumerate(values):
-                    if i < self.n_channels:
-                        channel = self.start_channel + i
-                        if 1 <= channel <= 512:
-                            self.controller.dmx_data[channel] = max(0, min(255, int(value)))
-                # Send all updates at once
-                self.controller._send_dmx_packet()
-        
-        return RGBFixture(name, start_channel, channels, controller)
-
-    def _create_strobe_fixture(self, name, start_channel, channels, controller):
-        """Create a strobe fixture for EnttecProController."""
-        class StrobeFixture:
-            def __init__(self, name, start_channel, channels, controller):
-                self.name = name
-                self.start_channel = start_channel
-                self.n_channels = channels
-                self.controller = controller
-            
-            def set_channels(self, values):
-                """Set strobe channel values (batched update to avoid multiple DMX sends)."""
-                # Update all channels in controller's buffer without sending
-                for i, value in enumerate(values):
-                    if i < self.n_channels:
-                        channel = self.start_channel + i
-                        if 1 <= channel <= 512:
-                            self.controller.dmx_data[channel] = max(0, min(255, int(value)))
-                # Send all updates at once
-                self.controller._send_dmx_packet()
-        
-        return StrobeFixture(name, start_channel, channels, controller)
-
-    def _create_laser_fixture(self, name, start_channel, channels, controller):
-        """Create a laser fixture for EnttecProController."""
-        class LaserFixture:
-            def __init__(self, name, start_channel, channels, controller):
-                self.name = name
-                self.start_channel = start_channel
-                self.n_channels = channels
-                self.controller = controller
-            
-            def set_channels(self, values):
-                """Set laser channel values (batched update to avoid multiple DMX sends)."""
-                # Update all channels in controller's buffer without sending
-                for i, value in enumerate(values):
-                    if i < self.n_channels:
-                        channel = self.start_channel + i
-                        if 1 <= channel <= 512:
-                            self.controller.dmx_data[channel] = max(0, min(255, int(value)))
-                # Send all updates at once
-                self.controller._send_dmx_packet()
-        
-        return LaserFixture(name, start_channel, channels, controller)
-
-    def _create_rockville_fixture(self, name, start_channel, channels, controller):
-        """Create a Rockville fixture for EnttecProController."""
-        class RockvilleFixture:
-            def __init__(self, name, start_channel, channels, controller):
-                self.name = name
-                self.start_channel = start_channel
-                self.n_channels = channels
-                self.controller = controller
-            
-            def set_channels(self, values):
-                """Set Rockville channel values (batched update to avoid multiple DMX sends)."""
-                # Update all channels in controller's buffer without sending
-                for i, value in enumerate(values):
-                    if i < self.n_channels:
-                        channel = self.start_channel + i
-                        if 1 <= channel <= 512:
-                            self.controller.dmx_data[channel] = max(0, min(255, int(value)))
-                # Send all updates at once
-                self.controller._send_dmx_packet()
-        
-        return RockvilleFixture(name, start_channel, channels, controller)
-
-    def _load_profile(self):
-        current_dir = Path(__file__).resolve().parent
-        project_root = current_dir.parent.parent
-        profile_path = project_root / 'profiles' / f'{self.profile_name}.json'
-        return load_json(profile_path)
-
-    def _load_controller(self):
-        max_retries = 3
-        retry_delay = 1.0  # seconds
-        last_error = None
-
-        for attempt in range(max_retries):
-            try:
-                if self.dmx_dry_run:
-                    from oculizer.light.virtual_enttec_controller import VirtualEnttecController
-
-                    controller = VirtualEnttecController(log_frames=not self.filter_dmx)
-                    _terminal_line("DMX dry-run: virtual Enttec controller initialized")
-                elif attempt > 0:
-                    _terminal_line(f"Retrying DMX connection (attempt {attempt + 1}/{max_retries})...")
-                    time.sleep(retry_delay)
-                else:
-                    _terminal_line("🔌 Connecting to DMX controller...")
-
-                if not self.dmx_dry_run:
-                    # Use EnttecProController for DMXKing ultraDMX MAX.
-                    # On retry attempts, skip cache and do full port scan.
-                    skip_cache = (attempt > 0)
-                    dmx_config = get_dmx_config(skip_cache=skip_cache)
-                    controller = EnttecProController(
-                        port=dmx_config['port'],
-                        baudrate=dmx_config['baudrate'],
-                        timeout=dmx_config['timeout']
-                    )
-                    _terminal_line(f"✓ DMX controller connected on {dmx_config['port']}")
-                control_dict = {}
-                curr_channel = 1
-                sleeptime = 0.0 if self.dmx_dry_run else 0.1
-
-                # Access the global n_channels dictionary
-                global n_channels
-                
-                _terminal_line(f"💡 Initializing {len(self.profile['lights'])} light fixtures...")
-                # Create custom fixture objects for EnttecProController
-                for light in self.profile['lights']:
-                    if light['type'] == 'dimmer':
-                        channels = n_channels['dimmer']
-                        fixture = self._create_dimmer_fixture(light['name'], curr_channel, channels, controller)
-                        control_dict[light['name']] = fixture
-                        curr_channel += channels
-                        fixture.dim(255)
-                        time.sleep(sleeptime)
-                        fixture.dim(0)
-
-                    elif light['type'] == 'rgb':
-                        channels = n_channels['rgb']
-                        fixture = self._create_rgb_fixture(light['name'], curr_channel, channels, controller)
-                        control_dict[light['name']] = fixture
-                        curr_channel += channels
-                        fixture.set_channels([255] * channels)
-                        time.sleep(sleeptime)
-                        fixture.set_channels([0] * channels)
-
-                    elif light['type'] == 'strobe':
-                        channels = n_channels['strobe']
-                        fixture = self._create_strobe_fixture(light['name'], curr_channel, channels, controller)
-                        control_dict[light['name']] = fixture
-                        curr_channel += channels
-                        fixture.set_channels([255] * channels)
-                        time.sleep(sleeptime)
-                        fixture.set_channels([0] * channels)
-
-                    elif light['type'] == 'laser':
-                        channels = n_channels['laser']
-                        fixture = self._create_laser_fixture(light['name'], curr_channel, channels, controller)
-                        control_dict[light['name']] = fixture
-                        curr_channel += channels
-                        fixture.set_channels([0] * channels)
-                        time.sleep(sleeptime)
-                        fixture.set_channels([128, 255] + [0] * (channels - 2))
-                        time.sleep(sleeptime)
-                        fixture.set_channels([0] * channels)
-
-                    elif light['type'] == 'rockville864':
-                        channels = n_channels['rockville864']
-                        fixture = self._create_rockville_fixture(light['name'], curr_channel, channels, controller)
-                        control_dict[light['name']] = fixture
-                        curr_channel += channels
-                        fixture.set_channels([0] * channels)
-                        time.sleep(sleeptime)
-                        fixture.set_channels([255] * channels)
-                        time.sleep(sleeptime)
-                        fixture.set_channels([0] * channels)
-
-                    elif light['type'] == 'pinspot':
-                        channels = n_channels['pinspot']
-                        fixture = self._create_rgb_fixture(light['name'], curr_channel, channels, controller)
-                        control_dict[light['name']] = fixture
-                        curr_channel += channels
-                        fixture.set_channels([0] * channels)
-                        time.sleep(sleeptime)
-                        fixture.set_channels([255] * channels)
-                        time.sleep(sleeptime)
-                        fixture.set_channels([0] * channels)
-
-                _terminal_line(f"✓ All {len(control_dict)} light fixtures initialized")
-                _terminal_line()
-                return controller, control_dict
-
-            except IOError as e:
-                last_error = e
-                _terminal_line(f"Failed to connect to DMX interface: {str(e)}")
-                if attempt < max_retries - 1:
-                    _terminal_line("Will retry after unplugging and replugging the device...")
-                    continue
-                
-                _terminal_line()
-                _terminal_line("Troubleshooting steps:")
-                _terminal_line("1. Unplug and replug your DMX interface")
-                _terminal_line("2. Check if the device shows up in 'System Information > USB'")
-                _terminal_line("3. Try a different USB port")
-                _terminal_line("4. If using a USB hub, try connecting directly to the computer")
-                raise RuntimeError("Failed to connect to DMX interface after multiple attempts") from last_error
-            
-            except Exception as e:
-                _terminal_line(f"Unexpected error while setting up DMX controller: {str(e)}")
-                raise
-
     def audio_callback(self, indata, frames, time, status):
         if status:
             logger.warning("Audio callback status: %s", status)
@@ -1102,17 +766,6 @@ class Oculizer(threading.Thread):
         mfft_data = np.mean(librosa.feature.melspectrogram(y=audio_data, sr=self.sample_rate, n_fft=self.block_size, hop_length=self.hop_length), axis=1)
         self.current_mel_spectrum = mfft_data
         self.current_mel_sample_rate = self.sample_rate
-        mfft_data = scale_mfft(mfft_data)
-
-        if self.normalizer is not None:
-            mfft_data = self.normalizer.process(mfft_data)
-        
-        if self.mfft_queue.full():
-            try:
-                self.mfft_queue.get_nowait()
-            except queue.Empty:
-                pass
-        self.mfft_queue.put(mfft_data)
 
     def _reset_file_loop_state(self):
         """Discard temporal state that must not cross a WAV loop boundary."""
@@ -1275,7 +928,7 @@ class Oculizer(threading.Thread):
             )
         
         try:
-            # Start main audio stream for FFT/DMX control
+            # Start the shared audio stream for analysis and prediction.
             from oculizer.audio.sources import SoundDeviceAudioSource
 
             with SoundDeviceAudioSource(
@@ -1363,87 +1016,13 @@ class Oculizer(threading.Thread):
                     logger.exception("Error closing prediction stream")
 
     def process_audio_and_lights(self):
-        # Skip processing in test mode
-        if self.test_mode or not self.backend.supports_direct_fixture_output:
-            # QLC+ scene control is intentionally connected in phase 3.
-            self.scene_changed.clear()
-            return
-            
-        scene_just_changed = False
-        if self.scene_changed.is_set():
-            self.scene_changed.clear()
-            scene_just_changed = True
-            self.turn_off_all_lights()
-            # Initialize orchestrator if configured in new scene
-            if 'orchestrator' in self.scene_manager.current_scene:
-                orch_config = self.scene_manager.current_scene['orchestrator']
-                orch_type = orch_config['type']
-                if orch_type in ORCHESTRATORS:
-                    self.current_orchestrator = ORCHESTRATORS[orch_type](orch_config['config'])
-                else:
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.warning(f"Orchestrator type {orch_type} not found")
-
-        try:
-            mfft_data = self.mfft_queue.get(block=False)
-        except queue.Empty:
-            # If scene just changed, use zeros to initialize lights
-            # Otherwise return and wait for audio data
-            if scene_just_changed:
-                mfft_data = np.zeros(128)  # Default MFFT size
-            else:
-                return
-
-        current_time = time.time()
-
-        # Get orchestrator modifications if orchestrator exists
-        modifications = {}
-        if self.current_orchestrator:
-            modifications = self.current_orchestrator.process(
-                self.light_names,
-                mfft_data,
-                current_time
-            )
-
-        # Track which lights are in the current scene
-        scene_light_names = {light['name'] for light in self.scene_manager.current_scene['lights']}
-        
-        # Process all lights in profile
-        for light_name in self.light_names:
-            # Find the light config in the scene (if it exists)
-            light_config = None
-            for light in self.scene_manager.current_scene['lights']:
-                if light['name'] == light_name:
-                    light_config = light
-                    break
-            
-            # If light is not in the scene, turn it off and continue
-            if light_config is None:
-                self.controller_dict[light_name].set_channels([0] * self.controller_dict[light_name].n_channels)
-                continue
-
-            try:
-                # Check if light is active according to orchestrator
-                light_mods = modifications.get(light_name, {'active': True, 'modifiers': {}})
-                
-                if not light_mods['active']:
-                    # Light is disabled by orchestrator - turn it off
-                    self.controller_dict[light_name].set_channels([0] * self.controller_dict[light_name].n_channels)
-                    continue
-
-                # Process light based on configuration
-                dmx_values = process_light(light_config, mfft_data, current_time, modifiers=light_mods['modifiers'])
-                if dmx_values is not None:
-                    self.controller_dict[light_name].set_channels(dmx_values)
-
-            except Exception as e:
-                print(f"Error processing light {light_name}: {str(e)} (Error type: {type(e).__name__})")
+        # QLC+ owns rendering; audio callbacks feed prediction/modulation only.
+        self.scene_changed.clear()
 
     def change_scene(self, scene_name):
         # The backend owns output-state transitions. If activation fails (for
         # example, because the logical scene is unmapped), preserve the current
-        # SceneManager state and report the failed command to the caller.
+        # logical scene state and report the failed command to the caller.
         target_scene = self.resolve_scene_target(scene_name)
         if target_scene is None:
             logger.warning("Requested scene '%s' has no available output target", scene_name)
@@ -1451,10 +1030,7 @@ class Oculizer(threading.Thread):
         if not self.backend.activate_scene(target_scene):
             return False
         # Reset all effect states before changing scene
-        reset_effect_states()
         self.scene_manager.set_scene(target_scene, apply_fallback=False)
-        # Reset orchestrator when changing scenes
-        self.current_orchestrator = None
         # Set flag for main loop to handle the transition
         self.scene_changed.set()
         logger.info("Scene request '%s' activated as '%s'", scene_name, target_scene)
@@ -1462,16 +1038,13 @@ class Oculizer(threading.Thread):
         return True
 
     def resolve_scene_target(self, scene_name):
-        """Resolve backend routing and legacy profile fallback without side effects."""
+        """Resolve backend routing and logical catalog membership."""
         backend_target = self.backend.resolve_scene(scene_name)
         if backend_target is None:
             return None
         if backend_target not in self.scene_manager.scenes:
             return None
-        return self.scene_manager.resolve_scene(
-            backend_target,
-            apply_fallback=self.output == OUTPUT_ENTTEC,
-        )
+        return self.scene_manager.resolve_scene(backend_target, apply_fallback=False)
 
     def get_scene_max_duration(self, scene_name):
         """Return a scene-specific automatic duration override, if declared."""
@@ -1489,8 +1062,6 @@ class Oculizer(threading.Thread):
 
     def restrict_scenes_to_backend(self):
         """Apply a hardware-independent QLC+ scene catalog when applicable."""
-        if self.output not in (OUTPUT_QLC_OSC, OUTPUT_QLC_WEBSOCKET, OUTPUT_QLC_NATIVE):
-            return
         self.scene_manager.scenes = {
             name: self.scene_manager.scenes[name]
             for name in self.backend.scene_map.scenes
@@ -1505,22 +1076,8 @@ class Oculizer(threading.Thread):
     def reload_scene_configuration(self):
         """Reload scene JSON and the QLC+ logical map without curses coupling."""
         self.scene_manager.reload_scenes()
-        if self.output in (OUTPUT_QLC_OSC, OUTPUT_QLC_WEBSOCKET, OUTPUT_QLC_NATIVE):
-            self.backend.reload_scene_map()
-            self.restrict_scenes_to_backend()
-
-    def get_light_type(self, light_name):
-        """Helper function to get light type from profile."""
-        for light in self.profile['lights']:
-            if light['name'] == light_name:
-                return light['type']
-        return None
-
-    def turn_off_all_lights(self):
-        if self.test_mode or not self.backend.supports_direct_fixture_output:
-            return
-        self.backend.blackout(True)
-        time.sleep(0.05)  # Small delay to ensure DMX signal is processed
+        self.backend.reload_scene_map()
+        self.restrict_scenes_to_backend()
 
     def stop(self):
         import logging
@@ -1548,24 +1105,3 @@ class Oculizer(threading.Thread):
         
         if hasattr(self, 'backend'):
             self.backend.close()
-
-def main():
-    # init scene manager
-    scene_manager = SceneManager('scenes')
-    # set the initial scene to the test scene
-    scene_manager.set_scene('testing')  
-    # init the light controller with the name of the profile and the scene manager
-    controller = Oculizer('testing', scene_manager)
-    print("Starting Oculizer...")
-    controller.start()
-    
-    try:
-        while True:
-            time.sleep(1)  # Main thread does nothing but keep the program alive
-    except KeyboardInterrupt:
-        print("Stopping Oculizer...")
-        controller.stop()
-        controller.join()
-
-if __name__ == "__main__":
-    main()
