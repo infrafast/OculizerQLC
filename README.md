@@ -81,11 +81,22 @@ Install the service pack. Installation neither starts the service nor changes it
 sudo ./raspi_service_pack/install.sh
 ```
 
-Override settings when needed:
+The installer accepts `--output` (`qlc-websocket`, `qlc-native`, or `qlc-osc`),
+`--audio-input`, `--dynamic-control`, and `--service-user`. For example, install
+or reconfigure the service for native output:
 
 ```bash
-sudo ./raspi_service_pack/install.sh --output qlc-websocket --audio-input default --dynamic-control normal
+sudo ./raspi_service_pack/install.sh --output qlc-native --audio-input default --dynamic-control normal --service-user pi
 ```
+
+Run `./raspi_service_pack/install.sh --help` for the authoritative option list.
+Each successful invocation regenerates `/etc/oculizer/deployment.json`; omitted
+options use their documented defaults rather than inheriting previous values.
+The previous file is saved as `/etc/oculizer/deployment.json.previous`. Inspect
+the active settings with `cat /etc/oculizer/deployment.json`, and run
+`oculizer-service restart` if a running process must adopt the new settings.
+The detailed option table and transport examples are in
+[`raspi_service_pack/README.md`](raspi_service_pack/README.md).
 
 Choose automatic boot operation:
 
@@ -111,9 +122,12 @@ Run the same installed configuration in the foreground for diagnostics:
 oculizer-service run-auto
 ```
 
-`run-auto` reports the QLC+ host and port it is waiting for. If the QLC+
-WebSocket server cannot be reached within 30 seconds, it exits with a clear
-connection error and troubleshooting hint instead of starting Oculizer.
+With WebSocket output, `run-auto` reports the QLC+ host and port it is waiting
+for. If that server cannot be reached within 30 seconds, it exits with a clear
+connection error and troubleshooting hint instead of starting Oculizer. Native
+output starts immediately and lets the asynchronous native client connect and
+request authorization when QLC+ becomes available. OSC output retains its
+fixed three-second startup delay.
 
 Disable future boot auto-start without stopping the currently running process:
 

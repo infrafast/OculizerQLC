@@ -12,6 +12,58 @@ sudo ./raspi_service_pack/install.sh
 
 Git preserves the executable bit. The `chmod` command is harmless and also supports copies made through an archive or filesystem that discarded Unix modes.
 
+## Installation options
+
+The installer accepts deployment options both for the first installation and
+when reconfiguring an existing service:
+
+| Option | Accepted value | Default |
+|---|---|---|
+| `--output MODE` | `qlc-websocket`, `qlc-native`, or `qlc-osc` | `qlc-websocket` |
+| `--audio-input SELECTOR` | An Oculizer device selector such as `default` | `default` |
+| `--dynamic-control NAME` | `off` or a profile declared in `config/oculizer.json` | `normal` |
+| `--service-user USER` | Existing Linux account used to run Oculizer | invoking sudo user, or `pi` |
+| `--check` | Validate the host without changing it | disabled |
+| `--non-interactive` | Explicit automation marker; installation is already non-interactive | disabled |
+
+Display the authoritative option list at any time:
+
+```bash
+./raspi_service_pack/install.sh --help
+```
+
+For example, install or reconfigure the service for QLC+ native output:
+
+```bash
+sudo ./raspi_service_pack/install.sh --output qlc-native --audio-input default --dynamic-control normal --service-user pi
+```
+
+Equivalent WebSocket and OSC examples are:
+
+```bash
+sudo ./raspi_service_pack/install.sh --output qlc-websocket --audio-input default --dynamic-control normal --service-user pi
+sudo ./raspi_service_pack/install.sh --output qlc-osc --audio-input default --dynamic-control normal --service-user pi
+```
+
+Every successful installation regenerates `/etc/oculizer/deployment.json`
+from the options supplied on that invocation. Options that are omitted take
+their documented defaults; they are not copied implicitly from the previous
+configuration. The prior deployment file is retained as
+`/etc/oculizer/deployment.json.previous`. Review the active configuration with:
+
+```bash
+cat /etc/oculizer/deployment.json
+```
+
+Reinstallation updates the environment, helpers, systemd unit, and deployment
+configuration but deliberately preserves whether the service is currently
+running and whether boot auto-start is enabled. Restart a running service
+explicitly when the new configuration should take effect:
+
+```bash
+oculizer-service restart
+```
+
 The installer preserves the current running and boot-enabled states. Choose one operating mode afterward:
 
 ```bash
