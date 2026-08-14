@@ -107,6 +107,8 @@ sudo -u "$service_user" -H "$REPO_ROOT/install.sh" --python python3
 "$REPO_ROOT/.venv/bin/python" -c 'import efficientat, numpy, scipy, torch; print(f"Validated Python stack: numpy={numpy.__version__} scipy={scipy.__version__} torch={torch.__version__}")'
 
 install -d -m 0755 "$CONFIG_DIR" "$HELPER_DIR"
+chown "$service_user:$service_group" "$CONFIG_DIR"
+chmod 0750 "$CONFIG_DIR"
 if [[ -e $CONFIG_FILE ]]; then
   cp -a "$CONFIG_FILE" "$CONFIG_FILE.previous"
 fi
@@ -130,9 +132,10 @@ temporary = path + ".tmp"
 with open(temporary, "w", encoding="utf-8") as handle:
     json.dump(payload, handle, indent=2)
     handle.write("\n")
-os.chmod(temporary, 0o644)
+os.chmod(temporary, 0o640)
 os.replace(temporary, path)
 PY
+chown "$service_user:$service_group" "$CONFIG_FILE"
 
 install -m 0755 "$SCRIPT_DIR/run_oculizer.py" "$HELPER_DIR/run_oculizer.py"
 install -m 0755 "$SCRIPT_DIR/wait_for_qlc.py" "$HELPER_DIR/wait_for_qlc.py"

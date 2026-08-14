@@ -32,6 +32,8 @@ def configure_service_streams() -> None:
 def parse_args():
     parser = argparse.ArgumentParser(description="Run Oculizer without a terminal interface")
     parser.add_argument("--config", default=None, help="General configuration (default: config/oculizer.json)")
+    parser.add_argument("--deployment-config", default=None,
+                        help="Trusted service deployment overlay (used by the installed launcher)")
     parser.add_argument("--input-device", default=None, help="Shared audio input selector")
     parser.add_argument("--audio-file", default=None, help="Loop a local PCM WAV file instead of opening an audio device")
     from oculizer.scene_predictors import list_available_versions
@@ -140,12 +142,16 @@ def build_service(args) -> HeadlessOculizerService:
         off_cache_size=args.scene_cache_size,
         scene_max_duration=args.scene_max_duration,
         control_socket_path=None if args.no_control_socket else args.control_socket,
-        config_store=ConfigurationStore(args.config),
+        config_store=ConfigurationStore(args.config, args.deployment_config),
         log_provider=LOG_BUFFER.tail,
         launch_info={
             "mode": "service" if os.environ.get("INVOCATION_ID") else "headless",
             "restart_capability": "service" if os.environ.get("INVOCATION_ID") else "manual",
             "config_path": args.config,
+            "deployment_path": (
+                str(Path(args.deployment_config).expanduser().resolve())
+                if args.deployment_config else None
+            ),
             "restart_command": shlex.join([str(Path(sys.executable).resolve()), *sys.argv]),
             "working_directory": str(Path.cwd()),
         },

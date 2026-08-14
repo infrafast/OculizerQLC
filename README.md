@@ -135,6 +135,13 @@ The Web server is not started by `oculize.py`. Its runtime selector switches
 between the installed **Service** and a **Local headless**
 `oculizer_service.py` process when both are available; changing the target
 reloads all settings, presets, status, devices, and logs from that runtime.
+For the Service target, machine/startup values such as audio input and Web
+listener are read from and written to `/etc/oculizer/deployment.json`; analysis,
+detection, modulation, routing, and scene values use the repository's
+`config/oculizer.json`. A single Apply validates, backs up, and updates the
+appropriate source for every changed field. Local headless uses only its
+selected application configuration. Each field and the configuration header
+show their effective source.
 Disable the Web child completely when starting headless mode:
 
 ```bash

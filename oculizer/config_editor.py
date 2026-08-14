@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import stat
 import tempfile
 import threading
 from typing import Any, Callable
@@ -227,25 +228,85 @@ class ConfigurationConflictError(RuntimeError):
     """Raised when an editor attempts to replace a newer file revision."""
 
 
-class ConfigurationStore:
-    """Edit one trusted configuration path with bounded atomic operations."""
+DEPLOYMENT_FIELD_PATHS = {
+    "audio.input_device": "audio_input",
+    "web.enabled": "web_enabled",
+    "web.bind": "web_bind",
+    "web.port": "web_port",
+}
 
-    def __init__(self, path: str | Path | None = None):
+
+class ConfigurationStore:
+    """Atomically edit application config and an optional service overlay."""
+
+    def __init__(self, path: str | Path | None = None,
+                 deployment_path: str | Path | None = None):
         self.path = Path(path).expanduser().resolve() if path else DEFAULT_CONFIG_PATH.resolve()
         self.backup_path = self.path.with_suffix(self.path.suffix + ".previous")
+        self.deployment_path = (
+            Path(deployment_path).expanduser().resolve() if deployment_path else None
+        )
         self.lock = threading.RLock()
 
     def schema(self) -> list[dict[str, Any]]:
-        return [field.public() for field in CONFIG_FIELDS]
+        result = []
+        for field in CONFIG_FIELDS:
+            public = field.public()
+            public["source"] = (
+                "deployment"
+                if self.deployment_path is not None and field.path in DEPLOYMENT_FIELD_PATHS
+                else "application"
+            )
+            result.append(public)
+        return result
+
+    @staticmethod
+    def _decode(raw: bytes, label: str) -> dict[str, Any]:
+        try:
+            value = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"{label} configuration is invalid: {exc}") from exc
+        if not isinstance(value, dict):
+            raise ValueError(f"{label} configuration must be a JSON object")
+        return value
+
+    def _read_documents(self):
+        application_raw = self.path.read_bytes()
+        application = load_runtime_config(self.path)
+        if self.deployment_path is None:
+            return application_raw, application, None, None
+        deployment_raw = self.deployment_path.read_bytes()
+        deployment = self._decode(deployment_raw, "deployment")
+        return application_raw, application, deployment_raw, deployment
+
+    @staticmethod
+    def _combined_revision(application_raw: bytes, deployment_raw: bytes | None) -> str:
+        digest = hashlib.sha256()
+        digest.update(application_raw)
+        if deployment_raw is not None:
+            digest.update(b"\0oculizer-deployment\0")
+            digest.update(deployment_raw)
+        return digest.hexdigest()
+
+    def _effective_values(self, application, deployment):
+        values = {field.path: _get_path(application, field.path) for field in CONFIG_FIELDS}
+        if deployment is not None:
+            for public_path, deployment_key in DEPLOYMENT_FIELD_PATHS.items():
+                if deployment_key in deployment:
+                    values[public_path] = deployment[deployment_key]
+        return values
 
     def read(self) -> dict[str, Any]:
         with self.lock:
-            raw = self.path.read_bytes()
-            config = load_runtime_config(self.path)
+            app_raw, application, deployment_raw, deployment = self._read_documents()
+            sources = {"application": str(self.path)}
+            if self.deployment_path is not None:
+                sources["deployment"] = str(self.deployment_path)
             return {
                 "path": str(self.path),
-                "revision": _revision(raw),
-                "values": {field.path: _get_path(config, field.path) for field in CONFIG_FIELDS},
+                "sources": sources,
+                "revision": self._combined_revision(app_raw, deployment_raw),
+                "values": self._effective_values(application, deployment),
             }
 
     @staticmethod
@@ -273,16 +334,18 @@ class ConfigurationStore:
         elif field.kind == "choice" and value not in field.choices:
             raise ValueError(f"{field.path} must be one of: {', '.join(field.choices)}")
 
-    def _write_temp(self, config: dict[str, Any]) -> Path:
-        descriptor, name = tempfile.mkstemp(prefix=f".{self.path.name}.", suffix=".tmp", dir=self.path.parent)
+    def _write_temp(self, path: Path, config: dict[str, Any], *, validate=False) -> Path:
+        descriptor, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
         temp_path = Path(name)
         try:
+            os.fchmod(descriptor, stat.S_IMODE(path.stat().st_mode))
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 json.dump(config, handle, indent=2, ensure_ascii=False)
                 handle.write("\n")
                 handle.flush()
                 os.fsync(handle.fileno())
-            load_runtime_config(temp_path)
+            if validate:
+                load_runtime_config(temp_path)
             return temp_path
         except Exception:
             temp_path.unlink(missing_ok=True)
@@ -301,53 +364,83 @@ class ConfigurationStore:
         if not isinstance(changes, dict) or not changes:
             raise ValueError("changes must be a non-empty object")
         with self.lock:
-            old_raw = self.path.read_bytes()
-            current_revision = _revision(old_raw)
+            app_raw, application, deployment_raw, deployment = self._read_documents()
+            current_revision = self._combined_revision(app_raw, deployment_raw)
             if not isinstance(expected_revision, str) or expected_revision != current_revision:
                 raise ConfigurationConflictError("configuration changed externally; reload before applying")
-            try:
-                current = json.loads(old_raw.decode("utf-8"))
-            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-                raise ValueError(f"current configuration is invalid: {exc}") from exc
-            candidate = copy.deepcopy(current)
+            application_candidate = copy.deepcopy(application)
+            deployment_candidate = copy.deepcopy(deployment) if deployment is not None else None
             changed_paths = set()
             for path, value in changes.items():
                 field = CONFIG_FIELD_BY_PATH.get(path)
                 if field is None:
                     raise ValueError(f"unknown or read-only configuration field: {path}")
                 self._validate_field_value(field, value)
-                if _get_path(candidate, path) != value:
-                    _set_path(candidate, path, value)
+                deployment_key = DEPLOYMENT_FIELD_PATHS.get(path)
+                if deployment_candidate is not None and deployment_key is not None:
+                    if deployment_candidate.get(deployment_key) == value:
+                        continue
+                    deployment_candidate[deployment_key] = value
+                else:
+                    if _get_path(application_candidate, path) == value:
+                        continue
+                    _set_path(application_candidate, path, value)
+                if path not in changed_paths:
                     changed_paths.add(path)
             if not changed_paths:
                 return {**self.read(), "changed": [], "hot_applied": [], "restart_required": []}
 
-            temp_path = self._write_temp(candidate)
-            backup_temp = self.backup_path.with_suffix(self.backup_path.suffix + ".tmp")
+            # Always validate the complete application document so deployment
+            # edits cannot accidentally mask an already-invalid base file.
+            application_temp = self._write_temp(
+                self.path, application_candidate, validate=True
+            )
+            deployment_temp = None
+            if deployment_candidate is not None:
+                deployment_temp = self._write_temp(
+                    self.deployment_path, deployment_candidate, validate=False
+                )
             hot_paths = {path for path in changed_paths if CONFIG_FIELD_BY_PATH[path].apply_mode == "hot"}
+            originals = {self.path: app_raw}
+            temporaries = {self.path: application_temp}
+            if self.deployment_path is not None:
+                originals[self.deployment_path] = deployment_raw
+                temporaries[self.deployment_path] = deployment_temp
+            backup_temporaries = {}
             try:
-                with backup_temp.open("wb") as handle:
-                    handle.write(old_raw)
-                    handle.flush()
-                    os.fsync(handle.fileno())
-                os.replace(backup_temp, self.backup_path)
-                os.replace(temp_path, self.path)
-                self._fsync_directory(self.path.parent)
+                for target, old_raw in originals.items():
+                    backup = target.with_suffix(target.suffix + ".previous")
+                    backup_temp = target.with_suffix(target.suffix + ".previous.tmp")
+                    backup_temporaries[target] = backup_temp
+                    descriptor = os.open(backup_temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IMODE(target.stat().st_mode))
+                    with os.fdopen(descriptor, "wb") as handle:
+                        handle.write(old_raw)
+                        handle.flush()
+                        os.fsync(handle.fileno())
+                    os.replace(backup_temp, backup)
+                for target, temporary in temporaries.items():
+                    os.replace(temporary, target)
+                    self._fsync_directory(target.parent)
                 if live_apply is not None and hot_paths:
-                    live_apply(candidate, hot_paths)
+                    live_apply(application_candidate, hot_paths)
             except Exception:
-                temp_path.unlink(missing_ok=True)
-                backup_temp.unlink(missing_ok=True)
-                restore_temp = self.path.with_suffix(self.path.suffix + ".rollback.tmp")
-                with restore_temp.open("wb") as handle:
-                    handle.write(old_raw)
-                    handle.flush()
-                    os.fsync(handle.fileno())
-                os.replace(restore_temp, self.path)
-                self._fsync_directory(self.path.parent)
+                for temporary in temporaries.values():
+                    if temporary is not None:
+                        temporary.unlink(missing_ok=True)
+                for temporary in backup_temporaries.values():
+                    temporary.unlink(missing_ok=True)
+                for target, old_raw in originals.items():
+                    restore_temp = target.with_suffix(target.suffix + ".rollback.tmp")
+                    descriptor = os.open(restore_temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IMODE(target.stat().st_mode))
+                    with os.fdopen(descriptor, "wb") as handle:
+                        handle.write(old_raw)
+                        handle.flush()
+                        os.fsync(handle.fileno())
+                    os.replace(restore_temp, target)
+                    self._fsync_directory(target.parent)
                 if live_apply is not None and hot_paths:
                     try:
-                        live_apply(current, hot_paths)
+                        live_apply(application, hot_paths)
                     except Exception:
                         pass
                 raise

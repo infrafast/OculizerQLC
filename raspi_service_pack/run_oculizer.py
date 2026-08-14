@@ -19,6 +19,7 @@ def build_command(config):
     command = [
         str(python), str(entrypoint),
         "--config", str(repository / "config/oculizer.json"),
+        "--deployment-config", str(CONFIG),
         "--input-device", config["audio_input"],
         "--dynamic-control", config["dynamic_control"],
         "--control-socket", control_socket,

@@ -55,6 +55,8 @@ class DeploymentTests(unittest.TestCase):
         self.assertNotIn("--qlc-config", command)
         self.assertIn("/opt/Oculizer QLC/config/oculizer.json", command)
         self.assertIn("/run/oculizer/control.sock", command)
+        self.assertIn("--deployment-config", command)
+        self.assertIn("/etc/oculizer/deployment.json", command)
         self.assertIn("--web-bind", command)
         self.assertIn("--web-port", command)
 

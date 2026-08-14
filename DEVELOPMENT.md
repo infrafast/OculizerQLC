@@ -1197,7 +1197,7 @@ Delivered behavior:
 
 Validation performed:
 
-- the complete retained suite passes: 194 tests;
+- the complete retained suite passes: 196 tests;
 - focused coverage includes atomic persistence and backup, cross-field validation, stale revision conflict, unknown/secret rejection, runtime/file rollback, hot policy replacement, response and request limits, concurrent control clients, Host/origin checks, static/API behavior, Web-child crash/restart isolation, `--no-web`, service launcher generation, shell syntax, and existing interactive/service CLI behavior;
 - the public schema is about 19.5 KiB, safely below the 64 KiB control-response limit;
 - `git diff --check`, Python compilation, installer/helper shell syntax, and both CLI help surfaces pass;
@@ -1209,7 +1209,16 @@ Post-validation UI adjustments:
 - changed the second runtime label and contract from Interactive/local to Local headless, and reload schema, values, presets, audio devices, status, graph history, and logs when the target changes;
 - added an on-demand PortAudio input inventory to the selected runtime and render `audio.input_device` as a dropdown containing only input-capable devices plus the OS default selector; device enumeration runs only during explicit configuration loading and adds no continuous work;
 - record graph scene labels only on actual transitions, so a surviving current scene is not relabeled at the moving left edge after its original transition leaves the 60-second window;
-- added focused section classification, input-device inventory, target-label, collapsible-rendering, and transition-label regression coverage before rerunning all 194 tests.
+- added focused section classification, input-device inventory, target-label, collapsible-rendering, and transition-label regression coverage before rerunning the complete suite.
+
+Service configuration-source correction:
+
+- the installed launcher now identifies `/etc/oculizer/deployment.json` explicitly to the runtime configuration store;
+- Service-target reads overlay effective `audio.input_device`, Web enabled, bind, and port values from deployment keys, while Local-headless reads those fields from its application JSON;
+- one Apply partitions changed fields between deployment and application documents, validates the complete application configuration, writes `.previous` backups, replaces both files under one lock, rolls both back after any persistence/live-apply failure, and computes its stale-edit revision across both byte streams;
+- the Web schema labels every field as `service deployment` or `application config` and the header lists both resolved paths;
+- the installer makes `/etc/oculizer` and `deployment.json` writable only by the configured service account/group (`0750` directory, `0640` file), enabling atomic same-directory replacement without broad permissions;
+- added dual-source routing, backup, effective-value, schema-source, and combined-revision tests. Raspberry Pi deployments must rerun the installer before testing this correction.
 
 Remaining acceptance:
 

@@ -55,6 +55,14 @@ configuration. The prior deployment file is retained as
 cat /etc/oculizer/deployment.json
 ```
 
+The service-owned Web editor treats this deployment file as the effective
+source for `audio_input`, `web_enabled`, `web_bind`, and `web_port`. All other
+editable application fields remain in the repository's
+`config/oculizer.json`. Apply distributes changes between those files,
+maintains a `.previous` backup for each source, and rejects stale edits if
+either file changed. The installer grants the service account narrowly scoped
+write ownership of `/etc/oculizer` for this purpose.
+
 Reinstallation updates the environment, helpers, systemd unit, and deployment
 configuration but deliberately preserves whether the service is currently
 running and whether boot auto-start is enabled. Restart a running service

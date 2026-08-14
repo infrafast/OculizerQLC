@@ -101,6 +101,48 @@ class ConfigurationStoreTests(unittest.TestCase):
         self.assertEqual(calls, [1.0, 2.0])
         self.assertEqual(self.store.read()["revision"], before["revision"])
 
+    def test_service_overlay_reads_and_writes_effective_fields_to_deployment(self):
+        deployment = Path(self.temp.name) / "deployment.json"
+        deployment.write_text(json.dumps({
+            "repository": "/opt/OculizerQLC",
+            "audio_input": "USB Capture",
+            "web_enabled": True,
+            "web_bind": "0.0.0.0",
+            "web_port": 8080,
+        }), encoding="utf-8")
+        store = ConfigurationStore(self.path, deployment)
+        before = store.read()
+        self.assertEqual(before["values"]["audio.input_device"], "USB Capture")
+        self.assertEqual(before["sources"]["deployment"], str(deployment.resolve()))
+        schema = {field["path"]: field for field in store.schema()}
+        self.assertEqual(schema["audio.input_device"]["source"], "deployment")
+        self.assertEqual(schema["audio.silence.threshold"]["source"], "application")
+
+        result = store.apply({
+            "audio.input_device": "2",
+            "audio.silence.duration_seconds": 1.25,
+        }, before["revision"])
+
+        self.assertEqual(json.loads(deployment.read_text())["audio_input"], "2")
+        self.assertEqual(
+            json.loads(self.path.read_text())["audio"]["silence"]["duration_seconds"],
+            1.25,
+        )
+        self.assertEqual(json.loads(Path(str(deployment) + ".previous").read_text())["audio_input"],
+                         "USB Capture")
+        self.assertIn("audio.input_device", result["restart_required"])
+        self.assertIn("audio.silence.duration_seconds", result["hot_applied"])
+
+    def test_service_revision_includes_external_deployment_edits(self):
+        deployment = Path(self.temp.name) / "deployment.json"
+        deployment.write_text(json.dumps({"audio_input": "default"}), encoding="utf-8")
+        store = ConfigurationStore(self.path, deployment)
+        revision = store.read()["revision"]
+        deployment.write_text(json.dumps({"audio_input": "changed"}), encoding="utf-8")
+
+        with self.assertRaises(ConfigurationConflictError):
+            store.apply({"audio.silence.duration_seconds": 1.0}, revision)
+
 
 if __name__ == "__main__":
     unittest.main()
