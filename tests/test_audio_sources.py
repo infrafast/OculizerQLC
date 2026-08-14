@@ -104,6 +104,7 @@ class WavFileAudioSourceTests(unittest.TestCase):
                 )
 
             self.assertIsNone(engine.device_idx)
+            self.assertIsNone(engine.normalizer)
             self.assertEqual(engine.audio_source.path, path.resolve())
             engine.stop()
 

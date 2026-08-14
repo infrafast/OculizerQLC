@@ -793,8 +793,9 @@ class AudioOculizerController:
             detail_parts = []
             if self.oculizer.current_cluster is not None:
                 detail_parts.append(f"Cluster: {self.oculizer.current_cluster}")
-            if self.oculizer.normalizer is not None:
-                n = self.oculizer.normalizer
+            normalizer = getattr(self.oculizer, "normalizer", None)
+            if normalizer is not None:
+                n = normalizer
                 if n.ema_rms is not None:
                     detail_parts.append(f"AGC: gain={n.current_gain:.2f}x lvl={n.ema_rms:.4f}")
                 else:

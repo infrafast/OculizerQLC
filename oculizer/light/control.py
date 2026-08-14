@@ -129,6 +129,10 @@ class Oculizer(threading.Thread):
         self.last_audio_rms = None
         self.current_audio_rms = None
         self.current_mel_spectrum = None
+        # The terminal UI exposes optional AGC diagnostics. File-backed audio
+        # does not create an AdaptiveNormalizer, so keep the diagnostic
+        # contract explicit for every audio source.
+        self.normalizer = None
 
         self.current_mel_sample_rate = None
         self.audio_underrun_count = 0

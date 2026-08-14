@@ -1033,6 +1033,19 @@ Final acceptance gate: the operator validates macOS interactive use and Raspberr
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
 
+### 2026-08-14 — Interactive WAV display compatibility
+
+Implemented:
+
+- restored a uniform optional-normalizer diagnostic contract across live and WAV audio sources;
+- made the terminal display tolerate audio engines without an adaptive normalizer;
+- retained identical WAV inference, QLC+ Native output, service behavior, and audio processing costs.
+
+Validation:
+
+- added regression coverage proving that a WAV-backed `Oculizer` explicitly exposes no normalizer instead of raising during display refresh;
+- focused audio-source and terminal-UI tests pass.
+
 ### 2026-08-14 — Milestone 9.1 native configuration cutover
 
 Delivered behavior:
