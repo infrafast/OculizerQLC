@@ -1090,6 +1090,91 @@ No implementation work begins until the operator explicitly approves Milestone 1
 
 Operator decision: Milestone 10.1 was approved on 2026-08-14. Two-channel averaging remains opt-in because enabling it by default would change the accepted channel-1 signal, require two input channels, and break valid mono/default Raspberry Pi devices. This milestone must preserve the current default while retaining `--average-dual-channels` for interfaces whose first two channels should deliberately be combined.
 
+## Forward roadmap — Phase 11: lightweight Web control and observability
+
+Status: **Approved for implementation — operator decisions recorded on 2026-08-14**
+
+Phase 11 adds a small Web application embedded in the headless Oculizer lifecycle. It provides configuration editing, runtime control, predictions, bounded logs, and an optional RMS/scene timeline without executing HTTP request handling in the audio/inference process. The interactive `oculize.py` terminal remains self-contained and does not start a Web server.
+
+The Web component is an Oculizer-owned child process, not an independent application or systemd service. Headless Oculizer starts, supervises, and stops it unless `--no-web` is selected. The child communicates through an extended bounded control-socket API and validated configuration operations. This process boundary contains ordinary Web crashes, blocking handlers, and memory faults without adding a second deployment lifecycle; an operating-system-level fatal condition affecting the whole host remains outside this guarantee. A Web-child failure must be logged and restarted with bounded backoff without interrupting audio capture, EfficientAT inference, scene routing, or QLC+ Native control.
+
+### Restore point and invariants
+
+Before implementation, create an annotated `phase10-one-input-accepted` tag at accepted commit `4b98607`. Phase 11 must not change audio capture, resampling, FFT/reactivity, prediction buffering or algorithms, silence/speech detection, scene-transition policy, dynamic-control calculations, QLC+ Native behavior, or the accepted service lifecycle.
+
+The Web process must add no audio stream, FFT, resampler, inference call, continuous high-rate worker, or unbounded history. If isolation cannot prevent a material Raspberry Pi 5 resource or timing regression, disable optional telemetry first; do not weaken inference to accommodate the UI.
+
+### Configuration and live-apply contract
+
+- expose a curated operator set: dynamic-control preset; silence and speech thresholds/timings/scenes; fast speech timing; prediction window/cadence; automatic maximum scene duration; and master plus bass/mid/high modulation settings and frequency bounds;
+- define one shared field catalog containing JSON path, type, units, explanation, hard bounds, recommended bounds, and hot-applicable versus restart-required status. Server validation and UI help/tooltips must derive from it;
+- treat browser validation as convenience only. The server must reject unknown/read-only fields, validate types and cross-field relationships through the existing configuration loader, cap request sizes, and return field-specific errors without changing memory or disk;
+- make **Apply configuration** transactional: validate the complete draft, atomically persist it with a recoverable backup, hot-apply supported fields, and report the exact restart-required fields. Failed application must retain previous runtime values and must not leave a partial file;
+- do not promise live application for startup-owned values. Audio input is restart-required in the first version because safely changing it would require PortAudio teardown/reopen, device/channel/rate validation, temporal-buffer reset, and failure recovery inside the running audio engine. Predictor/model loading, unsafe prediction-buffer/window changes, native connection settings, and Web bind settings also remain restart-required unless focused implementation and tests prove otherwise;
+- after a successful save containing restart-required fields, inspect the selected runtime's reported launch mode and offer the appropriate confirmed action. A systemd runtime uses the narrowly scoped installed `oculizer-service restart`; an interactive runtime may perform a clean shutdown and re-exec only from its recorded executable, arguments, and working directory. If safe relaunch capability is unavailable, show the exact manual command instead of guessing. Send the HTTP result before restarting, tolerate the temporary disconnect, and reconnect the page automatically;
+- use `0.75 s` as the initial Raspberry Pi recommended minimum for prediction or fast-detection intervals, not as a universal hard rule. Review every exposed field individually and provide meaningful hard bounds plus narrower recommended bounds wherever operational evidence or algorithm constraints justify them; input controls and mouseover help must show the same metadata;
+- never return the QLC+ encryption key to the browser. Secret editing is excluded from the first milestone.
+
+The selector chooses a running target rather than inventing arbitrary configuration stores:
+
+- **Service** selects the systemd/headless instance, its deployment-configured application file, and control socket;
+- **Interactive/local** selects a running local interactive instance discovered through the existing control-socket mechanism and its application file;
+- display the resolved process, socket, configuration path, connection state, and writability. Never accept an arbitrary filesystem path from HTTP;
+- if both targets use the same `config/oculizer.json`, say so explicitly. The selector determines which live process receives the update; it does not imply two independent configurations.
+
+### Shared telemetry and low-resource UI
+
+- factor a terminal-independent immutable runtime snapshot. Curses and Web views may both format it, avoiding duplicate interpretation of prediction, current/resolved scene, route reason, RMS, inference time, queue depth, controls, mode, audio health, and QLC+ state;
+- extend the bounded Unix control protocol with compatible read-only telemetry and recent-log commands. Preserve payload limits, permissions, timeouts, `oculizerctl`, and raspiLightGUI status meanings;
+- attach a bounded in-memory logging handler to Oculizer rather than scraping journald. Redact secrets and expose no arbitrary file;
+- draw the timeline in browser Canvas from already computed RMS/scene samples. Initially sample and poll at no more than 1–2 Hz, retain only 30–60 seconds, and cap every response;
+- make graph telemetry configurable and switchable. Disabling it stops history sampling and graph requests while status, predictions, controls, and logs remain available;
+- use bounded HTTP polling initially. Do not add WebSocket/SSE unless measurements prove polling inadequate.
+
+### Security, deployment, and maintenance caveats
+
+1. **Network exposure.** LAN mode is intentionally unauthenticated and must not add a password prompt or prominent UI warning. Bind to the configured interface and retain Host/origin validation, request/body/time limits, and no directory serving. Keep the security assumption as concise technical documentation: deployment is intended for the operator-controlled local network, not direct Internet exposure.
+2. **Privileges and restart.** Run the Web child unprivileged and grant no unrestricted `sudo` or systemd control. Service restart must use only the existing narrowly scoped service helper/sudoers command after explicit user confirmation. Interactive re-exec must reject unverified or incomplete launch metadata and must first follow the accepted clean shutdown ownership rules.
+3. **Concurrent writers.** Serialize updates, include a configuration revision/hash, and reject stale submissions. Web apply, runtime reload, and manual edits must not silently overwrite each other.
+4. **Separation.** Configuration mutation belongs in a focused configuration service, telemetry in the runtime/control layer, and HTTP handlers only validate, invoke, and format bounded results.
+5. **Dependencies.** Prefer Python's standard-library HTTP server and static vanilla HTML/CSS/JavaScript unless testing proves its isolation or shutdown unsuitable. Avoid a large framework/frontend toolchain for this bounded embedded UI.
+6. **Compatibility.** Preserve `oculizerctl`, raspiLightGUI status, curses operation, service helpers, deployment JSON, socket discovery, and manual configuration editing.
+7. **Embedded lifecycle with process isolation.** Do not create `oculizer-web.service`. Headless Oculizer alone owns the Web child, reaps it, applies bounded restart backoff, and terminates it during shutdown. `--no-web` prevents child creation entirely. A child crash must not restart or stop Oculizer; an Oculizer stop/restart naturally removes and recreates the child. Preserve `oculizer.service` as the sole status authority observed by raspiLightGUI.
+
+### Milestone 11.1 — shared schema, atomic configuration, and telemetry API
+
+- [ ] create the Phase 10 restoration tag and record clean test/resource baselines;
+- [ ] introduce the shared editable-field catalog and field/cross-field validation without changing configuration semantics;
+- [ ] implement revision-aware atomic persistence, backup, rollback, and hot-versus-restart-required reporting;
+- [ ] factor the shared runtime snapshot and bounded redacted log ring;
+- [ ] extend the control socket compatibly and prove existing `oculizerctl` and raspiLightGUI status behavior unchanged;
+- [ ] test concurrency, stale edits, invalid configuration, partial failure, payload limits, permissions, and secret redaction.
+
+Validation gate: apply and rollback against foreground headless and systemd runtimes; invalid or concurrent edits change nothing; predictions, routing, QLC+ output, existing controls, and service status remain identical.
+
+### Milestone 11.2 — embedded isolated Web application
+
+- [ ] add the Oculizer-owned HTTP child process, bounded supervision/backoff, responsive UI, Service/Interactive target selector, explanations/tooltips, hard/recommended limits, field errors, and hot/restart-required badges;
+- [ ] implement unauthenticated apply, pause/auto/manual-scene controls, runtime/prediction view, and bounded log view through the shared services only;
+- [ ] add launch-mode/capability reporting and a confirmed restart workflow: service-helper restart for systemd, verified clean re-exec for interactive mode, or an exact manual command when automatic restart is unavailable;
+- [ ] add the optional Canvas RMS/scene timeline with bounded low-rate sampling and persistent enable/disable setting;
+- [ ] test Host/origin checks, malformed requests, disconnected targets, timeouts, target/config identity, Web-child crash/restart without disturbing Oculizer, and Web disablement with `--no-web`;
+- [ ] measure Web-disabled and Web-enabled CPU, RSS, thread count, inference time, and queue depth on Raspberry Pi 5.
+
+Validation gate: validate from a second LAN device, including help, bounds, rejected edits, hot apply, restart-required reporting, prediction/log freshness, graph disablement, and uninterrupted lighting during Web refresh/restart.
+
+### Milestone 11.3 — Raspberry Pi service-pack integration and documentation
+
+- [ ] extend the single existing service launcher and deployment configuration with Web bind/port/enabled settings; do not install another unit or add a second status surface;
+- [ ] add canonical `--no-web` headless/service-helper behavior for a deliberately Oculizer-only run, while keeping Web-child failure isolated from the audio engine;
+- [ ] preserve uninstall, upgrade, backup, ownership, state restoration, absolute-path behavior, and raspiLightGUI compatibility for the single unit;
+- [ ] document LAN/local use, target semantics, hot versus restart-required fields, confirmed restart/reconnect behavior, recovery, and graph resource controls in `README.md`;
+- [ ] record architecture, tests, and Raspberry Pi measurements here in English with the implementation.
+
+Final acceptance requires a sustained LAN run with bounded queues/log/history, no inference or QLC+ regression, isolated/recovered Web-child failure, correct service and interactive restart proposals, working `--no-web`, and accepted Raspberry Pi resource use.
+
+Operator decisions recorded on 2026-08-14: the selector targets the service or local interactive runtime even when they share one JSON file; field limits are reviewed individually and `0.75 s` is a Raspberry Pi cadence recommendation/example; LAN control deliberately has neither password nor prominent warning; hot-safe fields apply immediately while audio-device and other startup-owned changes are saved with a launch-mode-aware restart proposal; the Web server is an isolated child embedded in the headless Oculizer lifecycle, never an independent service, and is omitted completely with `--no-web`. Phase 11 implementation may begin from Milestone 11.1.
+
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
