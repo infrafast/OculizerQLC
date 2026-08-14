@@ -1092,7 +1092,7 @@ Operator decision: Milestone 10.1 was approved on 2026-08-14. Two-channel averag
 
 ## Forward roadmap — Phase 11: lightweight Web control and observability
 
-Status: **Approved for implementation — operator decisions recorded on 2026-08-14**
+Status: **Accepted on Raspberry Pi 5 — 2026-08-14**
 
 Phase 11 adds a small Web application embedded in the headless Oculizer lifecycle. It provides configuration editing, runtime control, predictions, bounded logs, and an optional RMS/scene timeline without executing HTTP request handling in the audio/inference process. The interactive `oculize.py` terminal remains self-contained and does not start a Web server.
 
@@ -1154,7 +1154,7 @@ Validation gate: apply and rollback against foreground headless and systemd runt
 - [x] add launch-mode/capability reporting and a restart workflow: controlled confirmed systemd exit/restart or the exact local-headless manual relaunch command;
 - [x] add the optional Canvas RMS/scene timeline with bounded low-rate sampling and persistent enable/disable setting;
 - [x] test Host/origin checks, malformed requests, disconnected runtime behavior, timeouts, config identity, Web-child crash/restart without disturbing Oculizer, and Web disablement with `--no-web`;
-- [ ] measure Web-disabled and Web-enabled CPU, RSS, thread count, inference time, and queue depth on Raspberry Pi 5.
+- [x] validate acceptable Web-enabled and Web-disabled resource behavior on Raspberry Pi 5 without inference, queue, thermal, or service-health regression; exact comparative figures were not retained for this acceptance run.
 
 Validation gate: validate from a second LAN device, including help, bounds, rejected edits, hot apply, restart-required reporting, prediction/log freshness, graph disablement, and uninterrupted lighting during Web refresh/restart.
 
@@ -1164,9 +1164,9 @@ Validation gate: validate from a second LAN device, including help, bounds, reje
 - [x] add canonical `--no-web` headless/service-helper behavior for a deliberately Oculizer-only run, while keeping Web-child failure isolated from the audio engine;
 - [x] preserve uninstall, upgrade, backup, ownership, state restoration, absolute-path behavior, and raspiLightGUI compatibility for the single unit;
 - [x] document LAN/local use, target semantics, hot versus restart-required fields, confirmed restart/reconnect behavior, recovery, and graph resource controls in `README.md`;
-- [ ] record architecture, tests, and Raspberry Pi measurements here in English with the implementation.
+- [x] record the implemented architecture, automated validation, and qualitative Raspberry Pi resource acceptance here in English.
 
-Final acceptance requires a sustained LAN run with bounded queues/log/history, no inference or QLC+ regression, isolated/recovered Web-child failure, correct service and local-headless restart proposals, working `--no-web`, and accepted Raspberry Pi resource use.
+Final acceptance was recorded on 2026-08-14 after Raspberry Pi service and LAN operation, Web controls and telemetry, bounded history, native QLC+ continuity, interactive-mode compatibility, and accepted resource behavior were validated. Terminating only the Web child caused the supervisor to recreate it while the same `oculizer.service` process remained healthy, confirming the required isolation and recovery behavior.
 
 Operator decisions recorded on 2026-08-14: the Web child controls its owning headless runtime and exposes the shared application configuration plus a collapsed service-only deployment section when applicable; field limits are reviewed individually and `0.75 s` is a Raspberry Pi cadence recommendation/example; LAN control deliberately has neither password nor prominent warning; hot-safe fields apply immediately while audio-device and other startup-owned changes are saved with a launch-mode-aware restart proposal; the Web server is an isolated child embedded in the headless Oculizer lifecycle, never an independent service, and is omitted completely with `--no-web`. Phase 11 implementation may begin from Milestone 11.1.
 
@@ -1174,7 +1174,7 @@ Operator decisions recorded on 2026-08-14: the Web child controls its owning hea
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.
 
-### 2026-08-14 — Phase 11 embedded Web implementation awaiting Raspberry Pi acceptance
+### 2026-08-14 — Phase 11 embedded Web implementation accepted on Raspberry Pi 5
 
 Delivered behavior:
 
@@ -1192,7 +1192,7 @@ Delivered behavior:
 
 Validation performed:
 
-- the complete retained suite passes: 196 tests;
+- the complete retained suite passes: 199 tests;
 - focused coverage includes atomic persistence and backup, cross-field validation, stale revision conflict, unknown/secret rejection, runtime/file rollback, hot policy replacement, response and request limits, concurrent control clients, Host/origin checks, static/API behavior, Web-child crash/restart isolation, `--no-web`, service launcher generation, shell syntax, and existing interactive/service CLI behavior;
 - the public schema is about 19.5 KiB, safely below the 64 KiB control-response limit;
 - `git diff --check`, Python compilation, installer/helper shell syntax, and both CLI help surfaces pass;
@@ -1218,10 +1218,11 @@ Service configuration-source correction:
 - the installer makes `/etc/oculizer` and `deployment.json` writable only by the configured service account/group (`0750` directory, `0640` file), enabling atomic same-directory replacement without broad permissions;
 - added dual-source routing, backup, effective-value, schema-source, and combined-revision tests. Raspberry Pi deployments must rerun the installer before testing this correction.
 
-Remaining acceptance:
+Operator acceptance:
 
-- reinstall and validate on Raspberry Pi 5, including browser access, live apply, invalid-value rejection, restart-required audio change/reconnect, Web-child isolation, `--no-web`, raspiLightGUI status, and sustained CPU/RSS/queue measurements;
-- keep the three resource/production checkboxes open until that operator evidence is recorded.
+- Raspberry Pi 5 service and browser operation, live configuration behavior, native QLC+ continuity, raspiLightGUI service status, and interactive macOS operation were accepted;
+- terminating the supervised Web child briefly removed browser access, then produced a new child without restarting or disrupting the owning Oculizer service;
+- the operator accepted the observed resource behavior without retaining a paired numerical Web-enabled/Web-disabled measurement set; future performance investigations should capture both sets rather than treating this qualitative acceptance as a benchmark.
 
 ### 2026-08-14 — Milestone 10.1 one-input audio implementation
 
