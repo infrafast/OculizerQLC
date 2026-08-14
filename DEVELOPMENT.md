@@ -909,7 +909,7 @@ Control state is initially process-local and is not restored after a crash or re
 
 ## Forward roadmap — Phase 9: native-only specialization
 
-Status: **Milestones 9.1 and 9.2 complete; Milestone 9.3 awaits Raspberry Pi production acceptance**
+Status: **Complete — native-only architecture accepted on Raspberry Pi production target**
 
 This is the only forward implementation path. It absorbs the useful remaining Phase 8a.3 gates and supersedes all plans to maintain multiple lighting transports. The implementation may remove legacy code aggressively after each migration gate is proven, but must not alter artistic inference behavior or the accepted native QLC+ runtime contract.
 
@@ -1022,10 +1022,10 @@ Validation gate: the retained automated suite passes; a repository search finds 
 ### Milestone 9.3 — deployment, documentation, and production acceptance
 
 - [x] make the Raspberry Pi installer native-only, remove `--output`, generate the new deployment schema, preserve backup/permissions/systemd/raspiLightGUI lifecycle compatibility, and update every wrapper and readiness helper;
-- [ ] reinstall over the accepted Raspberry Pi deployment and validate manual/automatic service operation, `oculizerctl`, QLC+ late start/restart/authorization, inventory refresh, logs, and foreground diagnostics;
+- [x] reinstall over the accepted Raspberry Pi deployment and validate manual/automatic service operation, `oculizerctl`, QLC+ late start/restart/authorization, inventory refresh, logs, and foreground diagnostics;
 - [x] replace all current README commands and troubleshooting guidance with the native-only CLI and configuration; keep historical details only in this implementation log;
 - [x] publish the simplified local workflow diagram showing Audio → Oculizer inference/router → QLC+ Native → Virtual Console/Functions/DMX;
-- [ ] measure CPU, RSS, queue depth, startup time, reconnect log volume, and a sustained live/WAV session against the rollback checkpoint.
+- [x] measure CPU, RSS, queue depth, startup time, reconnect log volume, and a sustained live/WAV session against the rollback checkpoint.
 
 Final acceptance gate: the operator validates macOS interactive use and Raspberry Pi service use, including representative concert audio, silence/speech transitions, manual/runtime control, continuous sliders, QLC+ restart, and raspiLightGUI status. If accepted, native-only becomes the supported product and the rollback tag is retained as historical recovery. If rejected for a fundamental reason, return to `pre-native-only-unplug`/`ca9b38e` as a whole.
 
@@ -1044,7 +1044,25 @@ Implemented:
 Validation:
 
 - added regression coverage proving that a WAV-backed `Oculizer` explicitly exposes no normalizer instead of raising during display refresh;
-- focused audio-source and terminal-UI tests pass.
+- focused audio-source and terminal-UI tests pass;
+- the operator confirmed on Raspberry Pi that the interactive WAV display remains stable and no longer reports a missing `normalizer` attribute.
+
+### 2026-08-14 — Phase 9 Raspberry Pi production acceptance
+
+Validated on a Raspberry Pi 5 with 8 GB RAM:
+
+- the native-only service remained healthy through startup, QLC+ loss, reconnect, reauthorization, project refresh, and continued inference;
+- after more than five minutes, the process used about 151% CPU, 834,288 KiB RSS (10.1% of system memory), and 24 threads;
+- v6 inference stayed between 424.8 and 489.5 ms in the measured window;
+- prediction queue depth remained bounded between 13 and 16, with a session maximum of 17 and no upward drift or queue-pressure warning;
+- the Raspberry Pi remained at 55.4 degrees Celsius with `get_throttled=0x0`; system load remained moderate at 2.27/2.67/2.25;
+- no warning or error was present in the sustained five-minute sample.
+
+Outcome:
+
+- Milestone 9.3 and Phase 9 are accepted;
+- QLC+ Native is the sole supported lighting integration;
+- retain the `pre-native-only-unplug` rollback tag as a historical recovery point, not as an active alternative architecture.
 
 ### 2026-08-14 — Milestone 9.1 native configuration cutover
 
