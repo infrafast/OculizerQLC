@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from oculizer.light.native_controller import (
     NativeLightingController,
@@ -9,6 +9,21 @@ from oculizer.light.qlc_config import QLCConfig
 
 
 class NativeLightingControllerTests(unittest.TestCase):
+    def test_runtime_status_caption_contains_time_public_mode_and_dynamic_profile(self):
+        config = QLCConfig.from_file("config/oculizer.json")
+        client = Mock()
+        controller = NativeLightingController(
+            client, config.routing, config.controls,
+            "config/oculizer.json", config.scene_metadata,
+        )
+
+        with patch("oculizer.light.native_controller.time.strftime", return_value="12:34:56"):
+            self.assertTrue(controller.set_runtime_status("selection", "calm"))
+
+        client.set_status_caption.assert_called_once_with(
+            "12:34:56 : Mode:selection, Dynamic:calm"
+        )
+
     def test_scene_fallback_duplicate_suppression_and_slider_caption(self):
         config = QLCConfig.from_file("config/oculizer.json")
         client = Mock()

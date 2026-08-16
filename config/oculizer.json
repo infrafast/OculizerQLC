@@ -133,7 +133,11 @@
       "encryption_key": "",
       "reconnect_seconds": 2.0,
       "maximum_project_size": 16777216,
-      "dry_run": false
+      "dry_run": false,
+      "status_widget": {
+        "enabled": true,
+        "id": 71
+      }
     },
     "controls": {
       "master": "master",

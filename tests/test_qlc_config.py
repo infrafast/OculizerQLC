@@ -23,7 +23,11 @@ class QLCConfigTests(unittest.TestCase):
         config = QLCConfig.from_mapping({
             "audio": {},
             "lighting": {
-                "native": {"host": "192.0.2.20", "dry_run": True},
+                "native": {
+                    "host": "192.0.2.20",
+                    "dry_run": True,
+                    "status_widget": {"enabled": True, "id": 99},
+                },
                 "controls": {"master": "Grand Master"},
                 "routing": {
                     "pulse_seconds": 0.2,
@@ -46,6 +50,8 @@ class QLCConfigTests(unittest.TestCase):
 
         self.assertEqual(config.native.host, "192.0.2.20")
         self.assertTrue(config.native.dry_run)
+        self.assertTrue(config.native.status_widget.enabled)
+        self.assertEqual(config.native.status_widget.widget_id, 99)
         self.assertEqual(config.controls["master"].caption, "Grand Master")
         self.assertEqual(config.routing.get("silent").caption, "Silence")
         self.assertEqual(config.routing.resolve("unknown"), "ambient1")
@@ -66,6 +72,23 @@ class QLCConfigTests(unittest.TestCase):
         invalid["lighting"]["scene_metadata"]["ambient1"]["design_behavior"] = "fast"
         with self.assertRaisesRegex(QLCConfigError, "design_behavior"):
             QLCConfig.from_mapping(invalid)
+
+    def test_status_widget_defaults_to_enabled_id_71_and_validates_values(self):
+        metadata = {"ambient1": {
+            "description": "Fallback look", "design_behavior": "normal",
+        }}
+        config = QLCConfig.from_mapping({"lighting": {"scene_metadata": metadata}})
+        self.assertTrue(config.native.status_widget.enabled)
+        self.assertEqual(config.native.status_widget.widget_id, 71)
+
+        for status_widget in ({"enabled": 1}, {"id": -1}, {"id": True}, []):
+            with self.subTest(status_widget=status_widget), self.assertRaises(QLCConfigError):
+                QLCConfig.from_mapping({
+                    "lighting": {
+                        "native": {"status_widget": status_widget},
+                        "scene_metadata": metadata,
+                    }
+                })
 
 
 if __name__ == "__main__":

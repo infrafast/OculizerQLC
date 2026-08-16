@@ -11,6 +11,7 @@ from oculizer.light.qlc_native import (
     QLCNativeClient,
     QLCNativeError,
     VC_BUTTON_SET_PRESSED,
+    VC_WIDGET_CAPTION,
     _decrypt,
     _encrypt,
     _key_parts,
@@ -63,6 +64,38 @@ class QLCNativeTests(unittest.TestCase):
         opcode, sections = _recv_packet(self.FragmentedSocket(expected), DEFAULT_KEY)
         self.assertEqual(opcode, VC_BUTTON_SET_PRESSED)
         self.assertEqual(sections, [71, True])
+
+    def test_status_caption_targets_configured_id_and_coalesces(self):
+        connection = self.FragmentedSocket(b"", fragment_size=4096)
+        client = QLCNativeClient("127.0.0.1", status_widget_id=71)
+        client.socket = connection
+        client.state = NativeState.READY
+
+        self.assertTrue(client.set_status_caption("12:34:56 : Mode:auto, Dynamic:off"))
+        self.assertTrue(client.set_status_caption("12:35:00 : Mode:pause, Dynamic:off"))
+        client._flush_pending()
+
+        self.assertEqual(len(connection.sent), 1)
+        opcode, sections = _recv_packet(
+            self.FragmentedSocket(connection.sent[0]), DEFAULT_KEY,
+        )
+        self.assertEqual(opcode, VC_WIDGET_CAPTION)
+        self.assertEqual(sections, [71, "12:35:00 : Mode:pause, Dynamic:off"])
+
+    def test_latest_status_caption_is_restored_when_native_becomes_ready(self):
+        connection = self.FragmentedSocket(b"", fragment_size=4096)
+        client = QLCNativeClient("127.0.0.1", status_widget_id=71)
+        client.socket = connection
+        client.set_status_caption("12:34:56 : Mode:auto, Dynamic:normal")
+        client._pending_status_caption = None
+
+        client._set_state(NativeState.READY)
+        client._flush_pending()
+
+        _, sections = _recv_packet(
+            self.FragmentedSocket(connection.sent[0]), DEFAULT_KEY,
+        )
+        self.assertEqual(sections, [71, "12:34:56 : Mode:auto, Dynamic:normal"])
 
     def test_coalesced_packets_remain_separate(self):
         with patch("oculizer.light.qlc_native.os.urandom", return_value=b"\x5a"):

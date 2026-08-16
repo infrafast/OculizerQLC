@@ -211,11 +211,26 @@ Its main sections are:
 - `audio.silence` and `audio.speech`: priority routing thresholds and scenes;
 - `audio.master_modulation` and `audio.frequency_modulation`: normalized QLC+
   slider signals;
-- `lighting.native`: native host, port, authorization, reconnect, and dry-run;
+- `lighting.native`: native host, port, authorization, reconnect, dry-run, and
+  the optional operator-status widget;
 - `lighting.controls`: logical modulation name to QLC+ slider caption;
 - `lighting.routing`: button pulse, fallback scene, and caption exceptions;
 - `lighting.scene_metadata`: logical scene descriptions, design guidance, and
   optional maximum durations.
+
+When `lighting.native.status_widget.enabled` is true, Oculizer updates the QLC+
+widget identified by `lighting.native.status_widget.id` (default `71`) whenever
+the operator mode or dynamic-control profile changes. Its caption has this
+form:
+
+```text
+14:32:08 : Mode:auto, Dynamic:normal
+```
+
+Manual scene selection is displayed as `Mode:selection`. The caption is also
+restored after a native reconnect, but it is not refreshed periodically. This
+uses QLC+'s Virtual Console editing protocol and can mark the workspace as
+modified; reserve the configured numeric ID for a dedicated status label.
 
 Every logical scene carries one advisory `design_behavior`:
 

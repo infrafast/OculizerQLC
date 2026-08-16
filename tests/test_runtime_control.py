@@ -8,9 +8,14 @@ from oculizer.runtime_control import RuntimeControl
 class Backend:
     def __init__(self):
         self.blackout_active = False
+        self.runtime_statuses = []
 
     def blackout(self, enabled=True):
         self.blackout_active = enabled
+        return True
+
+    def set_runtime_status(self, mode, dynamic_control):
+        self.runtime_statuses.append((mode, dynamic_control))
         return True
 
 
@@ -79,6 +84,23 @@ class ConfigStore:
 
 
 class RuntimeControlTests(unittest.TestCase):
+    def test_operator_status_is_change_only_and_translates_manual_mode(self):
+        control, engine, _master, _frequency = make_control()
+        self.assertEqual(engine.backend.runtime_statuses, [("auto", "off")])
+
+        control.set_auto()
+        control.set_scene("party")
+        control.set_scene("silent")
+        control.apply_dynamic_control("normal")
+        control.set_pause()
+
+        self.assertEqual(engine.backend.runtime_statuses, [
+            ("auto", "off"),
+            ("selection", "off"),
+            ("selection", "normal"),
+            ("pause", "normal"),
+        ])
+
     def test_pause_only_suspends_prediction_and_runtime_updates(self):
         control, engine, master, frequency = make_control()
 

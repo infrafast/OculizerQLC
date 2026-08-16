@@ -32,6 +32,19 @@ class RuntimeControl:
         self.restart_callback = None
         self.mode = "auto"
         self.lock = threading.RLock()
+        self._published_operator_state = None
+        self._publish_operator_status()
+
+    def _publish_operator_status(self):
+        public_mode = "selection" if self.mode == "scene" else self.mode
+        state = (public_mode, self.active_dynamic_control)
+        if state == self._published_operator_state:
+            return
+        backend = getattr(self.oculizer, "backend", None)
+        publisher = getattr(backend, "set_runtime_status", None)
+        if publisher is not None:
+            publisher(*state)
+        self._published_operator_state = state
 
     def step(self):
         with self.lock:
@@ -53,12 +66,14 @@ class RuntimeControl:
             self.oculizer.set_prediction_suspended(False)
             if self.router.manual_override is not None:
                 self.router.clear_manual_override()
+            self._publish_operator_status()
             return self.status()
 
     def set_pause(self):
         with self.lock:
             self.mode = "pause"
             self.oculizer.set_prediction_suspended(True)
+            self._publish_operator_status()
             return self.status()
 
     def set_scene(self, scene_name):
@@ -70,6 +85,7 @@ class RuntimeControl:
             if not self.router.set_manual_override(scene_name):
                 raise ValueError(f"unknown or unavailable scene: {scene_name}")
             self.mode = "scene"
+            self._publish_operator_status()
             return self.status()
 
     def apply_dynamic_control(self, name, expected_revision=None):
@@ -90,6 +106,7 @@ class RuntimeControl:
                 expected_revision=expected_revision,
             )
             self.active_dynamic_control = name
+            self._publish_operator_status()
             result = self.status()
             return result
 

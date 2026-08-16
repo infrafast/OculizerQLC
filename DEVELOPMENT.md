@@ -1170,6 +1170,35 @@ Final acceptance was recorded on 2026-08-14 after Raspberry Pi service and LAN o
 
 Operator decisions recorded on 2026-08-14: the Web child controls its owning headless runtime and exposes the shared application configuration plus a collapsed service-only deployment section when applicable; field limits are reviewed individually and `0.75 s` is a Raspberry Pi cadence recommendation/example; LAN control deliberately has neither password nor prominent warning; hot-safe fields apply immediately while audio-device and other startup-owned changes are saved with a launch-mode-aware restart proposal; the Web server is an isolated child embedded in the headless Oculizer lifecycle, never an independent service, and is omitted completely with `--no-web`. Phase 11 implementation may begin from Milestone 11.1.
 
+## Forward roadmap — Phase 12: QLC+ native operator-status caption
+
+Status: **Implemented — awaiting live QLC+ validation**
+
+Objective: expose the authoritative Oculizer operator state on one dedicated
+QLC+ Virtual Console widget using the validated native `VCWidgetCaption`
+editing action. The target is deliberately identified by its configured
+numeric widget ID because its caption changes and therefore cannot serve as a
+stable lookup key.
+
+- [x] add `lighting.native.status_widget.enabled` and an unsigned numeric `id`,
+  enabled with ID `71` by default;
+- [x] publish `HH:MM:SS : Mode:<auto|pause|selection>, Dynamic:<profile>` from
+  the shared runtime control state, translating internal `scene` mode to the
+  operator-facing `selection` label;
+- [x] send only when mode or dynamic profile changes, never from audio,
+  inference, modulation, or periodic timing paths;
+- [x] retain only the latest pending caption while disconnected and restore
+  the latest state after every successful native reconnect;
+- [x] cover configuration validation, direct-ID packet encoding, coalescing,
+  reconnection restoration, public-mode translation, and formatted captions;
+- [ ] validate widget ID `71`, visible state changes, QLC+ workspace-modified
+  behavior, and reconnect restoration against the production workspace.
+
+The status path is intentionally independent of caption-based scene and slider
+routing. `VCWidgetCaption` is an editing action and may mark the QLC+ workspace
+modified or replicate to other native clients; this is accepted for a
+dedicated low-rate status label. Do not turn it into a clock or heartbeat.
+
 ## Implementation log
 
 Add an entry for every meaningful change. Use an ISO date and separate delivered behavior, validation, and remaining work.

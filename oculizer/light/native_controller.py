@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import replace
 from pathlib import Path
 
@@ -26,6 +27,9 @@ class DisabledLightingController:
         return True
 
     def set_parameter(self, name, value):
+        return True
+
+    def set_runtime_status(self, mode, dynamic_control):
         return True
 
     def reload_scene_map(self):
@@ -78,6 +82,11 @@ class NativeLightingController:
             return False
         return self.client.set_slider_level(control.caption, value)
 
+    def set_runtime_status(self, mode, dynamic_control):
+        return self.client.set_status_caption(
+            f"{time.strftime('%H:%M:%S')} : Mode:{mode}, Dynamic:{dynamic_control}"
+        )
+
     def reload_scene_map(self):
         config = QLCConfig.from_file(self.config_path)
         self.scene_map = config.routing
@@ -119,6 +128,8 @@ def create_native_lighting_controller(
             native.maximum_project_size,
             native.dry_run,
             button_release_seconds=config.routing.pulse_seconds,
+            status_widget_id=(native.status_widget.widget_id
+                              if native.status_widget.enabled else None),
         ),
         config.routing,
         config.controls,

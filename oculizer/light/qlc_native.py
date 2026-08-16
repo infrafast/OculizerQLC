@@ -74,6 +74,29 @@ class NativeWidget:
 
 
 @dataclass(frozen=True)
+class QLCStatusWidgetConfig:
+    enabled: bool = True
+    widget_id: int = 71
+
+    @classmethod
+    def from_mapping(cls, data):
+        if data is None:
+            data = {}
+        if not isinstance(data, dict):
+            raise ValueError("QLC+ native status_widget must be an object")
+        config = cls(
+            enabled=data.get("enabled", True),
+            widget_id=data.get("id", 71),
+        )
+        if not isinstance(config.enabled, bool):
+            raise ValueError("QLC+ native status_widget.enabled must be a boolean")
+        if (isinstance(config.widget_id, bool) or not isinstance(config.widget_id, int)
+                or not 0 <= config.widget_id <= 0xFFFFFFFF):
+            raise ValueError("QLC+ native status_widget.id must be an unsigned 32-bit integer")
+        return config
+
+
+@dataclass(frozen=True)
 class QLCNativeConfig:
     host: str = "127.0.0.1"
     port: int = 9998
@@ -81,6 +104,7 @@ class QLCNativeConfig:
     reconnect_seconds: float = 2.0
     maximum_project_size: int = 16 * 1024 * 1024
     dry_run: bool = False
+    status_widget: QLCStatusWidgetConfig = QLCStatusWidgetConfig()
 
     @classmethod
     def from_mapping(cls, data):
@@ -90,6 +114,7 @@ class QLCNativeConfig:
             reconnect_seconds=data.get("reconnect_seconds", 2.0),
             maximum_project_size=data.get("maximum_project_size", 16 * 1024 * 1024),
             dry_run=data.get("dry_run", False),
+            status_widget=QLCStatusWidgetConfig.from_mapping(data.get("status_widget", {})),
         )
         config.validate()
         return config
@@ -477,7 +502,8 @@ class QLCNativeClient:
 
     def __init__(self, host: str, port: int = 9998, encryption_key: str = "",
                  reconnect_seconds: float = 2.0, maximum_project_size: int = 16 * 1024 * 1024,
-                 dry_run: bool = False, button_release_seconds: float = 0.1):
+                 dry_run: bool = False, button_release_seconds: float = 0.1,
+                 status_widget_id: int | None = 71):
         self.host = host
         self.port = port
         self.encryption_key = encryption_key
@@ -486,6 +512,7 @@ class QLCNativeClient:
         self.maximum_project_size = maximum_project_size
         self.dry_run = dry_run
         self.button_release_seconds = max(0.0, float(button_release_seconds))
+        self.status_widget_id = status_widget_id
         self.socket: socket.socket | None = None
         self._stop = threading.Event()
         self._outbound = threading.Event()
@@ -496,6 +523,8 @@ class QLCNativeClient:
         self.sliders = {}
         self._pending_scene: str | None = None
         self._pending_parameters: dict[str, float] = {}
+        self._status_caption: str | None = None
+        self._pending_status_caption: str | None = None
         self._last_error: str | None = None
         self._state_log_times: dict[NativeState, float] = {}
 
@@ -529,6 +558,8 @@ class QLCNativeClient:
             self._state_log_times.pop(NativeState.CONNECTING, None)
             self._state_log_times.pop(NativeState.DISCONNECTED, None)
             self._last_error = None
+            with self._lock:
+                self._pending_status_caption = self._status_caption
         return True
 
     def _connect(self) -> None:
@@ -669,12 +700,37 @@ class QLCNativeClient:
         self._outbound.set()
         return True
 
+    def set_status_caption(self, caption: str) -> bool:
+        if self.status_widget_id is None:
+            return True
+        if not isinstance(caption, str) or not caption:
+            raise ValueError("QLC+ native status caption must be non-empty")
+        if self.dry_run:
+            logger.info(
+                "QLC+ native dry-run: widget %d caption = %r",
+                self.status_widget_id, caption,
+            )
+            return True
+        with self._lock:
+            self._status_caption = caption
+            self._pending_status_caption = caption
+        self._outbound.set()
+        return True
+
     def _flush_pending(self) -> None:
         with self._lock:
             if self.state != NativeState.READY or self.socket is None:
                 return
             scene = self._pending_scene
             parameters = dict(self._pending_parameters)
+            status_caption = self._pending_status_caption
+            if status_caption is not None and self.status_widget_id is not None:
+                self.socket.sendall(_packet(
+                    VC_WIDGET_CAPTION, self.key,
+                    _section_int(self.status_widget_id), _section_string(status_caption),
+                ))
+                if self._pending_status_caption == status_caption:
+                    self._pending_status_caption = None
             if scene is not None:
                 widget = self.buttons.get(normalize_caption(scene))
                 if widget is None:
