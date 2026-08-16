@@ -35,7 +35,7 @@ Build a specialized system in which:
 - Oculizer sends scene-button intentions and a small number of continuous modulations through the QLC+ native protocol;
 - QLC+ 5 owns lighting functions, fixture patching, and DMX output.
 
-During development, Oculizer and QLC+ run on the same Mac. In production, both run locally on a Raspberry Pi 5 with Raspberry Pi OS. The native endpoint therefore defaults to `127.0.0.1:9998`, while remaining configurable.
+During development, Oculizer and QLC+ run on the same Mac. In production, both run locally on a Raspberry Pi 5 with Raspberry Pi OS. The native endpoint therefore defaults to `127.0.0.1:9998`, while remaining configurable. Oculizer reserves the ordinary `127.0.0.1` source identity; concurrent QLCPlus-MCP STDIO processes bind distinct addresses in `127.0.0.0/8` to work around QLC+'s current source-IP-only session map without coupling either application to LiveStageAssistant. Unattended authorization still requires the proposed upstream QLC+ `--allow-all-native` option; without it, QLC+ must serialize simultaneous authorization requests by connection identity rather than overwrite its single popup's client name.
 
 ## Verified pre-unplug checkpoint
 
