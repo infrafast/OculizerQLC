@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 import wave
@@ -11,6 +12,7 @@ from typing import Callable, Protocol
 import numpy as np
 
 
+logger = logging.getLogger(__name__)
 AudioCallback = Callable[[np.ndarray, int, object, object], None]
 
 
@@ -54,13 +56,34 @@ class AudioSource(Protocol):
 class SoundDeviceAudioSource:
     """Adapt a live PortAudio input stream to the shared source lifecycle."""
 
-    def __init__(self, *, device, channels, sample_rate, block_size, callback):
+    def __init__(
+        self,
+        *,
+        device,
+        channels,
+        sample_rate,
+        block_size,
+        callback,
+        interrupt_timeout: float = 0.5,
+        shutdown_timeout: float = 2.0,
+    ):
         self.device = device
         self.channels = int(channels)
         self.sample_rate = int(sample_rate)
         self.block_size = int(block_size)
         self.callback = callback
+        self.interrupt_timeout = float(interrupt_timeout)
+        self.shutdown_timeout = float(shutdown_timeout)
+        if self.interrupt_timeout <= 0:
+            raise ValueError("interrupt_timeout must be greater than zero")
+        if self.shutdown_timeout <= 0:
+            raise ValueError("shutdown_timeout must be greater than zero")
         self.stream = None
+        self._state_lock = threading.Lock()
+        self._interrupt_thread = None
+        self._interrupt_done = threading.Event()
+        self._interrupt_requested = False
+        self._native_stage = None
 
     def start(self) -> None:
         import sounddevice as sd
@@ -74,21 +97,116 @@ class SoundDeviceAudioSource:
         )
         self.stream.start()
 
-    def stop(self) -> None:
-        if self.stream is not None:
-            self.stream.stop()
-            self.stream.close()
-            self.stream = None
+    def _timed_native_call(self, stage: str, callback) -> None:
+        started = time.monotonic()
+        with self._state_lock:
+            self._native_stage = stage
+        logger.info("PortAudio shutdown: %s started", stage)
+        try:
+            callback()
+        except Exception:
+            logger.warning("PortAudio shutdown: %s raised", stage, exc_info=True)
+        finally:
+            elapsed = time.monotonic() - started
+            logger.info("PortAudio shutdown: %s finished in %.3fs", stage, elapsed)
+            with self._state_lock:
+                if self._native_stage == stage:
+                    self._native_stage = None
+
+    def _interrupt_stream(self, stream) -> None:
+        try:
+            self._timed_native_call("stream.abort()", stream.abort)
+        finally:
+            self._interrupt_done.set()
 
     def request_stop(self) -> None:
-        """Let the owning runtime thread close the native PortAudio stream."""
-        return None
+        """Interrupt capture promptly without closing the stream from the caller."""
+        with self._state_lock:
+            stream = self.stream
+            if stream is None or self._interrupt_requested:
+                return
+            self._interrupt_requested = True
+            self._interrupt_done.clear()
+            thread = threading.Thread(
+                target=self._interrupt_stream,
+                args=(stream,),
+                name="oculizer-portaudio-abort",
+                daemon=True,
+            )
+            self._interrupt_thread = thread
+        logger.info("PortAudio shutdown interrupt requested")
+        thread.start()
+
+    def _close_stream(self, stream, *, interrupted: bool) -> None:
+        if not interrupted:
+            self._timed_native_call("stream.stop()", stream.stop)
+        else:
+            logger.info("PortAudio shutdown: stream.stop() skipped after interrupt")
+        self._timed_native_call("stream.close()", stream.close)
+
+    def stop(self) -> None:
+        with self._state_lock:
+            stream = self.stream
+            interrupt_thread = self._interrupt_thread
+            interrupted = self._interrupt_requested
+        if stream is None:
+            return
+
+        if interrupt_thread is not None and interrupt_thread.is_alive():
+            logger.info(
+                "PortAudio shutdown: waiting up to %.3fs for stream.abort()",
+                self.interrupt_timeout,
+            )
+            if not self._interrupt_done.wait(self.interrupt_timeout):
+                with self._state_lock:
+                    stage = self._native_stage or "stream.abort()"
+                    if self.stream is stream:
+                        self.stream = None
+                logger.error(
+                    "PortAudio shutdown: %s did not finish within %.3fs; "
+                    "leaving the native call on a daemon thread so application shutdown can continue",
+                    stage,
+                    self.interrupt_timeout,
+                )
+                return
+
+        close_thread = threading.Thread(
+            target=self._close_stream,
+            args=(stream,),
+            kwargs={"interrupted": interrupted},
+            name="oculizer-portaudio-close",
+            daemon=True,
+        )
+        close_thread.start()
+        close_thread.join(self.shutdown_timeout)
+        if close_thread.is_alive():
+            with self._state_lock:
+                stage = self._native_stage or "native shutdown"
+                if self.stream is stream:
+                    self.stream = None
+            logger.error(
+                "PortAudio shutdown: %s did not finish within %.3fs; "
+                "leaving the native call on a daemon thread so application shutdown can continue",
+                stage,
+                self.shutdown_timeout,
+            )
+            return
+
+        with self._state_lock:
+            if self.stream is stream:
+                self.stream = None
 
     def join(self, timeout: float | None = None) -> None:
         return None
 
     def is_alive(self) -> bool:
-        return bool(self.stream is not None and self.stream.active)
+        stream = self.stream
+        if stream is None:
+            return False
+        try:
+            return bool(stream.active)
+        except Exception:
+            return False
 
     def __enter__(self):
         self.start()
