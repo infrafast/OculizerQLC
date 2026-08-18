@@ -1,7 +1,7 @@
 [Unit]
 Description=Oculizer headless audio-reactive lighting service
-After=network.target sound.target
-Wants=network.target sound.target
+After=network.target sound.target user@@SERVICE_UID@.service
+Wants=network.target sound.target user@@SERVICE_UID@.service
 
 [Service]
 Type=simple
