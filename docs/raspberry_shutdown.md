@@ -67,7 +67,9 @@ Wants=network.target sound.target user@1000.service
 
 ### Validation status
 
-The first Raspberry Pi hardware regression test was validated on 2026-08-18 with the service using a live audio input:
+Two Raspberry Pi hardware regression cases were validated on 2026-08-18 with a live audio input.
+
+#### Normal service stop
 
 - `time sudo systemctl stop oculizer.service`: **2.820 seconds real time**;
 - `stream.abort()` completed in **0.001 seconds**;
@@ -78,7 +80,22 @@ The first Raspberry Pi hardware regression test was validated on 2026-08-18 with
 - systemd reported `Deactivated successfully` and `Stopped oculizer.service`;
 - no `Oculizer worker did not stop within five seconds`, systemd stop timeout, or `SIGKILL` was observed.
 
-This validates the normal `systemctl stop` case. The QLC+-already-stopped and full reboot/shutdown cases remain required before the fix is considered fully validated.
+#### QLC+ already stopped
+
+QLC+ was confirmed absent with `pgrep -af qlcplus-qml` before stopping Oculizer.
+
+- `time sudo systemctl stop oculizer.service`: **4.096 seconds real time**;
+- `stream.abort()` completed in **0.001 seconds**;
+- the prediction thread stopped cleanly;
+- the final `stream.close()` did **not** return within its **2.000-second** bound;
+- Oculizer logged the exact blocked stage and left that native call on its daemon shutdown helper;
+- the headless runtime still reported `Non-interactive Oculizer runtime stopped`;
+- systemd reported `Deactivated successfully` and `Stopped oculizer.service`;
+- no five-second worker warning, 30-second systemd timeout, or `SIGKILL` occurred.
+
+This second case is important diagnostically: it reproduces the problematic native PortAudio behavior directly and identifies `stream.close()` as the blocking call in that run. It also confirms that the new bounded shutdown path prevents the blocked native close from delaying service shutdown to 30 seconds. The result does not indicate a dependency on QLC+; QLC+ was already absent before the stop began.
+
+The full Raspberry Pi reboot/shutdown case remains required before the fix is considered fully validated.
 
 Run these regression cases on the Raspberry Pi after reinstalling the service pack:
 
@@ -94,16 +111,18 @@ Expected result: Oculizer exits normally without reaching the 30-second systemd 
 
 Observed result on 2026-08-18: PASS, with a 2.820-second command duration, `abort()` in 0.001 s and `close()` in 0.004 s.
 
-### 2. QLC+ already stopped
+### 2. QLC+ already stopped — VALIDATED
 
-Stop QLC+ using the service owned by the QLC+ deployment, then stop Oculizer:
+Stop QLC+ using the service owned by the QLC+ deployment, confirm that `pgrep -af qlcplus-qml` is empty, then stop Oculizer:
 
 ```bash
 sudo systemctl stop oculizer.service
 sudo journalctl -u oculizer.service -b -n 100 --no-pager
 ```
 
-Expected result: Oculizer shutdown remains prompt and does not depend on QLC+ being alive.
+Expected result: Oculizer shutdown remains bounded and does not depend on QLC+ being alive.
+
+Observed result on 2026-08-18: PASS for the service-lifecycle requirement. The command returned in 4.096 seconds even though `stream.close()` itself exceeded the 2.000-second native bound. The instrumentation therefore captured the exact native blocking stage while the bounded fallback prevented the old 30-second shutdown delay.
 
 ### 3. Full reboot/shutdown
 
