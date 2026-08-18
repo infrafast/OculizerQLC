@@ -316,6 +316,13 @@ machine-specific service values; application and lighting configuration remain
 in the repository's `config/oculizer.json`. See
 [raspi_service_pack/README.md](raspi_service_pack/README.md) for details.
 
+Live PortAudio shutdown is explicitly bounded on the Raspberry Pi service. A
+native `stream.close()` that wedges is logged with its exact stage and does not
+hold the Oculizer worker until systemd's 30-second timeout. `TimeoutStopSec=30`
+remains intentionally unchanged while the full reboot/shutdown regression is
+being validated. See [docs/raspberry_shutdown.md](docs/raspberry_shutdown.md)
+for the detailed lifecycle and validation procedure.
+
 ## Troubleshooting
 
 - `waiting-for-qlc-authorization`: authorize `OculizerQLC` in the QLC+ GUI.
