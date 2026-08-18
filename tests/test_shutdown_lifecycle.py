@@ -42,6 +42,33 @@ class SoundDeviceShutdownLifecycleTests(unittest.TestCase):
         stream.stop.assert_not_called()
         self.assertIsNone(source.stream)
 
+    def test_blocked_graceful_stop_is_bounded_and_reports_native_stage(self):
+        stop_started = threading.Event()
+        release_stop = threading.Event()
+        stream = Mock()
+        stream.active = True
+
+        def blocked_stop():
+            stop_started.set()
+            release_stop.wait(1.0)
+
+        stream.stop.side_effect = blocked_stop
+        source = self.make_source(shutdown_timeout=0.05)
+        source.stream = stream
+
+        started = time.monotonic()
+        with self.assertLogs("oculizer.audio.sources", level="ERROR") as logs:
+            source.stop()
+        elapsed = time.monotonic() - started
+
+        self.assertTrue(stop_started.is_set())
+        self.assertLess(elapsed, 0.5)
+        self.assertIsNone(source.stream)
+        stream.close.assert_not_called()
+        self.assertTrue(any("stream.stop() did not finish" in line for line in logs.output))
+
+        release_stop.set()
+
     def test_blocked_close_is_bounded_and_reports_native_stage(self):
         close_started = threading.Event()
         release_close = threading.Event()
