@@ -137,3 +137,44 @@ oculizerctl --socket /run/oculizer/control.sock status
 ```
 
 The client never guesses when multiple active runtimes are found.
+
+## Shutdown and reboot behavior
+
+The live audio source now requests a prompt PortAudio interrupt before the
+Oculizer worker owns the final stream close. Native `abort`, `stop`, and `close`
+stages are timed in the service log, and a blocked native audio call is bounded
+so it cannot hold the Oculizer worker indefinitely.
+
+The installed unit is also ordered after the selected service user's
+`user@<uid>.service`. systemd reverses that ordering on shutdown, allowing
+Oculizer to stop while the user's PipeWire/ALSA session is still available.
+
+`TimeoutStopSec=30` intentionally remains unchanged during validation. After
+installing this version, validate a normal stop first:
+
+```bash
+sudo systemctl stop oculizer.service
+sudo journalctl -u oculizer.service -b -n 100 --no-pager
+```
+
+Then validate a real Raspberry Pi reboot/shutdown and inspect the previous boot:
+
+```bash
+sudo journalctl -b -1 -u oculizer.service --no-pager
+```
+
+The expected result is that Oculizer exits before the 30-second timeout and the
+log shows which PortAudio shutdown stages completed. A `stream.close()` timeout
+may still be reported if the native audio stack wedges; that condition is now
+explicitly bounded so application shutdown can continue instead of waiting for
+systemd's 30-second kill timeout.
+
+On Raspberry Pi validation performed 2026-08-18, the normal stop completed in
+2.820 seconds with `close()` returning normally. A second stop performed after
+QLC+ was already absent completed in 4.096 seconds even though `stream.close()`
+did not return within its 2.000-second native bound. In both cases systemd
+reported successful deactivation and no SIGKILL occurred.
+
+The detailed design, observed validation results, expected log messages, and
+regression procedure are documented in
+[`docs/raspberry_shutdown.md`](../docs/raspberry_shutdown.md).
