@@ -65,9 +65,24 @@ Wants=network.target sound.target user@1000.service
 
 `TimeoutStopSec=30` remains unchanged while this fix is being validated. Do not reduce it merely to hide the symptom.
 
+### Validation status
+
+The first Raspberry Pi hardware regression test was validated on 2026-08-18 with the service using a live audio input:
+
+- `time sudo systemctl stop oculizer.service`: **2.820 seconds real time**;
+- `stream.abort()` completed in **0.001 seconds**;
+- `stream.close()` completed in **0.004 seconds**;
+- the prediction thread stopped cleanly;
+- the QLC+ Native client stopped cleanly;
+- the headless runtime reported `Non-interactive Oculizer runtime stopped`;
+- systemd reported `Deactivated successfully` and `Stopped oculizer.service`;
+- no `Oculizer worker did not stop within five seconds`, systemd stop timeout, or `SIGKILL` was observed.
+
+This validates the normal `systemctl stop` case. The QLC+-already-stopped and full reboot/shutdown cases remain required before the fix is considered fully validated.
+
 Run these regression cases on the Raspberry Pi after reinstalling the service pack:
 
-### 1. Normal service stop
+### 1. Normal service stop — VALIDATED
 
 ```bash
 sudo systemctl start oculizer.service
@@ -76,6 +91,8 @@ sudo journalctl -u oculizer.service -b -n 100 --no-pager
 ```
 
 Expected result: Oculizer exits normally without reaching the 30-second systemd timeout. The PortAudio log should identify `abort()`/`close()` timings.
+
+Observed result on 2026-08-18: PASS, with a 2.820-second command duration, `abort()` in 0.001 s and `close()` in 0.004 s.
 
 ### 2. QLC+ already stopped
 
@@ -105,6 +122,7 @@ Only after the full Raspberry Pi reboot/shutdown case is validated should a shor
 `tests/test_shutdown_lifecycle.py` covers:
 
 - explicit live-stream interruption without caller-side close;
+- a blocked `stream.stop()` returning control within a bounded interval;
 - a blocked `stream.close()` returning control within a bounded interval;
 - a blocked `stream.abort()` returning control without launching a competing close;
 - preservation of `TimeoutStopSec=30` during validation;
